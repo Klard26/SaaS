@@ -3,20 +3,36 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Klard – Booking platform for consultants
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: categories
+    description: Service categories
+  - name: providers
+    description: Provider operations
+  - name: services
+    description: Service offerings
+  - name: availability
+    description: Time slot operations
+  - name: bookings
+    description: Booking operations
+  - name: reviews
+    description: Review operations
+  - name: ai
+    description: AI offer generation
+  - name: dashboard
+    description: Dashboard summaries
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +40,668 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /categories:
+    get:
+      operationId: listCategories
+      tags: [categories]
+      summary: List all categories
+      responses:
+        "200":
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+
+  /providers:
+    get:
+      operationId: listProviders
+      tags: [providers]
+      summary: Search/list providers
+      parameters:
+        - name: zip
+          in: query
+          schema: { type: string }
+        - name: city
+          in: query
+          schema: { type: string }
+        - name: category
+          in: query
+          schema: { type: string }
+        - name: q
+          in: query
+          schema: { type: string }
+        - name: minPrice
+          in: query
+          schema: { type: number }
+        - name: maxPrice
+          in: query
+          schema: { type: number }
+        - name: limit
+          in: query
+          schema: { type: integer }
+        - name: offset
+          in: query
+          schema: { type: integer }
+      responses:
+        "200":
+          description: List of providers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProviderSummary"
+    post:
+      operationId: createProvider
+      tags: [providers]
+      summary: Create a provider profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProviderInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Provider"
+
+  /providers/{id}:
+    get:
+      operationId: getProvider
+      tags: [providers]
+      summary: Get provider details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Provider detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Provider"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateProvider
+      tags: [providers]
+      summary: Update provider profile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProviderUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Provider"
+
+  /providers/me:
+    get:
+      operationId: getMyProviderProfile
+      tags: [providers]
+      summary: Get the authenticated user's provider profile
+      responses:
+        "200":
+          description: Provider profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Provider"
+        "404":
+          description: Not found (not yet a provider)
+
+  /providers/{id}/services:
+    get:
+      operationId: listProviderServices
+      tags: [services]
+      summary: List services for a provider
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: List of services
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Service"
+    post:
+      operationId: createService
+      tags: [services]
+      summary: Add a service to a provider
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+
+  /services/{id}:
+    patch:
+      operationId: updateService
+      tags: [services]
+      summary: Update a service
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+    delete:
+      operationId: deleteService
+      tags: [services]
+      summary: Delete a service
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+
+  /providers/{id}/availability:
+    get:
+      operationId: listAvailability
+      tags: [availability]
+      summary: Get available time slots for a provider
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: List of time slots
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TimeSlot"
+
+  /availability:
+    post:
+      operationId: createTimeSlot
+      tags: [availability]
+      summary: Create a time slot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TimeSlotInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimeSlot"
+    delete:
+      operationId: deleteTimeSlot
+      tags: [availability]
+      summary: Delete a time slot
+      parameters:
+        - name: slotId
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+
+  /bookings:
+    post:
+      operationId: createBooking
+      tags: [bookings]
+      summary: Create a booking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingInput"
+      responses:
+        "201":
+          description: Booking created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+    get:
+      operationId: listMyBookings
+      tags: [bookings]
+      summary: List bookings for the authenticated user (as customer)
+      responses:
+        "200":
+          description: List of bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Booking"
+
+  /bookings/{id}:
+    get:
+      operationId: getBooking
+      tags: [bookings]
+      summary: Get booking details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Booking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+
+  /bookings/{id}/status:
+    patch:
+      operationId: updateBookingStatus
+      tags: [bookings]
+      summary: Update booking status (confirm / cancel)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingStatusUpdate"
+      responses:
+        "200":
+          description: Updated booking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+
+  /providers/{id}/bookings:
+    get:
+      operationId: listProviderBookings
+      tags: [bookings]
+      summary: List bookings for a provider (dashboard)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: List of bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Booking"
+
+  /providers/{id}/reviews:
+    get:
+      operationId: listProviderReviews
+      tags: [reviews]
+      summary: List reviews for a provider
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Reviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Review"
+
+  /reviews:
+    post:
+      operationId: createReview
+      tags: [reviews]
+      summary: Leave a review for a completed booking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewInput"
+      responses:
+        "201":
+          description: Review created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+
+  /ai/offer:
+    post:
+      operationId: generateAiOffer
+      tags: [ai]
+      summary: Generate an AI offer for a service inquiry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiOfferRequest"
+      responses:
+        "200":
+          description: Generated offer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiOfferResponse"
+
+  /dashboard/provider/{id}:
+    get:
+      operationId: getProviderDashboard
+      tags: [dashboard]
+      summary: Get provider dashboard summary
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderDashboard"
+
+  /dashboard/stats:
+    get:
+      operationId: getPlatformStats
+      tags: [dashboard]
+      summary: Platform-level stats (total providers, categories, bookings)
+      responses:
+        "200":
+          description: Platform stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformStats"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    Category:
+      type: object
+      required: [id, name, slug, icon]
+      properties:
+        id:    { type: integer }
+        name:  { type: string }
+        slug:  { type: string }
+        icon:  { type: string }
+        providerCount: { type: integer }
+
+    ProviderSummary:
+      type: object
+      required: [id, displayName, category, city, zip, rating, reviewCount, minPrice]
+      properties:
+        id:          { type: integer }
+        displayName: { type: string }
+        category:    { type: string }
+        categorySlug: { type: string }
+        city:        { type: string }
+        zip:         { type: string }
+        rating:      { type: number }
+        reviewCount: { type: integer }
+        minPrice:    { type: number }
+        bio:         { type: ["string", "null"] }
+        avatarUrl:   { type: ["string", "null"] }
+        verified:    { type: boolean }
+
+    Provider:
+      type: object
+      required: [id, clerkUserId, displayName, category, city, zip, rating, reviewCount]
+      properties:
+        id:           { type: integer }
+        clerkUserId:  { type: string }
+        displayName:  { type: string }
+        email:        { type: string }
+        phone:        { type: ["string", "null"] }
+        bio:          { type: ["string", "null"] }
+        category:     { type: string }
+        categorySlug: { type: string }
+        city:         { type: string }
+        zip:          { type: string }
+        address:      { type: ["string", "null"] }
+        website:      { type: ["string", "null"] }
+        avatarUrl:    { type: ["string", "null"] }
+        rating:       { type: number }
+        reviewCount:  { type: integer }
+        verified:     { type: boolean }
+        createdAt:    { type: string }
+
+    ProviderInput:
+      type: object
+      required: [displayName, category, city, zip]
+      properties:
+        displayName:  { type: string }
+        bio:          { type: string }
+        category:     { type: string }
+        city:         { type: string }
+        zip:          { type: string }
+        address:      { type: string }
+        phone:        { type: string }
+        website:      { type: string }
+
+    ProviderUpdate:
+      type: object
+      properties:
+        displayName:  { type: string }
+        bio:          { type: string }
+        category:     { type: string }
+        city:         { type: string }
+        zip:          { type: string }
+        address:      { type: string }
+        phone:        { type: string }
+        website:      { type: string }
+        avatarUrl:    { type: string }
+
+    Service:
+      type: object
+      required: [id, providerId, name, price, durationMinutes]
+      properties:
+        id:              { type: integer }
+        providerId:      { type: integer }
+        name:            { type: string }
+        description:     { type: ["string", "null"] }
+        price:           { type: number }
+        durationMinutes: { type: integer }
+        createdAt:       { type: string }
+
+    ServiceInput:
+      type: object
+      required: [name, price, durationMinutes]
+      properties:
+        name:            { type: string }
+        description:     { type: string }
+        price:           { type: number }
+        durationMinutes: { type: integer }
+
+    ServiceUpdate:
+      type: object
+      properties:
+        name:            { type: string }
+        description:     { type: string }
+        price:           { type: number }
+        durationMinutes: { type: integer }
+
+    TimeSlot:
+      type: object
+      required: [id, providerId, startTime, endTime, isAvailable]
+      properties:
+        id:          { type: integer }
+        providerId:  { type: integer }
+        startTime:   { type: string, format: date-time }
+        endTime:     { type: string, format: date-time }
+        isAvailable: { type: boolean }
+
+    TimeSlotInput:
+      type: object
+      required: [providerId, startTime, endTime]
+      properties:
+        providerId:  { type: integer }
+        startTime:   { type: string, format: date-time }
+        endTime:     { type: string, format: date-time }
+
+    Booking:
+      type: object
+      required: [id, customerId, providerId, serviceId, slotId, status, totalPrice, scheduledAt]
+      properties:
+        id:           { type: integer }
+        customerId:   { type: string }
+        customerName: { type: ["string", "null"] }
+        providerId:   { type: integer }
+        providerName: { type: string }
+        serviceId:    { type: integer }
+        serviceName:  { type: string }
+        slotId:       { type: integer }
+        status:       { type: string, enum: [pending, confirmed, cancelled, completed] }
+        totalPrice:   { type: number }
+        scheduledAt:  { type: string, format: date-time }
+        notes:        { type: ["string", "null"] }
+        createdAt:    { type: string }
+
+    BookingInput:
+      type: object
+      required: [providerId, serviceId, slotId]
+      properties:
+        providerId:  { type: integer }
+        serviceId:   { type: integer }
+        slotId:      { type: integer }
+        notes:       { type: string }
+
+    BookingStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [confirmed, cancelled, completed] }
+
+    Review:
+      type: object
+      required: [id, bookingId, customerId, providerId, rating, createdAt]
+      properties:
+        id:           { type: integer }
+        bookingId:    { type: integer }
+        customerId:   { type: string }
+        customerName: { type: ["string", "null"] }
+        providerId:   { type: integer }
+        rating:       { type: integer }
+        comment:      { type: ["string", "null"] }
+        createdAt:    { type: string }
+
+    ReviewInput:
+      type: object
+      required: [bookingId, rating]
+      properties:
+        bookingId:  { type: integer }
+        rating:     { type: integer }
+        comment:    { type: string }
+
+    AiOfferRequest:
+      type: object
+      required: [providerId, inquiry]
+      properties:
+        providerId: { type: integer }
+        inquiry:    { type: string }
+
+    AiOfferResponse:
+      type: object
+      required: [offer]
+      properties:
+        offer:       { type: string }
+        estimatedPrice: { type: ["number", "null"] }
+        estimatedDuration: { type: ["string", "null"] }
+
+    ProviderDashboard:
+      type: object
+      required: [totalBookings, pendingBookings, confirmedBookings, completedBookings, totalRevenue, averageRating, recentBookings]
+      properties:
+        totalBookings:     { type: integer }
+        pendingBookings:   { type: integer }
+        confirmedBookings: { type: integer }
+        completedBookings: { type: integer }
+        totalRevenue:      { type: number }
+        averageRating:     { type: number }
+        recentBookings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Booking"
+
+    PlatformStats:
+      type: object
+      required: [totalProviders, totalBookings, totalCategories, totalReviews]
+      properties:
+        totalProviders:   { type: integer }
+        totalBookings:    { type: integer }
+        totalCategories:  { type: integer }
+        totalReviews:     { type: integer }

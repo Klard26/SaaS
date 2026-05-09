@@ -1,10 +1,11 @@
-# [Project name]
+# Klard
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Klard is a Doctolib-style booking marketplace for German consultants (Berater) — where users search, compare, and instantly book appointments with advisors across 12 professional categories.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
+- `pnpm --filter @workspace/klard run dev` — run the frontend (port 26057)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
@@ -14,32 +15,58 @@ _Replace the heading above with the project's name, and this line with one sente
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
+- Frontend: React + Vite + Tailwind v4 + shadcn/ui + Wouter routing
+- API: Express 5 + Zod validation
 - DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
+- Auth: Clerk (managed by Replit) via `@clerk/react` + `@clerk/express`
+- AI: Anthropic Claude (via Replit AI Integrations proxy) for AI offer generation
+- API codegen: Orval (from OpenAPI spec → React Query hooks + Zod schemas)
 - Build: esbuild (CJS bundle)
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `lib/api-spec/openapi.yaml` — source of truth for API contract (19 endpoints)
+- `lib/api-client-react/src/generated/api.ts` — generated React Query hooks
+- `lib/api-client-react/src/generated/api.schemas.ts` — generated TypeScript types
+- `lib/db/src/schema/` — Drizzle table definitions (categories, providers, services, timeSlots, bookings, reviews)
+- `artifacts/api-server/src/routes/` — all Express route handlers
+- `artifacts/klard/src/pages/` — all frontend pages
+- `artifacts/klard/src/components/` — shared components (Navbar, shadcn/ui)
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Contract-first API: OpenAPI spec is written manually, then Orval codegen produces typed hooks and Zod schemas for both server validation and client consumption.
+- Clerk proxy middleware on the Express server forwards `/clerk/*` requests to Clerk's CDN, allowing the frontend to use a proxied Clerk JS URL for same-origin auth flows.
+- AI offers use Replit-managed Anthropic integration — no user API key required; billed to Replit credits.
+- All DB tables use Drizzle's `pgTable` with timestamps and Zod schemas via `drizzle-zod`.
+- Frontend routing: Wouter (lightweight) with `BASE_URL` base path support for the Replit proxy architecture.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- **Homepage**: Hero search, platform stats, category grid, featured providers, how-it-works
+- **Search** (`/search`): Filter providers by city/ZIP, category, price range; provider cards with ratings
+- **Provider Detail** (`/providers/:id`): Full profile, service list, live slot picker, AI offer generator, reviews
+- **Booking** (`/booking/:providerId/:serviceId/:slotId`): Confirmation page with notes
+- **My Bookings** (`/bookings`): Upcoming/past bookings, leave reviews on completed bookings
+- **Provider Dashboard** (`/dashboard`): Stats, booking management (confirm/cancel/complete), quick actions
+- **Provider Onboarding** (`/provider/onboarding`): Register as a consultant
+- **Provider Profile** (`/provider/profile`): Edit name, bio, city, contact info
+- **Provider Services** (`/provider/services`): CRUD for services with price/duration
+- **Provider Availability** (`/provider/availability`): Add/remove time slots calendar
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+_Populate as needed._
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Run `pnpm run typecheck:libs` after any schema change in `lib/db/` before typechecking `artifacts/api-server` — the DB lib must be rebuilt for exports to resolve.
+- Run `pnpm --filter @workspace/api-spec run codegen` after any OpenAPI spec change before building the frontend.
+- Use `zod` (not `zod/v4`) in frontend pages when passing to `zodResolver` from `@hookform/resolvers/zod`.
+- `deleteTimeSlot` mutation takes `{ params: { slotId } }` not `{ id }` — matches the `DeleteTimeSlotParams` generated type.
+- The Anthropic env vars are `ANTHROPIC_API_URL` and `ANTHROPIC_API_KEY` (set via Replit AI Integrations).
 
 ## Pointers
 
 - See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- See the `clerk-auth` skill for Clerk customization guidance

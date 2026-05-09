@@ -1,0 +1,76 @@
+import { Router, type IRouter } from "express";
+import { db } from "@workspace/db";
+import { timeSlotsTable } from "@workspace/db";
+import {
+  ListAvailabilityParams,
+  CreateTimeSlotBody,
+  DeleteTimeSlotQueryParams,
+} from "@workspace/api-zod";
+import { eq, and } from "drizzle-orm";
+
+const router: IRouter = Router();
+
+router.get("/providers/:id/availability", async (req, res): Promise<void> => {
+  try {
+    const parsed = ListAvailabilityParams.safeParse({ id: Number(req.params.id) });
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+    const slots = await db
+      .select()
+      .from(timeSlotsTable)
+      .where(
+        and(
+          eq(timeSlotsTable.providerId, parsed.data.id),
+          eq(timeSlotsTable.isAvailable, true),
+        ),
+      )
+      .orderBy(timeSlotsTable.startTime);
+    res.json(slots);
+  } catch (err) {
+    req.log.error({ err }, "Failed to fetch availability");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/availability", async (req, res): Promise<void> => {
+  try {
+    const parsed = CreateTimeSlotBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const d = parsed.data;
+    const [slot] = await db
+      .insert(timeSlotsTable)
+      .values({
+        providerId: d.providerId,
+        startTime: new Date(d.startTime),
+        endTime: new Date(d.endTime),
+        isAvailable: true,
+      })
+      .returning();
+    res.status(201).json(slot);
+  } catch (err) {
+    req.log.error({ err }, "Failed to create time slot");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.delete("/availability", async (req, res): Promise<void> => {
+  try {
+    const parsed = DeleteTimeSlotQueryParams.safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid slotId" });
+      return;
+    }
+    await db.delete(timeSlotsTable).where(eq(timeSlotsTable.id, parsed.data.slotId));
+    res.status(204).send();
+  } catch (err) {
+    req.log.error({ err }, "Failed to delete time slot");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+export default router;
