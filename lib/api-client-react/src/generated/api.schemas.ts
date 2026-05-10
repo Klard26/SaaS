@@ -15,7 +15,16 @@ export interface Category {
   slug: string;
   icon: string;
   providerCount?: number;
+  requiresDirectBilling?: boolean;
 }
+
+export type ProviderSummarySubscriptionTier =
+  (typeof ProviderSummarySubscriptionTier)[keyof typeof ProviderSummarySubscriptionTier];
+
+export const ProviderSummarySubscriptionTier = {
+  basic: "basic",
+  premium: "premium",
+} as const;
 
 export interface ProviderSummary {
   id: number;
@@ -32,7 +41,17 @@ export interface ProviderSummary {
   /** @nullable */
   avatarUrl?: string | null;
   verified?: boolean;
+  subscriptionTier?: ProviderSummarySubscriptionTier;
+  requiresDirectBilling?: boolean;
 }
+
+export type ProviderSubscriptionTier =
+  (typeof ProviderSubscriptionTier)[keyof typeof ProviderSubscriptionTier];
+
+export const ProviderSubscriptionTier = {
+  basic: "basic",
+  premium: "premium",
+} as const;
 
 export interface Provider {
   id: number;
@@ -56,6 +75,14 @@ export interface Provider {
   rating: number;
   reviewCount: number;
   verified?: boolean;
+  subscriptionTier?: ProviderSubscriptionTier;
+  requiresDirectBilling?: boolean;
+  /** @nullable */
+  premiumSince?: string | null;
+  /** @nullable */
+  icalToken?: string | null;
+  /** @nullable */
+  calendarSyncUrl?: string | null;
   createdAt?: string;
 }
 
@@ -130,6 +157,17 @@ export const BookingStatus = {
   completed: "completed",
 } as const;
 
+export type BookingPaymentStatus =
+  (typeof BookingPaymentStatus)[keyof typeof BookingPaymentStatus];
+
+export const BookingPaymentStatus = {
+  not_required: "not_required",
+  pending: "pending",
+  paid: "paid",
+  failed: "failed",
+  refunded: "refunded",
+} as const;
+
 export interface Booking {
   id: number;
   customerId: string;
@@ -145,6 +183,10 @@ export interface Booking {
   scheduledAt: string;
   /** @nullable */
   notes?: string | null;
+  paymentRequired?: boolean;
+  paymentStatus?: BookingPaymentStatus;
+  /** @nullable */
+  stripeCheckoutSessionId?: string | null;
   createdAt?: string;
 }
 
@@ -208,6 +250,29 @@ export interface ProviderDashboard {
   totalRevenue: number;
   averageRating: number;
   recentBookings: Booking[];
+}
+
+export interface CheckoutSession {
+  url: string;
+  sessionId?: string;
+}
+
+export type SubscriptionStatusTier =
+  (typeof SubscriptionStatusTier)[keyof typeof SubscriptionStatusTier];
+
+export const SubscriptionStatusTier = {
+  basic: "basic",
+  premium: "premium",
+} as const;
+
+export interface SubscriptionStatus {
+  tier: SubscriptionStatusTier;
+  /** @nullable */
+  status?: string | null;
+  /** @nullable */
+  currentPeriodEnd?: string | null;
+  cancelAtPeriodEnd?: boolean;
+  priceEur?: number;
 }
 
 export interface PlatformStats {

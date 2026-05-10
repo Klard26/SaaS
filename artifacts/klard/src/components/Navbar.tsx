@@ -35,6 +35,9 @@ export function Navbar() {
           <Link href="/search" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-search">
             Berater finden
           </Link>
+          <Link href="/pricing" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-pricing">
+            Für Berater
+          </Link>
           {isSignedIn && (
             <>
               <Link href="/bookings" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-bookings">
@@ -120,6 +123,9 @@ export function Navbar() {
           <nav className="flex flex-col px-4 py-3 gap-1">
             <Link href="/search" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>
               Berater finden
+            </Link>
+            <Link href="/pricing" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>
+              Für Berater
             </Link>
             {isSignedIn && (
               <>

@@ -26,6 +26,10 @@ tags:
     description: AI offer generation
   - name: dashboard
     description: Dashboard summaries
+  - name: billing
+    description: Subscription and payment operations
+  - name: calendar
+    description: Calendar synchronization (iCalendar feeds)
 
 paths:
   /healthz:
@@ -469,6 +473,95 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProviderDashboard"
 
+  /providers/me/subscription/checkout:
+    post:
+      operationId: createSubscriptionCheckout
+      tags: [billing]
+      summary: Create a Stripe Checkout Session for the Premium provider subscription
+      responses:
+        "200":
+          description: Checkout session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutSession"
+
+  /providers/me/subscription:
+    get:
+      operationId: getMySubscription
+      tags: [billing]
+      summary: Get current provider subscription status
+      responses:
+        "200":
+          description: Subscription status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionStatus"
+    delete:
+      operationId: cancelMySubscription
+      tags: [billing]
+      summary: Cancel premium subscription at period end
+      responses:
+        "200":
+          description: Cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionStatus"
+
+  /bookings/{id}/payment/checkout:
+    post:
+      operationId: createBookingCheckout
+      tags: [billing]
+      summary: Create a Stripe Checkout Session for a booking payment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Checkout session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutSession"
+
+  /providers/{id}/calendar.ics:
+    get:
+      operationId: getProviderCalendarFeed
+      tags: [calendar]
+      summary: iCal feed of confirmed bookings for a provider (token via ?token=)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: iCalendar (.ics) feed
+          content:
+            text/calendar:
+              schema: { type: string }
+
+  /bookings/{id}/calendar.ics:
+    get:
+      operationId: getBookingCalendarFile
+      tags: [calendar]
+      summary: Download .ics file for a single booking
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: iCalendar (.ics) file
+          content:
+            text/calendar:
+              schema: { type: string }
+
   /dashboard/stats:
     get:
       operationId: getPlatformStats
@@ -500,6 +593,7 @@ components:
         slug:  { type: string }
         icon:  { type: string }
         providerCount: { type: integer }
+        requiresDirectBilling: { type: boolean }
 
     ProviderSummary:
       type: object
@@ -517,6 +611,8 @@ components:
         bio:         { type: ["string", "null"] }
         avatarUrl:   { type: ["string", "null"] }
         verified:    { type: boolean }
+        subscriptionTier: { type: string, enum: [basic, premium] }
+        requiresDirectBilling: { type: boolean }
 
     Provider:
       type: object
@@ -538,6 +634,11 @@ components:
         rating:       { type: number }
         reviewCount:  { type: integer }
         verified:     { type: boolean }
+        subscriptionTier: { type: string, enum: [basic, premium] }
+        requiresDirectBilling: { type: boolean }
+        premiumSince:    { type: ["string", "null"] }
+        icalToken:       { type: ["string", "null"] }
+        calendarSyncUrl: { type: ["string", "null"] }
         createdAt:    { type: string }
 
     ProviderInput:
@@ -629,6 +730,9 @@ components:
         totalPrice:   { type: number }
         scheduledAt:  { type: string, format: date-time }
         notes:        { type: ["string", "null"] }
+        paymentRequired: { type: boolean }
+        paymentStatus:   { type: string, enum: [not_required, pending, paid, failed, refunded] }
+        stripeCheckoutSessionId: { type: ["string", "null"] }
         createdAt:    { type: string }
 
     BookingInput:
@@ -696,6 +800,23 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Booking"
+
+    CheckoutSession:
+      type: object
+      required: [url]
+      properties:
+        url:       { type: string }
+        sessionId: { type: string }
+
+    SubscriptionStatus:
+      type: object
+      required: [tier]
+      properties:
+        tier: { type: string, enum: [basic, premium] }
+        status: { type: ["string", "null"] }
+        currentPeriodEnd: { type: ["string", "null"] }
+        cancelAtPeriodEnd: { type: boolean }
+        priceEur: { type: number }
 
     PlatformStats:
       type: object

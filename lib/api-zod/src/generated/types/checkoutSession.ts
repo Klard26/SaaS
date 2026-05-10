@@ -6,11 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface Category {
-  id: number;
-  name: string;
-  slug: string;
-  icon: string;
-  providerCount?: number;
-  requiresDirectBilling?: boolean;
+export interface CheckoutSession {
+  url: string;
+  sessionId?: string;
 }

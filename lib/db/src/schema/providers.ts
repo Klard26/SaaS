@@ -19,6 +19,12 @@ export const providersTable = pgTable("providers", {
   rating: real("rating").notNull().default(0),
   reviewCount: integer("review_count").notNull().default(0),
   verified: boolean("verified").notNull().default(false),
+  subscriptionTier: text("subscription_tier").notNull().default("basic"),
+  premiumSince: timestamp("premium_since"),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  icalToken: text("ical_token"),
+  calendarSyncUrl: text("calendar_sync_url"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

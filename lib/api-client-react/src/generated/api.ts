@@ -23,6 +23,7 @@ import type {
   BookingInput,
   BookingStatusUpdate,
   Category,
+  CheckoutSession,
   DeleteTimeSlotParams,
   HealthStatus,
   ListProvidersParams,
@@ -37,6 +38,7 @@ import type {
   Service,
   ServiceInput,
   ServiceUpdate,
+  SubscriptionStatus,
   TimeSlot,
   TimeSlotInput,
 } from "./api.schemas";
@@ -2006,6 +2008,504 @@ export function useGetProviderDashboard<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetProviderDashboardQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a Stripe Checkout Session for the Premium provider subscription
+ */
+export const getCreateSubscriptionCheckoutUrl = () => {
+  return `/api/providers/me/subscription/checkout`;
+};
+
+export const createSubscriptionCheckout = async (
+  options?: RequestInit,
+): Promise<CheckoutSession> => {
+  return customFetch<CheckoutSession>(getCreateSubscriptionCheckoutUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getCreateSubscriptionCheckoutMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createSubscriptionCheckout>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createSubscriptionCheckout>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["createSubscriptionCheckout"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createSubscriptionCheckout>>,
+    void
+  > = () => {
+    return createSubscriptionCheckout(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateSubscriptionCheckoutMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createSubscriptionCheckout>>
+>;
+
+export type CreateSubscriptionCheckoutMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a Stripe Checkout Session for the Premium provider subscription
+ */
+export const useCreateSubscriptionCheckout = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createSubscriptionCheckout>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createSubscriptionCheckout>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getCreateSubscriptionCheckoutMutationOptions(options));
+};
+
+/**
+ * @summary Get current provider subscription status
+ */
+export const getGetMySubscriptionUrl = () => {
+  return `/api/providers/me/subscription`;
+};
+
+export const getMySubscription = async (
+  options?: RequestInit,
+): Promise<SubscriptionStatus> => {
+  return customFetch<SubscriptionStatus>(getGetMySubscriptionUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMySubscriptionQueryKey = () => {
+  return [`/api/providers/me/subscription`] as const;
+};
+
+export const getGetMySubscriptionQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMySubscription>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMySubscription>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMySubscriptionQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getMySubscription>>
+  > = ({ signal }) => getMySubscription({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMySubscription>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMySubscriptionQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMySubscription>>
+>;
+export type GetMySubscriptionQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get current provider subscription status
+ */
+
+export function useGetMySubscription<
+  TData = Awaited<ReturnType<typeof getMySubscription>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMySubscription>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMySubscriptionQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Cancel premium subscription at period end
+ */
+export const getCancelMySubscriptionUrl = () => {
+  return `/api/providers/me/subscription`;
+};
+
+export const cancelMySubscription = async (
+  options?: RequestInit,
+): Promise<SubscriptionStatus> => {
+  return customFetch<SubscriptionStatus>(getCancelMySubscriptionUrl(), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getCancelMySubscriptionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof cancelMySubscription>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof cancelMySubscription>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["cancelMySubscription"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof cancelMySubscription>>,
+    void
+  > = () => {
+    return cancelMySubscription(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CancelMySubscriptionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof cancelMySubscription>>
+>;
+
+export type CancelMySubscriptionMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Cancel premium subscription at period end
+ */
+export const useCancelMySubscription = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof cancelMySubscription>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof cancelMySubscription>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getCancelMySubscriptionMutationOptions(options));
+};
+
+/**
+ * @summary Create a Stripe Checkout Session for a booking payment
+ */
+export const getCreateBookingCheckoutUrl = (id: number) => {
+  return `/api/bookings/${id}/payment/checkout`;
+};
+
+export const createBookingCheckout = async (
+  id: number,
+  options?: RequestInit,
+): Promise<CheckoutSession> => {
+  return customFetch<CheckoutSession>(getCreateBookingCheckoutUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getCreateBookingCheckoutMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createBookingCheckout>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createBookingCheckout>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["createBookingCheckout"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createBookingCheckout>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return createBookingCheckout(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateBookingCheckoutMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createBookingCheckout>>
+>;
+
+export type CreateBookingCheckoutMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a Stripe Checkout Session for a booking payment
+ */
+export const useCreateBookingCheckout = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createBookingCheckout>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createBookingCheckout>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getCreateBookingCheckoutMutationOptions(options));
+};
+
+/**
+ * @summary iCal feed of confirmed bookings for a provider (token via ?token=)
+ */
+export const getGetProviderCalendarFeedUrl = (id: number) => {
+  return `/api/providers/${id}/calendar.ics`;
+};
+
+export const getProviderCalendarFeed = async (
+  id: number,
+  options?: RequestInit,
+): Promise<string> => {
+  return customFetch<string>(getGetProviderCalendarFeedUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetProviderCalendarFeedQueryKey = (id: number) => {
+  return [`/api/providers/${id}/calendar.ics`] as const;
+};
+
+export const getGetProviderCalendarFeedQueryOptions = <
+  TData = Awaited<ReturnType<typeof getProviderCalendarFeed>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getProviderCalendarFeed>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetProviderCalendarFeedQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getProviderCalendarFeed>>
+  > = ({ signal }) =>
+    getProviderCalendarFeed(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getProviderCalendarFeed>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetProviderCalendarFeedQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getProviderCalendarFeed>>
+>;
+export type GetProviderCalendarFeedQueryError = ErrorType<unknown>;
+
+/**
+ * @summary iCal feed of confirmed bookings for a provider (token via ?token=)
+ */
+
+export function useGetProviderCalendarFeed<
+  TData = Awaited<ReturnType<typeof getProviderCalendarFeed>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getProviderCalendarFeed>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetProviderCalendarFeedQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Download .ics file for a single booking
+ */
+export const getGetBookingCalendarFileUrl = (id: number) => {
+  return `/api/bookings/${id}/calendar.ics`;
+};
+
+export const getBookingCalendarFile = async (
+  id: number,
+  options?: RequestInit,
+): Promise<string> => {
+  return customFetch<string>(getGetBookingCalendarFileUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetBookingCalendarFileQueryKey = (id: number) => {
+  return [`/api/bookings/${id}/calendar.ics`] as const;
+};
+
+export const getGetBookingCalendarFileQueryOptions = <
+  TData = Awaited<ReturnType<typeof getBookingCalendarFile>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getBookingCalendarFile>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetBookingCalendarFileQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getBookingCalendarFile>>
+  > = ({ signal }) => getBookingCalendarFile(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getBookingCalendarFile>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetBookingCalendarFileQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getBookingCalendarFile>>
+>;
+export type GetBookingCalendarFileQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Download .ics file for a single booking
+ */
+
+export function useGetBookingCalendarFile<
+  TData = Awaited<ReturnType<typeof getBookingCalendarFile>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getBookingCalendarFile>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetBookingCalendarFileQueryOptions(id, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

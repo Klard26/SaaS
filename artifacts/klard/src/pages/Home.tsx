@@ -6,12 +6,17 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Navbar } from "@/components/Navbar";
 import { useListCategories, useListProviders, useGetPlatformStats } from "@workspace/api-client-react";
-import { Star, ArrowRight, CheckCircle, Clock, Shield, Search } from "lucide-react";
+import { Star, ArrowRight, CheckCircle, Clock, Shield, Search, Crown } from "lucide-react";
 
 const ICONS: Record<string, string> = {
   calculator: "🧮", zap: "⚡", briefcase: "💼", scale: "⚖️", "trending-up": "📈",
   home: "🏠", monitor: "🖥️", megaphone: "📢", users: "👥", shield: "🛡️",
-  building: "🏢", target: "🎯",
+  building: "🏢", target: "🎯", "file-signature": "✍️", "clipboard-check": "📋",
+  compass: "🧭", rocket: "🚀", coins: "🪙", search: "🔍", newspaper: "📰",
+  laptop: "💻", lock: "🔒", "shield-check": "🛡️", "user-check": "✅",
+  sparkles: "✨", handshake: "🤝", brain: "🧠", apple: "🍎",
+  "heart-pulse": "💗", leaf: "🌱", ruler: "📐", "search-check": "🔎",
+  scroll: "📜", truck: "🚚", "git-merge": "🔀", lightbulb: "💡", receipt: "🧾",
 };
 
 export default function Home() {
@@ -140,10 +145,15 @@ export default function Home() {
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold text-foreground truncate">{provider.displayName}</h3>
                         {provider.verified && (
                           <CheckCircle className="h-4 w-4 text-primary shrink-0" />
+                        )}
+                        {provider.subscriptionTier === "premium" && (
+                          <span className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-200">
+                            <Crown className="h-2.5 w-2.5" /> Premium
+                          </span>
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">{provider.category} · {provider.city}</p>
@@ -203,11 +213,16 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center">
           <h2 className="text-3xl font-bold mb-4">Sind Sie Berater?</h2>
           <p className="text-primary-foreground/80 max-w-xl mx-auto mb-8">
-            Registrieren Sie sich kostenlos und erhalten Sie neue Mandanten uber Klard. Verwalten Sie Termine, Preise und Verfugbarkeit in einem Dashboard.
+            Registrieren Sie sich kostenlos und erhalten Sie neue Mandanten über Klard. Premium ab 89 €/Monat für mehr Sichtbarkeit, AI-Tools und Kalendersynchronisierung.
           </p>
-          <Button size="lg" variant="secondary" onClick={() => setLocation("/provider/onboarding")} data-testid="button-provider-cta">
-            Jetzt als Berater starten
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button size="lg" variant="secondary" onClick={() => setLocation("/provider/onboarding")} data-testid="button-provider-cta">
+              Kostenlos starten
+            </Button>
+            <Button size="lg" variant="outline" onClick={() => setLocation("/pricing")} className="bg-transparent border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10" data-testid="button-pricing-cta">
+              Tarife ansehen
+            </Button>
+          </div>
         </div>
       </section>
 

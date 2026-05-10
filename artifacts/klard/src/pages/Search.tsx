@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Navbar } from "@/components/Navbar";
 import { useListProviders, useListCategories, getListProvidersQueryKey } from "@workspace/api-client-react";
-import { Star, MapPin, CheckCircle, Search, SlidersHorizontal, X } from "lucide-react";
+import { Star, MapPin, CheckCircle, Search, SlidersHorizontal, X, Crown } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function SearchPage() {
@@ -185,6 +185,11 @@ export default function SearchPage() {
                       <div className="flex items-center gap-1.5">
                         <h3 className="font-semibold text-foreground text-sm truncate">{provider.displayName}</h3>
                         {provider.verified && <CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" />}
+                        {provider.subscriptionTier === "premium" && (
+                          <Badge variant="secondary" className="h-4 px-1.5 gap-0.5 bg-amber-100 text-amber-900 border-amber-200 text-[10px]">
+                            <Crown className="h-2.5 w-2.5" /> Premium
+                          </Badge>
+                        )}
                       </div>
                       <p className="text-xs text-muted-foreground">{provider.category}</p>
                     </div>

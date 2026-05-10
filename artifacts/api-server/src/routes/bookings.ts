@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { bookingsTable, timeSlotsTable, servicesTable, providersTable } from "@workspace/db";
+import { bookingsTable, timeSlotsTable, servicesTable, providersTable, categoriesTable } from "@workspace/db";
+import { clerkClient } from "@clerk/express";
 import {
   CreateBookingBody,
   GetBookingParams,
@@ -62,10 +63,31 @@ router.post("/bookings", async (req, res): Promise<void> => {
       return;
     }
 
+    const [category] = await db
+      .select()
+      .from(categoriesTable)
+      .where(eq(categoriesTable.slug, provider.categorySlug))
+      .limit(1);
+
+    const paymentRequired = !(category?.requiresDirectBilling ?? false);
+
+    let customerName: string | null = null;
+    let customerEmail: string | null = null;
+    try {
+      const u = await clerkClient.users.getUser(userId);
+      customerName =
+        [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || null;
+      customerEmail = u.primaryEmailAddress?.emailAddress ?? null;
+    } catch (e) {
+      req.log.warn({ err: e }, "Failed to load Clerk user for booking");
+    }
+
     const [booking] = await db
       .insert(bookingsTable)
       .values({
         customerId: userId,
+        customerName,
+        customerEmail,
         providerId: d.providerId,
         providerName: provider.displayName,
         serviceId: d.serviceId,
@@ -75,6 +97,8 @@ router.post("/bookings", async (req, res): Promise<void> => {
         totalPrice: service.price,
         scheduledAt: slot.startTime,
         notes: d.notes,
+        paymentRequired,
+        paymentStatus: paymentRequired ? "pending" : "not_required",
       })
       .returning();
 

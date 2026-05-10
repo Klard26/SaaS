@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { useUser } from "@clerk/react";
 import { Button } from "@/components/ui/button";
@@ -10,8 +11,10 @@ import {
   useGetProviderDashboard, getGetProviderDashboardQueryKey,
   useListProviderBookings, getListProviderBookingsQueryKey,
   useUpdateBookingStatus, getListProviderBookingsQueryKey as providerBookingsKey,
+  useGetMySubscription, getGetMySubscriptionQueryKey,
+  getGetProviderCalendarFeedUrl,
 } from "@workspace/api-client-react";
-import { Star, TrendingUp, Calendar, DollarSign, Users, PlusCircle, Settings, Clock } from "lucide-react";
+import { Star, TrendingUp, Calendar, DollarSign, Users, PlusCircle, Settings, Clock, Crown, Copy, Sparkles } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
@@ -49,7 +52,42 @@ export default function Dashboard() {
     { query: { enabled: !!profile?.id, queryKey: getListProviderBookingsQueryKey(profile?.id ?? 0) } }
   );
 
+  const { data: subscription } = useGetMySubscription({
+    query: { enabled: !!profile?.id, queryKey: getGetMySubscriptionQueryKey() },
+  });
+
   const updateStatus = useUpdateBookingStatus();
+
+  // Reconcile billing state when returning from a successful Stripe Checkout.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("subscription") !== "success") return;
+    (async () => {
+      try {
+        await fetch(`${import.meta.env.BASE_URL}api/billing/reconcile`, {
+          method: "POST",
+          credentials: "include",
+        });
+      } catch {
+        /* ignore */
+      }
+      qc.invalidateQueries({ queryKey: getGetMySubscriptionQueryKey() });
+      qc.invalidateQueries({ queryKey: getGetMyProviderProfileQueryKey() });
+      toast({ title: "Premium aktiviert", description: "Vielen Dank! Ihre Mitgliedschaft ist aktiv." });
+      window.history.replaceState({}, "", window.location.pathname);
+    })();
+  }, [qc, toast]);
+
+  const isPremium = subscription?.tier === "premium";
+  const calendarFeedUrl = profile?.id && profile.icalToken
+    ? `${window.location.origin}${getGetProviderCalendarFeedUrl(profile.id)}?token=${profile.icalToken}`
+    : null;
+
+  function copyCalendarUrl() {
+    if (!calendarFeedUrl) return;
+    navigator.clipboard.writeText(calendarFeedUrl);
+    toast({ title: "Kalender-Link kopiert", description: "In Apple/Google/Outlook Kalender als Abo hinzufügen." });
+  }
 
   async function handleStatusChange(bookingId: number, status: "confirmed" | "cancelled" | "completed") {
     try {
@@ -90,7 +128,16 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+              {isPremium ? (
+                <Badge className="gap-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0">
+                  <Crown className="h-3 w-3" /> Premium
+                </Badge>
+              ) : profile && (
+                <Badge variant="outline">Basic</Badge>
+              )}
+            </div>
             {profile && <p className="text-muted-foreground mt-0.5">{profile.displayName}</p>}
           </div>
           <div className="flex gap-2">
@@ -131,6 +178,48 @@ export default function Dashboard() {
             ))}
           </div>
         ) : null}
+
+        {/* Premium upsell or calendar sync */}
+        {profile && (isPremium ? (
+          calendarFeedUrl && (
+            <Card className="mb-6 border-primary/20 bg-primary/5">
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between gap-4 flex-col sm:flex-row">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Calendar className="h-4 w-4 text-primary" />
+                      <span className="font-semibold text-sm text-foreground">Kalender synchronisieren</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Abonnieren Sie diesen iCal-Link in Apple Calendar, Google Calendar oder Outlook, um alle bestätigten Buchungen automatisch in Ihrem Kalender zu sehen.
+                    </p>
+                    <code className="text-xs bg-background px-2 py-1 rounded border border-border block truncate font-mono">{calendarFeedUrl}</code>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={copyCalendarUrl} className="gap-1.5 shrink-0" data-testid="button-copy-calendar">
+                    <Copy className="h-3.5 w-3.5" /> Link kopieren
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        ) : (
+          <Card className="mb-6 border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10">
+            <CardContent className="p-5 flex items-start justify-between gap-4 flex-col sm:flex-row">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <span className="font-semibold text-sm text-foreground">Mehr Mandanten mit Premium</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Premium-Berater erhalten priorisierte Suchplatzierung, Kalendersynchronisierung, AI-Tools und 4 % statt 9 % Provision — ab 89 €/Monat.
+                </p>
+              </div>
+              <Button size="sm" className="gap-1.5 shrink-0" onClick={() => setLocation("/pricing")} data-testid="button-upgrade-dashboard">
+                <Crown className="h-3.5 w-3.5" /> Upgrade auf Premium
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
 
         {/* Quick Actions */}
         <div className="grid sm:grid-cols-3 gap-3 mb-8">

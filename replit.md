@@ -20,6 +20,8 @@ Klard is a Doctolib-style booking marketplace for German consultants (Berater) �
 - DB: PostgreSQL + Drizzle ORM
 - Auth: Clerk (managed by Replit) via `@clerk/react` + `@clerk/express`
 - AI: Anthropic Claude (via Replit AI Integrations proxy) for AI offer generation
+- Payments: Stripe (via Replit-managed connector) for premium subscriptions + booking payments
+- Calendar: hand-rolled iCal feed builder (RFC 5545), no external library
 - API codegen: Orval (from OpenAPI spec → React Query hooks + Zod schemas)
 - Build: esbuild (CJS bundle)
 
@@ -43,16 +45,31 @@ Klard is a Doctolib-style booking marketplace for German consultants (Berater) �
 
 ## Product
 
-- **Homepage**: Hero search, platform stats, category grid, featured providers, how-it-works
-- **Search** (`/search`): Filter providers by city/ZIP, category, price range; provider cards with ratings
-- **Provider Detail** (`/providers/:id`): Full profile, service list, live slot picker, AI offer generator, reviews
-- **Booking** (`/booking/:providerId/:serviceId/:slotId`): Confirmation page with notes
-- **My Bookings** (`/bookings`): Upcoming/past bookings, leave reviews on completed bookings
-- **Provider Dashboard** (`/dashboard`): Stats, booking management (confirm/cancel/complete), quick actions
-- **Provider Onboarding** (`/provider/onboarding`): Register as a consultant
+- **Homepage**: Hero search, platform stats, category grid (34 fields), featured providers, how-it-works, dual CTA (free start / pricing)
+- **Search** (`/search`): Filter providers by city/ZIP, category, price range; provider cards with ratings + Premium badges
+- **Provider Detail** (`/providers/:id`): Full profile, Premium badge, RVG/StBVV direct-billing notice for legal/tax categories, service list, live slot picker, AI offer generator, reviews
+- **Pricing** (`/pricing`): Basic (free, 9% commission) vs. Premium (89 €/month, 4% commission, AI tools, calendar sync, prioritized listing)
+- **Booking** (`/booking/:providerId/:serviceId/:slotId`): Confirmation page with notes + post-booking iCal download
+- **My Bookings** (`/bookings`): Upcoming/past bookings, payment status badges, "Jetzt bezahlen" (Stripe) for billable bookings, "Zum Kalender" iCal download, reviews
+- **Provider Dashboard** (`/dashboard`): Tier badge, Premium upsell card OR iCal subscribe URL, stats, booking management
+- **Provider Onboarding** (`/provider/onboarding`): Register as a consultant (auto-generates iCal token)
 - **Provider Profile** (`/provider/profile`): Edit name, bio, city, contact info
 - **Provider Services** (`/provider/services`): CRUD for services with price/duration
 - **Provider Availability** (`/provider/availability`): Add/remove time slots calendar
+
+## Subscriptions & Billing
+
+- **Tiers**: `basic` (free, default) and `premium` (89 €/month). Tracked on `providers.subscriptionTier` + `stripeCustomerId` + `stripeSubscriptionId`.
+- **Provider subscriptions**: Stripe Checkout via `POST /providers/me/subscription/checkout`. Status read via `GET /providers/me/subscription`. Cancel via `DELETE /providers/me/subscription`.
+- **Booking payments**: Categories with `requiresDirectBilling=true` (Steuerberater, Rechtsanwalt, Notar, Wirtschaftsprüfer) are excluded from Klard's payment flow per RVG/StBVV — bookings show "Direkt mit Berater" and the billing endpoint refuses them. All other bookings can be paid via `POST /bookings/{id}/payment/checkout` (Stripe Checkout) and update `paymentStatus` (`pending`/`paid`/`failed`/`refunded`).
+- **Stripe client**: `artifacts/api-server/src/lib/stripeClient.ts` reads OAuth credentials from the Replit Stripe connector. All billing endpoints return `503 Stripe nicht konfiguriert` until the user authorizes the integration in the Replit dashboard.
+- **Webhook**: not yet wired — paymentStatus stays `pending` until the user finishes Stripe setup. Add `POST /billing/webhook` once the connector is live.
+
+## Calendar Sync (iCal)
+
+- **Provider feed** (Premium feature): `GET /providers/{id}/calendar.ics?token=<icalToken>` returns a subscribable iCal feed of all confirmed bookings. Token is auto-generated on provider creation and stored in `providers.icalToken`. Dashboard shows the full URL with a copy-link button for Premium providers.
+- **Per-booking download** (all customers): `GET /bookings/{id}/calendar.ics` returns a single VEVENT for the booking owner. Exposed as a "Zum Kalender" download button in BookingConfirmation success screen and MyBookings cards.
+- Implementation in `artifacts/api-server/src/routes/calendar.ts` — minimal iCal builder, no external library.
 
 ## User preferences
 

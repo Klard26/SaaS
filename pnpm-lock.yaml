@@ -202,6 +202,9 @@ importers:
       pino-http:
         specifier: ^10
         version: 10.5.0
+      stripe:
+        specifier: ^22.1.1
+        version: 22.1.1(@types/node@25.3.5)
     devDependencies:
       '@types/cookie-parser':
         specifier: ^1.4.10
@@ -657,6 +660,13 @@ importers:
         version: 0.31.9
 
   scripts:
+    dependencies:
+      '@workspace/db':
+        specifier: workspace:*
+        version: link:../lib/db
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.45.2(@types/pg@8.18.0)(pg@8.20.0)
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -3056,6 +3066,15 @@ packages:
   strip-json-comments@5.0.3:
     resolution: {integrity: sha512-1tB5mhVo7U+ETBKNf92xT4hrQa3pm0MZ0PQvuDnWgAAGHDsfp4lPSpiS6psrSiet87wyGPh9ft6wmhOMQ0hDiw==}
     engines: {node: '>=14.16'}
+
+  stripe@22.1.1:
+    resolution: {integrity: sha512-cmodIYP27tBkJ8G7DuGgWw0PFuemlFZbuF3Wwr1TrjFjUa3T7NIgCe6TVwX8BO2ynu+xtTuDGfHafNDCPt9lXA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@types/node': '>=18'
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
 
   swr@2.3.4:
     resolution: {integrity: sha512-bYd2lrhc+VarcpkgWclcUi92wYCpOgMws9Sd1hG1ntAu0NEy+14CbotuFjshBU2kt9rYj9TSmDcybpxpeTU1fg==}
@@ -5758,6 +5777,10 @@ snapshots:
   strip-final-newline@4.0.0: {}
 
   strip-json-comments@5.0.3: {}
+
+  stripe@22.1.1(@types/node@25.3.5):
+    optionalDependencies:
+      '@types/node': 25.3.5
 
   swr@2.3.4(react@19.1.0):
     dependencies:

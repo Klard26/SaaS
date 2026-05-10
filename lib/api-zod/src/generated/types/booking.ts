@@ -5,6 +5,7 @@
  * Klard – Booking platform for consultants
  * OpenAPI spec version: 0.1.0
  */
+import type { BookingPaymentStatus } from "./bookingPaymentStatus";
 import type { BookingStatus } from "./bookingStatus";
 
 export interface Booking {
@@ -22,5 +23,9 @@ export interface Booking {
   scheduledAt: Date;
   /** @nullable */
   notes?: string | null;
+  paymentRequired?: boolean;
+  paymentStatus?: BookingPaymentStatus;
+  /** @nullable */
+  stripeCheckoutSessionId?: string | null;
   createdAt?: string;
 }

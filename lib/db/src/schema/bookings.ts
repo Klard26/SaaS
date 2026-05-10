@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, real, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, real, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -6,6 +6,7 @@ export const bookingsTable = pgTable("bookings", {
   id: serial("id").primaryKey(),
   customerId: text("customer_id").notNull(),
   customerName: text("customer_name"),
+  customerEmail: text("customer_email"),
   providerId: integer("provider_id").notNull(),
   providerName: text("provider_name").notNull(),
   serviceId: integer("service_id").notNull(),
@@ -15,6 +16,10 @@ export const bookingsTable = pgTable("bookings", {
   totalPrice: real("total_price").notNull(),
   scheduledAt: timestamp("scheduled_at").notNull(),
   notes: text("notes"),
+  paymentRequired: boolean("payment_required").notNull().default(false),
+  paymentStatus: text("payment_status").notNull().default("not_required"),
+  stripePaymentIntentId: text("stripe_payment_intent_id"),
+  stripeCheckoutSessionId: text("stripe_checkout_session_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

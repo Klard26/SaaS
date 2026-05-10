@@ -8,11 +8,15 @@ import bookingsRouter from "./bookings";
 import reviewsRouter from "./reviews";
 import aiRouter from "./ai";
 import dashboardRouter from "./dashboard";
+import billingRouter from "./billing";
+import calendarRouter from "./calendar";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(categoriesRouter);
+router.use(billingRouter);
+router.use(calendarRouter);
 router.use(providersRouter);
 router.use(servicesRouter);
 router.use(availabilityRouter);

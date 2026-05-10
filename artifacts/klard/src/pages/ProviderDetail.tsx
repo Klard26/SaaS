@@ -15,7 +15,7 @@ import {
   useListProviderReviews, getListProviderReviewsQueryKey,
   useGenerateAiOffer,
 } from "@workspace/api-client-react";
-import { Star, MapPin, Clock, CheckCircle, Globe, Phone, Sparkles, ChevronRight } from "lucide-react";
+import { Star, MapPin, Clock, CheckCircle, Globe, Phone, Sparkles, ChevronRight, Crown, Info } from "lucide-react";
 
 export default function ProviderDetail() {
   const { id } = useParams<{ id: string }>();
@@ -101,12 +101,25 @@ export default function ProviderDetail() {
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                   <h1 className="text-2xl font-bold text-foreground">{provider.displayName}</h1>
+                  {provider.subscriptionTier === "premium" && (
+                    <Badge className="gap-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0">
+                      <Crown className="h-3.5 w-3.5" /> Premium
+                    </Badge>
+                  )}
                   {provider.verified && (
                     <Badge variant="secondary" className="gap-1">
                       <CheckCircle className="h-3.5 w-3.5" /> Verifiziert
                     </Badge>
                   )}
                 </div>
+                {provider.requiresDirectBilling && (
+                  <div className="mb-3 flex items-start gap-2 text-xs bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-md px-3 py-2">
+                    <Info className="h-3.5 w-3.5 text-amber-600 mt-0.5 shrink-0" />
+                    <span className="text-amber-900 dark:text-amber-200">
+                      Hinweis: Bei dieser Berufsgruppe (Anwälte, Steuerberater, Notare) erfolgt die Abrechnung direkt mit der Kanzlei nach gesetzlichen Vorgaben (RVG/StBVV). Klard übermittelt nur die Buchung.
+                    </span>
+                  </div>
+                )}
                 <p className="text-muted-foreground mb-3">{provider.category}</p>
 
                 <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-4">

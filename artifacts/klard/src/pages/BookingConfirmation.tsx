@@ -14,7 +14,8 @@ import {
   useCreateBooking,
   getListMyBookingsQueryKey,
 } from "@workspace/api-client-react";
-import { CheckCircle, Clock, MapPin, Calendar } from "lucide-react";
+import { CheckCircle, Clock, MapPin, Calendar, Info, Download } from "lucide-react";
+import { getGetBookingCalendarFileUrl } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
@@ -32,6 +33,7 @@ export default function BookingConfirmation() {
   const qc = useQueryClient();
   const [notes, setNotes] = useState("");
   const [confirmed, setConfirmed] = useState(false);
+  const [bookingId, setBookingId] = useState<number | null>(null);
 
   const { data: provider, isLoading: pLoad } = useGetProvider(providerId, {
     query: { enabled: !!providerId, queryKey: getGetProviderQueryKey(providerId) },
@@ -52,10 +54,11 @@ export default function BookingConfirmation() {
 
   async function handleConfirm() {
     try {
-      await createBooking.mutateAsync({
+      const res = await createBooking.mutateAsync({
         data: { providerId, serviceId, slotId, notes: notes || undefined }
       });
       qc.invalidateQueries({ queryKey: getListMyBookingsQueryKey() });
+      if (res?.id) setBookingId(res.id);
       setConfirmed(true);
     } catch {
       toast({ title: "Fehler", description: "Buchung konnte nicht abgeschlossen werden.", variant: "destructive" });
@@ -70,12 +73,24 @@ export default function BookingConfirmation() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-6">
             <CheckCircle className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground mb-3">Buchung bestatigt!</h1>
-          <p className="text-muted-foreground mb-8">
-            Ihre Buchung bei <strong>{provider?.displayName}</strong> wurde erfolgreich ubermittelt.
-            Sie erhalten in Kurze eine Bestatigung.
+          <h1 className="text-2xl font-bold text-foreground mb-3">Buchung bestätigt!</h1>
+          <p className="text-muted-foreground mb-6">
+            Ihre Buchung bei <strong>{provider?.displayName}</strong> wurde erfolgreich übermittelt.
+            Sie erhalten in Kürze eine Bestätigung.
           </p>
+          {provider?.requiresDirectBilling && (
+            <p className="text-sm text-muted-foreground mb-6 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-md p-3">
+              Die Abrechnung erfolgt direkt mit der Kanzlei nach RVG/StBVV.
+            </p>
+          )}
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            {bookingId && (
+              <a href={getGetBookingCalendarFileUrl(bookingId)} download data-testid="link-ics-confirmation">
+                <Button variant="outline" className="gap-1.5">
+                  <Download className="h-4 w-4" /> Zum Kalender hinzufügen
+                </Button>
+              </a>
+            )}
             <Button onClick={() => setLocation("/bookings")} data-testid="button-my-bookings">
               Meine Buchungen
             </Button>

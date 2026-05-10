@@ -4,8 +4,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Navbar } from "@/components/Navbar";
-import { useListMyBookings, getListMyBookingsQueryKey, useCreateReview, getGetProviderQueryKey } from "@workspace/api-client-react";
-import { Calendar, Clock, MapPin, Star } from "lucide-react";
+import {
+  useListMyBookings, getListMyBookingsQueryKey,
+  useCreateReview, getGetProviderQueryKey,
+  useCreateBookingCheckout,
+  getGetBookingCalendarFileUrl,
+} from "@workspace/api-client-react";
+import { Calendar, Clock, MapPin, Star, CreditCard, Download } from "lucide-react";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -40,6 +45,16 @@ export default function MyBookings() {
   });
 
   const createReview = useCreateReview();
+  const payCheckout = useCreateBookingCheckout();
+
+  async function handlePay(bookingId: number) {
+    try {
+      const res = await payCheckout.mutateAsync({ id: bookingId });
+      if (res?.url) window.location.href = res.url;
+    } catch {
+      toast({ title: "Zahlung nicht verfügbar", description: "Stripe-Zahlungen sind noch nicht eingerichtet.", variant: "destructive" });
+    }
+  }
 
   const upcoming = bookings.filter(b => ["pending", "confirmed"].includes(b.status));
   const past = bookings.filter(b => ["completed", "cancelled"].includes(b.status));
@@ -81,31 +96,59 @@ export default function MyBookings() {
               <Clock className="h-3.5 w-3.5 shrink-0" />
               <span>{new Date(booking.scheduledAt).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr</span>
             </div>
-            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-              <span className="font-semibold text-foreground">
-                {booking.totalPrice === 0 ? "Kostenlos" : `${booking.totalPrice} €`}
-              </span>
-              {booking.status === "completed" && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="gap-1.5"
-                  onClick={() => { setReviewBookingId(booking.id); setReviewProviderId(booking.providerId); }}
-                  data-testid={`button-review-${booking.id}`}
-                >
-                  <Star className="h-3.5 w-3.5" /> Bewertung
-                </Button>
-              )}
-              {["pending", "confirmed"].includes(booking.status) && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setLocation(`/providers/${booking.providerId}`)}
-                  data-testid={`button-provider-${booking.id}`}
-                >
-                  Berater ansehen
-                </Button>
-              )}
+            <div className="mt-3 pt-3 border-t border-border space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-semibold text-foreground">
+                  {booking.totalPrice === 0 ? "Kostenlos" : `${booking.totalPrice} €`}
+                </span>
+                <div className="flex items-center gap-1.5">
+                  {booking.paymentRequired && booking.paymentStatus === "pending" && booking.status !== "cancelled" && (
+                    <Badge variant="secondary" className="text-xs">Zahlung offen</Badge>
+                  )}
+                  {booking.paymentStatus === "paid" && (
+                    <Badge className="text-xs bg-green-600 hover:bg-green-600">Bezahlt</Badge>
+                  )}
+                  {!booking.paymentRequired && booking.totalPrice > 0 && (
+                    <Badge variant="outline" className="text-xs">Direkt mit Berater</Badge>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {booking.paymentRequired && booking.paymentStatus === "pending" && booking.status !== "cancelled" && (
+                  <Button size="sm" className="gap-1.5 h-8" onClick={() => handlePay(booking.id)} data-testid={`button-pay-${booking.id}`}>
+                    <CreditCard className="h-3.5 w-3.5" /> Jetzt bezahlen
+                  </Button>
+                )}
+                {booking.status === "confirmed" && (
+                  <a href={getGetBookingCalendarFileUrl(booking.id)} download data-testid={`link-ics-${booking.id}`}>
+                    <Button size="sm" variant="outline" className="gap-1.5 h-8">
+                      <Download className="h-3.5 w-3.5" /> Zum Kalender
+                    </Button>
+                  </a>
+                )}
+                {booking.status === "completed" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 h-8"
+                    onClick={() => { setReviewBookingId(booking.id); setReviewProviderId(booking.providerId); }}
+                    data-testid={`button-review-${booking.id}`}
+                  >
+                    <Star className="h-3.5 w-3.5" /> Bewertung
+                  </Button>
+                )}
+                {["pending"].includes(booking.status) && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8"
+                    onClick={() => setLocation(`/providers/${booking.providerId}`)}
+                    data-testid={`button-provider-${booking.id}`}
+                  >
+                    Berater ansehen
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </CardContent>

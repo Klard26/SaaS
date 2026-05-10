@@ -19,6 +19,7 @@ import ProviderOnboarding from "./pages/ProviderOnboarding";
 import ProviderProfile from "./pages/ProviderProfile";
 import ProviderServices from "./pages/ProviderServices";
 import ProviderAvailability from "./pages/ProviderAvailability";
+import Pricing from "./pages/Pricing";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -181,6 +182,7 @@ function ClerkProviderWithRoutes() {
           <Route path="/sign-in/*?" component={SignInPage} />
           <Route path="/sign-up/*?" component={SignUpPage} />
           <Route path="/search" component={Search} />
+          <Route path="/pricing" component={Pricing} />
           <Route path="/providers/:id" component={ProviderDetail} />
           
           <Route path="/booking/:providerId/:serviceId/:slotId">

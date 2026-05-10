@@ -5,6 +5,7 @@
  * Klard – Booking platform for consultants
  * OpenAPI spec version: 0.1.0
  */
+import type { ProviderSubscriptionTier } from "./providerSubscriptionTier";
 
 export interface Provider {
   id: number;
@@ -28,5 +29,13 @@ export interface Provider {
   rating: number;
   reviewCount: number;
   verified?: boolean;
+  subscriptionTier?: ProviderSubscriptionTier;
+  requiresDirectBilling?: boolean;
+  /** @nullable */
+  premiumSince?: string | null;
+  /** @nullable */
+  icalToken?: string | null;
+  /** @nullable */
+  calendarSyncUrl?: string | null;
   createdAt?: string;
 }

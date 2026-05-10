@@ -23,6 +23,7 @@ export const ListCategoriesResponseItem = zod.object({
   slug: zod.string(),
   icon: zod.string(),
   providerCount: zod.number().optional(),
+  requiresDirectBilling: zod.boolean().optional(),
 });
 export const ListCategoriesResponse = zod.array(ListCategoriesResponseItem);
 
@@ -53,6 +54,8 @@ export const ListProvidersResponseItem = zod.object({
   bio: zod.string().nullish(),
   avatarUrl: zod.string().nullish(),
   verified: zod.boolean().optional(),
+  subscriptionTier: zod.enum(["basic", "premium"]).optional(),
+  requiresDirectBilling: zod.boolean().optional(),
 });
 export const ListProvidersResponse = zod.array(ListProvidersResponseItem);
 
@@ -94,6 +97,11 @@ export const GetProviderResponse = zod.object({
   rating: zod.number(),
   reviewCount: zod.number(),
   verified: zod.boolean().optional(),
+  subscriptionTier: zod.enum(["basic", "premium"]).optional(),
+  requiresDirectBilling: zod.boolean().optional(),
+  premiumSince: zod.string().nullish(),
+  icalToken: zod.string().nullish(),
+  calendarSyncUrl: zod.string().nullish(),
   createdAt: zod.string().optional(),
 });
 
@@ -133,6 +141,11 @@ export const UpdateProviderResponse = zod.object({
   rating: zod.number(),
   reviewCount: zod.number(),
   verified: zod.boolean().optional(),
+  subscriptionTier: zod.enum(["basic", "premium"]).optional(),
+  requiresDirectBilling: zod.boolean().optional(),
+  premiumSince: zod.string().nullish(),
+  icalToken: zod.string().nullish(),
+  calendarSyncUrl: zod.string().nullish(),
   createdAt: zod.string().optional(),
 });
 
@@ -156,6 +169,11 @@ export const GetMyProviderProfileResponse = zod.object({
   rating: zod.number(),
   reviewCount: zod.number(),
   verified: zod.boolean().optional(),
+  subscriptionTier: zod.enum(["basic", "premium"]).optional(),
+  requiresDirectBilling: zod.boolean().optional(),
+  premiumSince: zod.string().nullish(),
+  icalToken: zod.string().nullish(),
+  calendarSyncUrl: zod.string().nullish(),
   createdAt: zod.string().optional(),
 });
 
@@ -282,6 +300,11 @@ export const ListMyBookingsResponseItem = zod.object({
   totalPrice: zod.number(),
   scheduledAt: zod.coerce.date(),
   notes: zod.string().nullish(),
+  paymentRequired: zod.boolean().optional(),
+  paymentStatus: zod
+    .enum(["not_required", "pending", "paid", "failed", "refunded"])
+    .optional(),
+  stripeCheckoutSessionId: zod.string().nullish(),
   createdAt: zod.string().optional(),
 });
 export const ListMyBookingsResponse = zod.array(ListMyBookingsResponseItem);
@@ -306,6 +329,11 @@ export const GetBookingResponse = zod.object({
   totalPrice: zod.number(),
   scheduledAt: zod.coerce.date(),
   notes: zod.string().nullish(),
+  paymentRequired: zod.boolean().optional(),
+  paymentStatus: zod
+    .enum(["not_required", "pending", "paid", "failed", "refunded"])
+    .optional(),
+  stripeCheckoutSessionId: zod.string().nullish(),
   createdAt: zod.string().optional(),
 });
 
@@ -333,6 +361,11 @@ export const UpdateBookingStatusResponse = zod.object({
   totalPrice: zod.number(),
   scheduledAt: zod.coerce.date(),
   notes: zod.string().nullish(),
+  paymentRequired: zod.boolean().optional(),
+  paymentStatus: zod
+    .enum(["not_required", "pending", "paid", "failed", "refunded"])
+    .optional(),
+  stripeCheckoutSessionId: zod.string().nullish(),
   createdAt: zod.string().optional(),
 });
 
@@ -356,6 +389,11 @@ export const ListProviderBookingsResponseItem = zod.object({
   totalPrice: zod.number(),
   scheduledAt: zod.coerce.date(),
   notes: zod.string().nullish(),
+  paymentRequired: zod.boolean().optional(),
+  paymentStatus: zod
+    .enum(["not_required", "pending", "paid", "failed", "refunded"])
+    .optional(),
+  stripeCheckoutSessionId: zod.string().nullish(),
   createdAt: zod.string().optional(),
 });
 export const ListProviderBookingsResponse = zod.array(
@@ -434,9 +472,70 @@ export const GetProviderDashboardResponse = zod.object({
       totalPrice: zod.number(),
       scheduledAt: zod.coerce.date(),
       notes: zod.string().nullish(),
+      paymentRequired: zod.boolean().optional(),
+      paymentStatus: zod
+        .enum(["not_required", "pending", "paid", "failed", "refunded"])
+        .optional(),
+      stripeCheckoutSessionId: zod.string().nullish(),
       createdAt: zod.string().optional(),
     }),
   ),
+});
+
+/**
+ * @summary Create a Stripe Checkout Session for the Premium provider subscription
+ */
+export const CreateSubscriptionCheckoutResponse = zod.object({
+  url: zod.string(),
+  sessionId: zod.string().optional(),
+});
+
+/**
+ * @summary Get current provider subscription status
+ */
+export const GetMySubscriptionResponse = zod.object({
+  tier: zod.enum(["basic", "premium"]),
+  status: zod.string().nullish(),
+  currentPeriodEnd: zod.string().nullish(),
+  cancelAtPeriodEnd: zod.boolean().optional(),
+  priceEur: zod.number().optional(),
+});
+
+/**
+ * @summary Cancel premium subscription at period end
+ */
+export const CancelMySubscriptionResponse = zod.object({
+  tier: zod.enum(["basic", "premium"]),
+  status: zod.string().nullish(),
+  currentPeriodEnd: zod.string().nullish(),
+  cancelAtPeriodEnd: zod.boolean().optional(),
+  priceEur: zod.number().optional(),
+});
+
+/**
+ * @summary Create a Stripe Checkout Session for a booking payment
+ */
+export const CreateBookingCheckoutParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const CreateBookingCheckoutResponse = zod.object({
+  url: zod.string(),
+  sessionId: zod.string().optional(),
+});
+
+/**
+ * @summary iCal feed of confirmed bookings for a provider (token via ?token=)
+ */
+export const GetProviderCalendarFeedParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Download .ics file for a single booking
+ */
+export const GetBookingCalendarFileParams = zod.object({
+  id: zod.coerce.number(),
 });
 
 /**
