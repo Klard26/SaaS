@@ -155,8 +155,8 @@ export default function ProviderOnboarding() {
                   </FormItem>
                 )} />
 
-                <FormItem>
-                  <FormLabel>Logo / Profilbild (optional)</FormLabel>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium leading-none">Logo / Profilbild (optional)</label>
                   <div className="flex items-center gap-4">
                     <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center overflow-hidden border border-border shrink-0">
                       {logoPreview ? (
@@ -180,7 +180,7 @@ export default function ProviderOnboarding() {
                     </label>
                   </div>
                   <p className="text-xs text-muted-foreground">PNG / JPG, max. 5 MB.</p>
-                </FormItem>
+                </div>
 
                 <div className="grid sm:grid-cols-2 gap-4">
                   <FormField control={form.control} name="city" render={({ field }) => (
