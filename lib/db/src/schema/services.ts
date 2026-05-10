@@ -7,7 +7,11 @@ export const servicesTable = pgTable("services", {
   providerId: integer("provider_id").notNull(),
   name: text("name").notNull(),
   description: text("description"),
+  // `price` is the gross (Brutto) price in EUR — kept as the canonical billing
+  // amount for backwards compatibility with existing bookings.
   price: real("price").notNull(),
+  netPrice: real("net_price"),
+  vatRate: real("vat_rate").notNull().default(19),
   durationMinutes: integer("duration_minutes").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

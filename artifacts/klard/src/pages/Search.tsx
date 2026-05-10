@@ -9,8 +9,11 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Navbar } from "@/components/Navbar";
 import { useListProviders, useListCategories, getListProvidersQueryKey } from "@workspace/api-client-react";
-import { Star, MapPin, CheckCircle, Search, SlidersHorizontal, X, Crown } from "lucide-react";
+import { Star, MapPin, CheckCircle, Search, SlidersHorizontal, X, Crown, Briefcase } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { Footer } from "@/components/Footer";
+import { publicUrlForObjectPath } from "@/lib/upload";
+import { formatPriceEUR } from "@/lib/dateFmt";
 
 export default function SearchPage() {
   const rawSearch = useSearch();
@@ -56,7 +59,7 @@ export default function SearchPage() {
   const hasFilters = q || city || zip || (category && category !== "all") || minPrice || maxPrice;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
 
       <div className="border-b border-border bg-muted/30 py-4">
@@ -178,13 +181,22 @@ export default function SearchPage() {
               >
                 <CardContent className="p-5">
                   <div className="flex items-start gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-sm font-semibold text-primary">
-                      {provider.displayName.charAt(0)}
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-sm font-semibold text-primary overflow-hidden border border-border">
+                      {provider.logoUrl ? (
+                        <img
+                          src={publicUrlForObjectPath(provider.logoUrl)}
+                          alt={`Logo ${provider.displayName}`}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      ) : (
+                        provider.displayName.charAt(0)
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <h3 className="font-semibold text-foreground text-sm truncate">{provider.displayName}</h3>
-                        {provider.verified && <CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" />}
+                        {provider.verified && <CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" aria-label="Verifiziert" />}
                         {provider.subscriptionTier === "premium" && (
                           <Badge variant="secondary" className="h-4 px-1.5 gap-0.5 bg-amber-100 text-amber-900 border-amber-200 text-[10px]">
                             <Crown className="h-2.5 w-2.5" /> Premium
@@ -192,10 +204,15 @@ export default function SearchPage() {
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground">{provider.category}</p>
+                      {provider.yearsExperience != null && provider.yearsExperience > 0 && (
+                        <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                          <Briefcase className="h-3 w-3" /> {provider.yearsExperience} J. Erfahrung
+                        </p>
+                      )}
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                      <span className="text-sm font-medium">{provider.rating.toFixed(1)}</span>
+                      <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" aria-hidden="true" />
+                      <span className="text-sm font-medium" aria-label={`Bewertung ${provider.rating.toFixed(1)} von 5`}>{provider.rating.toFixed(1)}</span>
                     </div>
                   </div>
 
@@ -207,11 +224,11 @@ export default function SearchPage() {
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <MapPin className="h-3.5 w-3.5" />
+                      <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
                       <span>{provider.city}</span>
                     </div>
                     <span className="text-sm font-medium text-foreground">
-                      ab {provider.minPrice === 0 ? "kostenlos" : `${provider.minPrice} €`}
+                      ab {provider.minPrice === 0 ? "kostenlos" : formatPriceEUR(provider.minPrice)}
                     </span>
                   </div>
                 </CardContent>
@@ -220,6 +237,7 @@ export default function SearchPage() {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 }

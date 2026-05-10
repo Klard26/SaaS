@@ -13,6 +13,17 @@ import { eq } from "drizzle-orm";
 
 const router: IRouter = Router();
 
+function deriveGross(net: number | undefined, gross: number | undefined, vat: number): { price: number; net: number } {
+  const v = vat / 100;
+  if (gross !== undefined && gross !== null) {
+    return { price: gross, net: net ?? +(gross / (1 + v)).toFixed(2) };
+  }
+  if (net !== undefined && net !== null) {
+    return { price: +(net * (1 + v)).toFixed(2), net };
+  }
+  return { price: 0, net: 0 };
+}
+
 router.get("/providers/:id/services", async (req, res): Promise<void> => {
   try {
     const parsed = ListProviderServicesParams.safeParse({ id: Number(req.params.id) });
@@ -45,13 +56,17 @@ router.post("/providers/:id/services", async (req, res): Promise<void> => {
       return;
     }
     const d = bodyParsed.data;
+    const vat = d.vatRate ?? 19;
+    const { price, net } = deriveGross(d.netPrice, d.price, vat);
     const [service] = await db
       .insert(servicesTable)
       .values({
         providerId: paramsParsed.data.id,
         name: d.name,
         description: d.description,
-        price: d.price,
+        price,
+        netPrice: net,
+        vatRate: vat,
         durationMinutes: d.durationMinutes,
       })
       .returning();
@@ -78,9 +93,19 @@ router.patch("/services/:id", async (req, res): Promise<void> => {
     const updateData: Record<string, unknown> = {};
     if (d.name !== undefined) updateData.name = d.name;
     if (d.description !== undefined) updateData.description = d.description;
-    if (d.price !== undefined) updateData.price = d.price;
     if (d.durationMinutes !== undefined) updateData.durationMinutes = d.durationMinutes;
-
+    if (d.vatRate !== undefined) updateData.vatRate = d.vatRate;
+    if (d.price !== undefined || d.netPrice !== undefined) {
+      const [existing] = await db.select().from(servicesTable).where(eq(servicesTable.id, paramsParsed.data.id)).limit(1);
+      if (!existing) {
+        res.status(404).json({ error: "Service not found" });
+        return;
+      }
+      const vat = (updateData.vatRate as number | undefined) ?? existing.vatRate;
+      const { price, net } = deriveGross(d.netPrice, d.price, vat);
+      updateData.price = price;
+      updateData.netPrice = net;
+    }
     const [updated] = await db
       .update(servicesTable)
       .set(updateData)

@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { aiLimiter } from "../middlewares/rateLimit";
 import { db } from "@workspace/db";
 import { providersTable, servicesTable } from "@workspace/db";
 import { GenerateAiOfferBody } from "@workspace/api-zod";
@@ -12,7 +13,7 @@ const anthropic = new Anthropic({
   baseURL: process.env.ANTHROPIC_API_URL,
 });
 
-router.post("/ai/offer", async (req, res): Promise<void> => {
+router.post("/ai/offer", aiLimiter, async (req, res): Promise<void> => {
   try {
     const parsed = GenerateAiOfferBody.safeParse(req.body);
     if (!parsed.success) {

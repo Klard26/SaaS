@@ -16,4 +16,6 @@ export interface ProviderUpdate {
   phone?: string;
   website?: string;
   avatarUrl?: string;
+  logoUrl?: string;
+  yearsExperience?: number;
 }

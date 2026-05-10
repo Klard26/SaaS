@@ -58,7 +58,7 @@ async function getCredentials(): Promise<{ secretKey: string; publishableKey: st
 export async function getUncachableStripeClient(): Promise<Stripe | null> {
   const creds = await getCredentials();
   if (!creds) return null;
-  return new Stripe(creds.secretKey, { apiVersion: "2025-08-27.basil" });
+  return new Stripe(creds.secretKey, { apiVersion: "2026-04-22.dahlia" });
 }
 
 export async function isStripeConfigured(): Promise<boolean> {

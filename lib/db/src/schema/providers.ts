@@ -16,6 +16,8 @@ export const providersTable = pgTable("providers", {
   address: text("address"),
   website: text("website"),
   avatarUrl: text("avatar_url"),
+  logoUrl: text("logo_url"),
+  yearsExperience: integer("years_experience"),
   rating: real("rating").notNull().default(0),
   reviewCount: integer("review_count").notNull().default(0),
   verified: boolean("verified").notNull().default(false),

@@ -28,19 +28,6 @@ router.post("/bookings", async (req, res): Promise<void> => {
     }
     const d = parsed.data;
 
-    const [slot] = await db
-      .select()
-      .from(timeSlotsTable)
-      .where(
-        and(eq(timeSlotsTable.id, d.slotId), eq(timeSlotsTable.isAvailable, true)),
-      )
-      .limit(1);
-
-    if (!slot) {
-      res.status(400).json({ error: "Time slot not available" });
-      return;
-    }
-
     const [service] = await db
       .select()
       .from(servicesTable)
@@ -49,6 +36,10 @@ router.post("/bookings", async (req, res): Promise<void> => {
 
     if (!service) {
       res.status(404).json({ error: "Service not found" });
+      return;
+    }
+    if (service.providerId !== d.providerId) {
+      res.status(400).json({ error: "Leistung gehört nicht zu diesem Berater." });
       return;
     }
 
@@ -82,33 +73,63 @@ router.post("/bookings", async (req, res): Promise<void> => {
       req.log.warn({ err: e }, "Failed to load Clerk user for booking");
     }
 
-    const [booking] = await db
-      .insert(bookingsTable)
-      .values({
-        customerId: userId,
-        customerName,
-        customerEmail,
-        providerId: d.providerId,
-        providerName: provider.displayName,
-        serviceId: d.serviceId,
-        serviceName: service.name,
-        slotId: d.slotId,
-        status: "pending",
-        totalPrice: service.price,
-        scheduledAt: slot.startTime,
-        notes: d.notes,
-        paymentRequired,
-        paymentStatus: paymentRequired ? "pending" : "not_required",
-      })
-      .returning();
+    // Atomic: re-check slot availability inside a transaction and lock it
+    // so two concurrent bookings can't grab the same slot.
+    const booking = await db.transaction(async (tx) => {
+      const [slot] = await tx
+        .select()
+        .from(timeSlotsTable)
+        .where(
+          and(eq(timeSlotsTable.id, d.slotId), eq(timeSlotsTable.isAvailable, true)),
+        )
+        .for("update")
+        .limit(1);
 
-    await db
-      .update(timeSlotsTable)
-      .set({ isAvailable: false })
-      .where(eq(timeSlotsTable.id, d.slotId));
+      if (!slot) {
+        throw new Error("SLOT_TAKEN");
+      }
+      if (slot.providerId !== d.providerId) {
+        throw new Error("SLOT_PROVIDER_MISMATCH");
+      }
+
+      const [b] = await tx
+        .insert(bookingsTable)
+        .values({
+          customerId: userId,
+          customerName,
+          customerEmail,
+          providerId: d.providerId,
+          providerName: provider.displayName,
+          serviceId: d.serviceId,
+          serviceName: service.name,
+          slotId: d.slotId,
+          status: "pending",
+          totalPrice: service.price,
+          scheduledAt: slot.startTime,
+          notes: d.notes,
+          paymentRequired,
+          paymentStatus: paymentRequired ? "pending" : "not_required",
+        })
+        .returning();
+
+      await tx
+        .update(timeSlotsTable)
+        .set({ isAvailable: false })
+        .where(eq(timeSlotsTable.id, d.slotId));
+
+      return b;
+    });
 
     res.status(201).json(booking);
   } catch (err) {
+    if (err instanceof Error && err.message === "SLOT_TAKEN") {
+      res.status(409).json({ error: "Dieser Termin wurde gerade gebucht. Bitte wählen Sie einen anderen." });
+      return;
+    }
+    if (err instanceof Error && err.message === "SLOT_PROVIDER_MISMATCH") {
+      res.status(400).json({ error: "Termin gehört nicht zu diesem Berater." });
+      return;
+    }
     req.log.error({ err }, "Failed to create booking");
     res.status(500).json({ error: "Internal server error" });
   }
@@ -135,6 +156,11 @@ router.get("/bookings", async (req, res): Promise<void> => {
 
 router.get("/bookings/:id", async (req, res): Promise<void> => {
   try {
+    const { userId } = getAuth(req);
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
     const parsed = GetBookingParams.safeParse({ id: Number(req.params.id) });
     if (!parsed.success) {
       res.status(400).json({ error: "Invalid id" });
@@ -150,6 +176,20 @@ router.get("/bookings/:id", async (req, res): Promise<void> => {
       res.status(404).json({ error: "Booking not found" });
       return;
     }
+
+    // Allow either the customer who booked, or the provider receiving the booking.
+    if (booking.customerId !== userId) {
+      const [provider] = await db
+        .select()
+        .from(providersTable)
+        .where(eq(providersTable.id, booking.providerId))
+        .limit(1);
+      if (!provider || provider.clerkUserId !== userId) {
+        res.status(403).json({ error: "Forbidden" });
+        return;
+      }
+    }
+
     res.json(booking);
   } catch (err) {
     req.log.error({ err }, "Failed to fetch booking");
@@ -159,6 +199,11 @@ router.get("/bookings/:id", async (req, res): Promise<void> => {
 
 router.patch("/bookings/:id/status", async (req, res): Promise<void> => {
   try {
+    const { userId } = getAuth(req);
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
     const paramsParsed = UpdateBookingStatusParams.safeParse({ id: Number(req.params.id) });
     if (!paramsParsed.success) {
       res.status(400).json({ error: "Invalid id" });
@@ -169,18 +214,48 @@ router.patch("/bookings/:id/status", async (req, res): Promise<void> => {
       res.status(400).json({ error: bodyParsed.error.message });
       return;
     }
-    const [updated] = await db
-      .update(bookingsTable)
-      .set({ status: bodyParsed.data.status })
-      .where(eq(bookingsTable.id, paramsParsed.data.id))
-      .returning();
 
-    if (!updated) {
+    const [existing] = await db
+      .select()
+      .from(bookingsTable)
+      .where(eq(bookingsTable.id, paramsParsed.data.id))
+      .limit(1);
+    if (!existing) {
       res.status(404).json({ error: "Booking not found" });
       return;
     }
 
-    if (bodyParsed.data.status === "cancelled") {
+    // Authorization rules:
+    //   - Customer may only cancel their own booking.
+    //   - Provider (owner of providerId) may set any status on incoming bookings.
+    const newStatus = bodyParsed.data.status;
+    const isCustomer = existing.customerId === userId;
+    let isProviderOwner = false;
+    const [providerRow] = await db
+      .select()
+      .from(providersTable)
+      .where(eq(providersTable.id, existing.providerId))
+      .limit(1);
+    if (providerRow && providerRow.clerkUserId === userId) {
+      isProviderOwner = true;
+    }
+
+    if (!isCustomer && !isProviderOwner) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+    if (isCustomer && !isProviderOwner && newStatus !== "cancelled") {
+      res.status(403).json({ error: "Sie können diesen Termin nur stornieren." });
+      return;
+    }
+
+    const [updated] = await db
+      .update(bookingsTable)
+      .set({ status: newStatus })
+      .where(eq(bookingsTable.id, paramsParsed.data.id))
+      .returning();
+
+    if (newStatus === "cancelled" && updated) {
       await db
         .update(timeSlotsTable)
         .set({ isAvailable: true })
@@ -196,11 +271,31 @@ router.patch("/bookings/:id/status", async (req, res): Promise<void> => {
 
 router.get("/providers/:id/bookings", async (req, res): Promise<void> => {
   try {
+    const { userId } = getAuth(req);
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
     const parsed = ListProviderBookingsParams.safeParse({ id: Number(req.params.id) });
     if (!parsed.success) {
       res.status(400).json({ error: "Invalid id" });
       return;
     }
+
+    const [provider] = await db
+      .select()
+      .from(providersTable)
+      .where(eq(providersTable.id, parsed.data.id))
+      .limit(1);
+    if (!provider) {
+      res.status(404).json({ error: "Provider not found" });
+      return;
+    }
+    if (provider.clerkUserId !== userId) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+
     const bookings = await db
       .select()
       .from(bookingsTable)

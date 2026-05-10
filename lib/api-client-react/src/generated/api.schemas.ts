@@ -40,6 +40,10 @@ export interface ProviderSummary {
   bio?: string | null;
   /** @nullable */
   avatarUrl?: string | null;
+  /** @nullable */
+  logoUrl?: string | null;
+  /** @nullable */
+  yearsExperience?: number | null;
   verified?: boolean;
   subscriptionTier?: ProviderSummarySubscriptionTier;
   requiresDirectBilling?: boolean;
@@ -72,6 +76,10 @@ export interface Provider {
   website?: string | null;
   /** @nullable */
   avatarUrl?: string | null;
+  /** @nullable */
+  logoUrl?: string | null;
+  /** @nullable */
+  yearsExperience?: number | null;
   rating: number;
   reviewCount: number;
   verified?: boolean;
@@ -95,6 +103,8 @@ export interface ProviderInput {
   address?: string;
   phone?: string;
   website?: string;
+  logoUrl?: string;
+  yearsExperience?: number;
 }
 
 export interface ProviderUpdate {
@@ -107,6 +117,8 @@ export interface ProviderUpdate {
   phone?: string;
   website?: string;
   avatarUrl?: string;
+  logoUrl?: string;
+  yearsExperience?: number;
 }
 
 export interface Service {
@@ -116,6 +128,9 @@ export interface Service {
   /** @nullable */
   description?: string | null;
   price: number;
+  /** @nullable */
+  netPrice?: number | null;
+  vatRate: number;
   durationMinutes: number;
   createdAt?: string;
 }
@@ -123,7 +138,9 @@ export interface Service {
 export interface ServiceInput {
   name: string;
   description?: string;
-  price: number;
+  price?: number;
+  netPrice?: number;
+  vatRate?: number;
   durationMinutes: number;
 }
 
@@ -131,7 +148,32 @@ export interface ServiceUpdate {
   name?: string;
   description?: string;
   price?: number;
+  netPrice?: number;
+  vatRate?: number;
   durationMinutes?: number;
+}
+
+export interface ServiceTemplate {
+  id: number;
+  categorySlug: string;
+  name: string;
+  /** @nullable */
+  description?: string | null;
+  defaultDurationMinutes: number;
+  /** @nullable */
+  defaultPrice?: number | null;
+  sortOrder?: number;
+}
+
+export interface UploadUrlRequest {
+  name: string;
+  size?: number;
+  contentType: string;
+}
+
+export interface UploadUrlResponse {
+  uploadURL: string;
+  objectPath: string;
 }
 
 export interface TimeSlot {
@@ -281,6 +323,10 @@ export interface PlatformStats {
   totalCategories: number;
   totalReviews: number;
 }
+
+export type ListServiceTemplatesParams = {
+  category: string;
+};
 
 export type ListProvidersParams = {
   zip?: string;

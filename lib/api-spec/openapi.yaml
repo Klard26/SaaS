@@ -30,6 +30,8 @@ tags:
     description: Subscription and payment operations
   - name: calendar
     description: Calendar synchronization (iCalendar feeds)
+  - name: storage
+    description: Object storage uploads
 
 paths:
   /healthz:
@@ -59,6 +61,45 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Category"
+
+  /service-templates:
+    get:
+      operationId: listServiceTemplates
+      tags: [services]
+      summary: List service templates for a given category slug
+      parameters:
+        - name: category
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: List of templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ServiceTemplate"
+
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      tags: [storage]
+      summary: Request a presigned upload URL for object storage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadUrlRequest"
+      responses:
+        "200":
+          description: Upload URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadUrlResponse"
 
   /providers:
     get:
@@ -610,6 +651,8 @@ components:
         minPrice:    { type: number }
         bio:         { type: ["string", "null"] }
         avatarUrl:   { type: ["string", "null"] }
+        logoUrl:     { type: ["string", "null"] }
+        yearsExperience: { type: ["integer", "null"] }
         verified:    { type: boolean }
         subscriptionTier: { type: string, enum: [basic, premium] }
         requiresDirectBilling: { type: boolean }
@@ -631,6 +674,8 @@ components:
         address:      { type: ["string", "null"] }
         website:      { type: ["string", "null"] }
         avatarUrl:    { type: ["string", "null"] }
+        logoUrl:      { type: ["string", "null"] }
+        yearsExperience: { type: ["integer", "null"] }
         rating:       { type: number }
         reviewCount:  { type: integer }
         verified:     { type: boolean }
@@ -653,6 +698,8 @@ components:
         address:      { type: string }
         phone:        { type: string }
         website:      { type: string }
+        logoUrl:      { type: string }
+        yearsExperience: { type: integer }
 
     ProviderUpdate:
       type: object
@@ -666,26 +713,32 @@ components:
         phone:        { type: string }
         website:      { type: string }
         avatarUrl:    { type: string }
+        logoUrl:      { type: string }
+        yearsExperience: { type: integer }
 
     Service:
       type: object
-      required: [id, providerId, name, price, durationMinutes]
+      required: [id, providerId, name, price, durationMinutes, vatRate]
       properties:
         id:              { type: integer }
         providerId:      { type: integer }
         name:            { type: string }
         description:     { type: ["string", "null"] }
         price:           { type: number }
+        netPrice:        { type: ["number", "null"] }
+        vatRate:         { type: number }
         durationMinutes: { type: integer }
         createdAt:       { type: string }
 
     ServiceInput:
       type: object
-      required: [name, price, durationMinutes]
+      required: [name, durationMinutes]
       properties:
         name:            { type: string }
         description:     { type: string }
         price:           { type: number }
+        netPrice:        { type: number }
+        vatRate:         { type: number }
         durationMinutes: { type: integer }
 
     ServiceUpdate:
@@ -694,7 +747,36 @@ components:
         name:            { type: string }
         description:     { type: string }
         price:           { type: number }
+        netPrice:        { type: number }
+        vatRate:         { type: number }
         durationMinutes: { type: integer }
+
+    ServiceTemplate:
+      type: object
+      required: [id, categorySlug, name, defaultDurationMinutes]
+      properties:
+        id:                     { type: integer }
+        categorySlug:           { type: string }
+        name:                   { type: string }
+        description:            { type: ["string", "null"] }
+        defaultDurationMinutes: { type: integer }
+        defaultPrice:           { type: ["number", "null"] }
+        sortOrder:              { type: integer }
+
+    UploadUrlRequest:
+      type: object
+      required: [name, contentType]
+      properties:
+        name:        { type: string }
+        size:        { type: integer }
+        contentType: { type: string }
+
+    UploadUrlResponse:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL:  { type: string }
+        objectPath: { type: string }
 
     TimeSlot:
       type: object

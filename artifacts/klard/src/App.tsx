@@ -20,6 +20,11 @@ import ProviderProfile from "./pages/ProviderProfile";
 import ProviderServices from "./pages/ProviderServices";
 import ProviderAvailability from "./pages/ProviderAvailability";
 import Pricing from "./pages/Pricing";
+import Impressum from "./pages/legal/Impressum";
+import AGB from "./pages/legal/AGB";
+import Datenschutz from "./pages/legal/Datenschutz";
+import Cookies from "./pages/legal/Cookies";
+import { CookieBanner } from "./components/CookieBanner";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -183,6 +188,10 @@ function ClerkProviderWithRoutes() {
           <Route path="/sign-up/*?" component={SignUpPage} />
           <Route path="/search" component={Search} />
           <Route path="/pricing" component={Pricing} />
+          <Route path="/impressum" component={Impressum} />
+          <Route path="/agb" component={AGB} />
+          <Route path="/datenschutz" component={Datenschutz} />
+          <Route path="/cookies" component={Cookies} />
           <Route path="/providers/:id" component={ProviderDetail} />
           
           <Route path="/booking/:providerId/:serviceId/:slotId">
@@ -219,6 +228,7 @@ function App() {
     <WouterRouter base={basePath}>
       <TooltipProvider>
         <ClerkProviderWithRoutes />
+        <CookieBanner />
         <Toaster />
       </TooltipProvider>
     </WouterRouter>

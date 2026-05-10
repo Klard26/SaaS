@@ -6,7 +6,7 @@ import {
   ListProviderReviewsParams,
 } from "@workspace/api-zod";
 import { eq, avg } from "drizzle-orm";
-import { getAuth } from "@clerk/express";
+import { getAuth, clerkClient } from "@clerk/express";
 
 const router: IRouter = Router();
 
@@ -54,11 +54,49 @@ router.post("/reviews", async (req, res): Promise<void> => {
       return;
     }
 
+    // Verified-only reviews: must be the customer who booked, and the booking
+    // must be completed (or at least past + confirmed).
+    if (booking.customerId !== userId) {
+      res.status(403).json({ error: "Sie können nur eigene Buchungen bewerten." });
+      return;
+    }
+    const allowedStatuses = new Set(["completed", "confirmed"]);
+    const isPast = booking.scheduledAt && new Date(booking.scheduledAt).getTime() < Date.now();
+    if (!allowedStatuses.has(booking.status) || !isPast) {
+      res.status(400).json({
+        error: "Bewertungen sind nur nach einem stattgefundenen Termin möglich.",
+      });
+      return;
+    }
+
+    // Block duplicate reviews per booking.
+    const [existing] = await db
+      .select()
+      .from(reviewsTable)
+      .where(eq(reviewsTable.bookingId, d.bookingId))
+      .limit(1);
+    if (existing) {
+      res.status(409).json({ error: "Für diese Buchung existiert bereits eine Bewertung." });
+      return;
+    }
+
+    let customerName: string | null = booking.customerName ?? null;
+    if (!customerName) {
+      try {
+        const u = await clerkClient.users.getUser(userId);
+        customerName =
+          [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || null;
+      } catch {
+        // ignore
+      }
+    }
+
     const [review] = await db
       .insert(reviewsTable)
       .values({
         bookingId: d.bookingId,
         customerId: userId,
+        customerName,
         providerId: booking.providerId,
         rating: d.rating,
         comment: d.comment,

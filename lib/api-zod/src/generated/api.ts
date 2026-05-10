@@ -28,6 +28,40 @@ export const ListCategoriesResponseItem = zod.object({
 export const ListCategoriesResponse = zod.array(ListCategoriesResponseItem);
 
 /**
+ * @summary List service templates for a given category slug
+ */
+export const ListServiceTemplatesQueryParams = zod.object({
+  category: zod.coerce.string(),
+});
+
+export const ListServiceTemplatesResponseItem = zod.object({
+  id: zod.number(),
+  categorySlug: zod.string(),
+  name: zod.string(),
+  description: zod.string().nullish(),
+  defaultDurationMinutes: zod.number(),
+  defaultPrice: zod.number().nullish(),
+  sortOrder: zod.number().optional(),
+});
+export const ListServiceTemplatesResponse = zod.array(
+  ListServiceTemplatesResponseItem,
+);
+
+/**
+ * @summary Request a presigned upload URL for object storage
+ */
+export const RequestUploadUrlBody = zod.object({
+  name: zod.string(),
+  size: zod.number().optional(),
+  contentType: zod.string(),
+});
+
+export const RequestUploadUrlResponse = zod.object({
+  uploadURL: zod.string(),
+  objectPath: zod.string(),
+});
+
+/**
  * @summary Search/list providers
  */
 export const ListProvidersQueryParams = zod.object({
@@ -53,6 +87,8 @@ export const ListProvidersResponseItem = zod.object({
   minPrice: zod.number(),
   bio: zod.string().nullish(),
   avatarUrl: zod.string().nullish(),
+  logoUrl: zod.string().nullish(),
+  yearsExperience: zod.number().nullish(),
   verified: zod.boolean().optional(),
   subscriptionTier: zod.enum(["basic", "premium"]).optional(),
   requiresDirectBilling: zod.boolean().optional(),
@@ -71,6 +107,8 @@ export const CreateProviderBody = zod.object({
   address: zod.string().optional(),
   phone: zod.string().optional(),
   website: zod.string().optional(),
+  logoUrl: zod.string().optional(),
+  yearsExperience: zod.number().optional(),
 });
 
 /**
@@ -94,6 +132,8 @@ export const GetProviderResponse = zod.object({
   address: zod.string().nullish(),
   website: zod.string().nullish(),
   avatarUrl: zod.string().nullish(),
+  logoUrl: zod.string().nullish(),
+  yearsExperience: zod.number().nullish(),
   rating: zod.number(),
   reviewCount: zod.number(),
   verified: zod.boolean().optional(),
@@ -122,6 +162,8 @@ export const UpdateProviderBody = zod.object({
   phone: zod.string().optional(),
   website: zod.string().optional(),
   avatarUrl: zod.string().optional(),
+  logoUrl: zod.string().optional(),
+  yearsExperience: zod.number().optional(),
 });
 
 export const UpdateProviderResponse = zod.object({
@@ -138,6 +180,8 @@ export const UpdateProviderResponse = zod.object({
   address: zod.string().nullish(),
   website: zod.string().nullish(),
   avatarUrl: zod.string().nullish(),
+  logoUrl: zod.string().nullish(),
+  yearsExperience: zod.number().nullish(),
   rating: zod.number(),
   reviewCount: zod.number(),
   verified: zod.boolean().optional(),
@@ -166,6 +210,8 @@ export const GetMyProviderProfileResponse = zod.object({
   address: zod.string().nullish(),
   website: zod.string().nullish(),
   avatarUrl: zod.string().nullish(),
+  logoUrl: zod.string().nullish(),
+  yearsExperience: zod.number().nullish(),
   rating: zod.number(),
   reviewCount: zod.number(),
   verified: zod.boolean().optional(),
@@ -190,6 +236,8 @@ export const ListProviderServicesResponseItem = zod.object({
   name: zod.string(),
   description: zod.string().nullish(),
   price: zod.number(),
+  netPrice: zod.number().nullish(),
+  vatRate: zod.number(),
   durationMinutes: zod.number(),
   createdAt: zod.string().optional(),
 });
@@ -207,7 +255,9 @@ export const CreateServiceParams = zod.object({
 export const CreateServiceBody = zod.object({
   name: zod.string(),
   description: zod.string().optional(),
-  price: zod.number(),
+  price: zod.number().optional(),
+  netPrice: zod.number().optional(),
+  vatRate: zod.number().optional(),
   durationMinutes: zod.number(),
 });
 
@@ -222,6 +272,8 @@ export const UpdateServiceBody = zod.object({
   name: zod.string().optional(),
   description: zod.string().optional(),
   price: zod.number().optional(),
+  netPrice: zod.number().optional(),
+  vatRate: zod.number().optional(),
   durationMinutes: zod.number().optional(),
 });
 
@@ -231,6 +283,8 @@ export const UpdateServiceResponse = zod.object({
   name: zod.string(),
   description: zod.string().nullish(),
   price: zod.number(),
+  netPrice: zod.number().nullish(),
+  vatRate: zod.number(),
   durationMinutes: zod.number(),
   createdAt: zod.string().optional(),
 });

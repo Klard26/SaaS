@@ -26,6 +26,10 @@ export interface Provider {
   website?: string | null;
   /** @nullable */
   avatarUrl?: string | null;
+  /** @nullable */
+  logoUrl?: string | null;
+  /** @nullable */
+  yearsExperience?: number | null;
   rating: number;
   reviewCount: number;
   verified?: boolean;

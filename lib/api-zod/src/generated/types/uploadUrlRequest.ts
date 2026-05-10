@@ -6,11 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface ServiceInput {
+export interface UploadUrlRequest {
   name: string;
-  description?: string;
-  price?: number;
-  netPrice?: number;
-  vatRate?: number;
-  durationMinutes: number;
+  size?: number;
+  contentType: string;
 }

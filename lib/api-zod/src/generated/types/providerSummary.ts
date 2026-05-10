@@ -21,6 +21,10 @@ export interface ProviderSummary {
   bio?: string | null;
   /** @nullable */
   avatarUrl?: string | null;
+  /** @nullable */
+  logoUrl?: string | null;
+  /** @nullable */
+  yearsExperience?: number | null;
   verified?: boolean;
   subscriptionTier?: ProviderSummarySubscriptionTier;
   requiresDirectBilling?: boolean;

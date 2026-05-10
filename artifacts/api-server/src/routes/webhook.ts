@@ -1,0 +1,110 @@
+import { Router, type IRouter, raw } from "express";
+import type Stripe from "stripe";
+import { db } from "@workspace/db";
+import { providersTable, bookingsTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
+import { getUncachableStripeClient } from "../lib/stripeClient";
+
+const router: IRouter = Router();
+
+/**
+ * POST /api/billing/webhook
+ *
+ * Stripe sends events here. The body is verified with the signature header
+ * `stripe-signature`. The webhook secret must be set as STRIPE_WEBHOOK_SECRET.
+ *
+ * Note: This route is mounted with `express.raw()` so the raw body is preserved
+ * for signature verification — do NOT use `express.json()` before this route.
+ */
+router.post(
+  "/billing/webhook",
+  raw({ type: "application/json" }),
+  async (req, res): Promise<void> => {
+    const stripe = await getUncachableStripeClient();
+    if (!stripe) {
+      res.status(503).send("Stripe nicht konfiguriert");
+      return;
+    }
+    const secret = process.env["STRIPE_WEBHOOK_SECRET"];
+    const sig = req.header("stripe-signature");
+
+    if (!secret) {
+      req.log.error("Webhook secret not configured (STRIPE_WEBHOOK_SECRET)");
+      res.status(503).send("Webhook secret not configured");
+      return;
+    }
+    if (!sig) {
+      res.status(400).send("Missing stripe-signature");
+      return;
+    }
+    let event: Stripe.Event;
+    try {
+      event = stripe.webhooks.constructEvent(req.body, sig, secret);
+    } catch (err) {
+      req.log.error({ err }, "Webhook signature verification failed");
+      res.status(400).send("Webhook Error");
+      return;
+    }
+
+    try {
+      switch (event.type) {
+        case "checkout.session.completed": {
+          const session = event.data.object as Stripe.Checkout.Session;
+          const kind = session.metadata?.["kind"];
+          if (kind === "subscription") {
+            const providerId = Number(session.metadata?.["providerId"]);
+            if (Number.isFinite(providerId) && session.subscription) {
+              await db
+                .update(providersTable)
+                .set({
+                  subscriptionTier: "premium",
+                  stripeSubscriptionId: String(session.subscription),
+                  premiumSince: new Date(),
+                })
+                .where(eq(providersTable.id, providerId));
+            }
+          } else if (kind === "booking") {
+            const bookingId = Number(session.metadata?.["bookingId"]);
+            if (Number.isFinite(bookingId) && session.payment_status === "paid") {
+              await db
+                .update(bookingsTable)
+                .set({ paymentStatus: "paid" })
+                .where(eq(bookingsTable.id, bookingId));
+            }
+          }
+          break;
+        }
+        case "customer.subscription.deleted": {
+          const sub = event.data.object as Stripe.Subscription;
+          await db
+            .update(providersTable)
+            .set({ subscriptionTier: "basic", stripeSubscriptionId: null })
+            .where(eq(providersTable.stripeSubscriptionId, sub.id));
+          break;
+        }
+        case "invoice.payment_failed": {
+          // Stripe will retry; we don't downgrade immediately.
+          break;
+        }
+        case "charge.refunded": {
+          const charge = event.data.object as Stripe.Charge;
+          const sessionId = (charge.payment_intent as string | null) ?? null;
+          if (sessionId) {
+            // Best-effort: find booking by checkout session id is not direct;
+            // we rely on payment_intent linkage instead. Skip for now.
+          }
+          break;
+        }
+        default:
+          // Ignore other events.
+          break;
+      }
+    } catch (err) {
+      req.log.error({ err, type: event.type }, "Webhook handler error");
+    }
+
+    res.json({ received: true });
+  },
+);
+
+export default router;

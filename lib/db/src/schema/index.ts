@@ -4,3 +4,4 @@ export * from "./services";
 export * from "./timeSlots";
 export * from "./bookings";
 export * from "./reviews";
+export * from "./serviceTemplates";

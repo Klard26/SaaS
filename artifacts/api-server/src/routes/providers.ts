@@ -8,7 +8,7 @@ import {
   GetProviderParams,
   ListProvidersQueryParams,
 } from "@workspace/api-zod";
-import { eq, ilike, or, and, gte, lte, type SQL } from "drizzle-orm";
+import { eq, ilike, or, and, desc, type SQL, sql } from "drizzle-orm";
 import { getAuth, clerkClient } from "@clerk/express";
 import { randomBytes } from "node:crypto";
 import { slugify } from "../lib/slugify";
@@ -47,13 +47,18 @@ router.get("/providers", async (req, res): Promise<void> => {
     const limit = q.limit ?? 20;
     const offset = q.offset ?? 0;
 
+    // Premium-first ranking: premium providers ahead of basic, then by rating desc, then by reviewCount desc.
     const providers = await db
       .select()
       .from(providersTable)
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .limit(limit)
       .offset(offset)
-      .orderBy(providersTable.rating);
+      .orderBy(
+        sql`CASE WHEN ${providersTable.subscriptionTier} = 'premium' THEN 0 ELSE 1 END`,
+        desc(providersTable.rating),
+        desc(providersTable.reviewCount),
+      );
 
     const map = await getDirectBillingMap();
     res.json(providers.map(p => withDirectBilling(p, map)));
@@ -147,6 +152,8 @@ router.post("/providers", async (req, res): Promise<void> => {
         address: d.address,
         phone: d.phone,
         website: d.website,
+        logoUrl: d.logoUrl,
+        yearsExperience: d.yearsExperience,
         icalToken: randomBytes(24).toString("hex"),
       })
       .returning();
@@ -188,6 +195,8 @@ router.patch("/providers/:id", async (req, res): Promise<void> => {
     if (d.phone !== undefined) updateData.phone = d.phone;
     if (d.website !== undefined) updateData.website = d.website;
     if (d.avatarUrl !== undefined) updateData.avatarUrl = d.avatarUrl;
+    if (d.logoUrl !== undefined) updateData.logoUrl = d.logoUrl;
+    if (d.yearsExperience !== undefined) updateData.yearsExperience = d.yearsExperience;
 
     const [updated] = await db
       .update(providersTable)

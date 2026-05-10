@@ -27,6 +27,7 @@ import type {
   DeleteTimeSlotParams,
   HealthStatus,
   ListProvidersParams,
+  ListServiceTemplatesParams,
   PlatformStats,
   Provider,
   ProviderDashboard,
@@ -37,10 +38,13 @@ import type {
   ReviewInput,
   Service,
   ServiceInput,
+  ServiceTemplate,
   ServiceUpdate,
   SubscriptionStatus,
   TimeSlot,
   TimeSlotInput,
+  UploadUrlRequest,
+  UploadUrlResponse,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -201,6 +205,192 @@ export function useListCategories<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary List service templates for a given category slug
+ */
+export const getListServiceTemplatesUrl = (
+  params: ListServiceTemplatesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/service-templates?${stringifiedParams}`
+    : `/api/service-templates`;
+};
+
+export const listServiceTemplates = async (
+  params: ListServiceTemplatesParams,
+  options?: RequestInit,
+): Promise<ServiceTemplate[]> => {
+  return customFetch<ServiceTemplate[]>(getListServiceTemplatesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListServiceTemplatesQueryKey = (
+  params?: ListServiceTemplatesParams,
+) => {
+  return [`/api/service-templates`, ...(params ? [params] : [])] as const;
+};
+
+export const getListServiceTemplatesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listServiceTemplates>>,
+  TError = ErrorType<unknown>,
+>(
+  params: ListServiceTemplatesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listServiceTemplates>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListServiceTemplatesQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listServiceTemplates>>
+  > = ({ signal }) =>
+    listServiceTemplates(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listServiceTemplates>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListServiceTemplatesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listServiceTemplates>>
+>;
+export type ListServiceTemplatesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List service templates for a given category slug
+ */
+
+export function useListServiceTemplates<
+  TData = Awaited<ReturnType<typeof listServiceTemplates>>,
+  TError = ErrorType<unknown>,
+>(
+  params: ListServiceTemplatesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listServiceTemplates>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListServiceTemplatesQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Request a presigned upload URL for object storage
+ */
+export const getRequestUploadUrlUrl = () => {
+  return `/api/storage/uploads/request-url`;
+};
+
+export const requestUploadUrl = async (
+  uploadUrlRequest: UploadUrlRequest,
+  options?: RequestInit,
+): Promise<UploadUrlResponse> => {
+  return customFetch<UploadUrlResponse>(getRequestUploadUrlUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(uploadUrlRequest),
+  });
+};
+
+export const getRequestUploadUrlMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof requestUploadUrl>>,
+    TError,
+    { data: BodyType<UploadUrlRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof requestUploadUrl>>,
+  TError,
+  { data: BodyType<UploadUrlRequest> },
+  TContext
+> => {
+  const mutationKey = ["requestUploadUrl"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof requestUploadUrl>>,
+    { data: BodyType<UploadUrlRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return requestUploadUrl(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RequestUploadUrlMutationResult = NonNullable<
+  Awaited<ReturnType<typeof requestUploadUrl>>
+>;
+export type RequestUploadUrlMutationBody = BodyType<UploadUrlRequest>;
+export type RequestUploadUrlMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Request a presigned upload URL for object storage
+ */
+export const useRequestUploadUrl = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof requestUploadUrl>>,
+    TError,
+    { data: BodyType<UploadUrlRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof requestUploadUrl>>,
+  TError,
+  { data: BodyType<UploadUrlRequest> },
+  TContext
+> => {
+  return useMutation(getRequestUploadUrlMutationOptions(options));
+};
 
 /**
  * @summary Search/list providers

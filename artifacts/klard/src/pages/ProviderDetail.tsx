@@ -15,7 +15,10 @@ import {
   useListProviderReviews, getListProviderReviewsQueryKey,
   useGenerateAiOffer,
 } from "@workspace/api-client-react";
-import { Star, MapPin, Clock, CheckCircle, Globe, Phone, Sparkles, ChevronRight, Crown, Info } from "lucide-react";
+import { Star, MapPin, Clock, CheckCircle, Globe, Phone, Sparkles, ChevronRight, Crown, Info, Briefcase } from "lucide-react";
+import { Footer } from "@/components/Footer";
+import { publicUrlForObjectPath } from "@/lib/upload";
+import { formatPriceEUR, formatTimeBerlin, formatDateBerlin } from "@/lib/dateFmt";
 
 export default function ProviderDetail() {
   const { id } = useParams<{ id: string }>();
@@ -45,11 +48,38 @@ export default function ProviderDetail() {
 
   const availableSlots = slots.filter(s => s.isAvailable);
   const groupedSlots = availableSlots.reduce<Record<string, typeof availableSlots>>((acc, slot) => {
-    const date = new Date(slot.startTime).toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" });
+    const date = formatDateBerlin(slot.startTime);
     if (!acc[date]) acc[date] = [];
     acc[date].push(slot);
     return acc;
   }, {});
+
+  const jsonLd = provider
+    ? {
+        "@context": "https://schema.org",
+        "@type": "ProfessionalService",
+        name: provider.displayName,
+        description: provider.bio ?? undefined,
+        image: provider.logoUrl ? publicUrlForObjectPath(provider.logoUrl) : undefined,
+        url: typeof window !== "undefined" ? window.location.href : undefined,
+        telephone: provider.phone ?? undefined,
+        address: {
+          "@type": "PostalAddress",
+          addressLocality: provider.city,
+          postalCode: provider.zip ?? undefined,
+          streetAddress: provider.address ?? undefined,
+          addressCountry: "DE",
+        },
+        aggregateRating:
+          provider.reviewCount > 0
+            ? {
+                "@type": "AggregateRating",
+                ratingValue: provider.rating,
+                reviewCount: provider.reviewCount,
+              }
+            : undefined,
+      }
+    : null;
 
   function handleBooking() {
     if (!isSignedIn) { setLocation("/sign-in"); return; }
@@ -87,16 +117,30 @@ export default function ProviderDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
       <Navbar />
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 flex-1 w-full">
         {/* Provider Header */}
         <Card className="mb-6">
           <CardContent className="p-6 md:p-8">
             <div className="flex flex-col sm:flex-row gap-6">
-              <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center text-2xl font-bold text-primary shrink-0">
-                {provider.displayName.charAt(0)}
+              <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center text-2xl font-bold text-primary shrink-0 overflow-hidden border border-border">
+                {provider.logoUrl ? (
+                  <img
+                    src={publicUrlForObjectPath(provider.logoUrl)}
+                    alt={`Logo ${provider.displayName}`}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  provider.displayName.charAt(0)
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -120,7 +164,12 @@ export default function ProviderDetail() {
                     </span>
                   </div>
                 )}
-                <p className="text-muted-foreground mb-3">{provider.category}</p>
+                <p className="text-muted-foreground mb-1">{provider.category}</p>
+                {provider.yearsExperience != null && provider.yearsExperience > 0 && (
+                  <p className="text-sm text-muted-foreground mb-3 flex items-center gap-1.5">
+                    <Briefcase className="h-3.5 w-3.5" /> {provider.yearsExperience} Jahre Berufserfahrung
+                  </p>
+                )}
 
                 <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-4">
                   <span className="flex items-center gap-1.5">
@@ -198,7 +247,7 @@ export default function ProviderDetail() {
                         </div>
                         <div className="shrink-0 ml-4 text-right">
                           <span className="font-semibold text-foreground">
-                            {service.price === 0 ? "Kostenlos" : `${service.price} €`}
+                            {service.price === 0 ? "Kostenlos" : formatPriceEUR(service.price)}
                           </span>
                         </div>
                       </button>
@@ -324,7 +373,7 @@ export default function ProviderDetail() {
                                   }`}
                                   data-testid={`button-slot-${slot.id}`}
                                 >
-                                  {new Date(slot.startTime).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
+                                  {formatTimeBerlin(slot.startTime)}
                                 </button>
                               ))}
                             </div>
@@ -348,6 +397,7 @@ export default function ProviderDetail() {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

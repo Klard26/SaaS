@@ -10,5 +10,7 @@ export interface ServiceUpdate {
   name?: string;
   description?: string;
   price?: number;
+  netPrice?: number;
+  vatRate?: number;
   durationMinutes?: number;
 }

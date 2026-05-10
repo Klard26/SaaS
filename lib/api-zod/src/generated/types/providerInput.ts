@@ -15,4 +15,6 @@ export interface ProviderInput {
   address?: string;
   phone?: string;
   website?: string;
+  logoUrl?: string;
+  yearsExperience?: number;
 }

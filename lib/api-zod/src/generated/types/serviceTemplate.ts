@@ -6,16 +6,14 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface Service {
+export interface ServiceTemplate {
   id: number;
-  providerId: number;
+  categorySlug: string;
   name: string;
   /** @nullable */
   description?: string | null;
-  price: number;
+  defaultDurationMinutes: number;
   /** @nullable */
-  netPrice?: number | null;
-  vatRate: number;
-  durationMinutes: number;
-  createdAt?: string;
+  defaultPrice?: number | null;
+  sortOrder?: number;
 }
