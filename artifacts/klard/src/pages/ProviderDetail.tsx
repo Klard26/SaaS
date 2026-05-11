@@ -117,7 +117,7 @@ export default function ProviderDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-[var(--klard-bg)] flex flex-col">
       {jsonLd && (
         <script
           type="application/ld+json"
@@ -128,10 +128,10 @@ export default function ProviderDetail() {
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 flex-1 w-full">
         {/* Provider Header */}
-        <Card className="mb-6">
+        <Card className="mb-6 rounded-[20px] border-[1.5px] shadow-sm">
           <CardContent className="p-6 md:p-8">
             <div className="flex flex-col sm:flex-row gap-6">
-              <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center text-2xl font-bold text-primary shrink-0 overflow-hidden border border-border">
+              <div className="w-20 h-20 rounded-[16px] flex items-center justify-center text-2xl font-bold shrink-0 overflow-hidden border border-border bg-gradient-to-br from-[var(--klard-teal-l)] to-[var(--klard-teal-p)] text-[var(--klard-teal-d)]">
                 {provider.logoUrl ? (
                   <img
                     src={publicUrlForObjectPath(provider.logoUrl)}
@@ -143,24 +143,24 @@ export default function ProviderDetail() {
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-2 mb-1">
-                  <h1 className="text-2xl font-bold text-foreground">{provider.displayName}</h1>
-                  {provider.subscriptionTier === "premium" && (
-                    <Badge className="gap-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0">
-                      <Crown className="h-3.5 w-3.5" /> Premium
-                    </Badge>
-                  )}
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <h1 className="font-serif text-3xl font-semibold text-foreground tracking-tight">{provider.displayName}</h1>
                   {provider.verified && (
-                    <Badge variant="secondary" className="gap-1">
-                      <CheckCircle className="h-3.5 w-3.5" /> Verifiziert
-                    </Badge>
+                    <span className="inline-flex items-center gap-1 bg-[var(--klard-green-l)] text-[var(--klard-green)] text-[0.7rem] font-bold px-2 py-0.5 rounded-full">
+                      <CheckCircle className="h-3 w-3" /> Verifiziert
+                    </span>
+                  )}
+                  {provider.subscriptionTier === "premium" && (
+                    <span className="inline-flex items-center gap-1 bg-[var(--klard-gold-l)] text-[var(--klard-gold)] text-[0.7rem] font-bold px-2 py-0.5 rounded-full">
+                      <Crown className="h-3 w-3" /> Premium
+                    </span>
                   )}
                 </div>
                 {provider.requiresDirectBilling && (
-                  <div className="mb-3 flex items-start gap-2 text-xs bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-md px-3 py-2">
-                    <Info className="h-3.5 w-3.5 text-amber-600 mt-0.5 shrink-0" />
-                    <span className="text-amber-900 dark:text-amber-200">
-                      Hinweis: Bei dieser Berufsgruppe (Anwälte, Steuerberater, Notare) erfolgt die Abrechnung direkt mit der Kanzlei nach gesetzlichen Vorgaben (RVG/StBVV). Klard übermittelt nur die Buchung.
+                  <div className="mb-3 flex items-start gap-2.5 text-xs bg-gradient-to-br from-[#EFF6FF] to-[var(--klard-teal-p)] border border-[#BAE6FD] rounded-xl px-3.5 py-3">
+                    <Info className="h-4 w-4 text-[var(--klard-teal-d)] mt-0.5 shrink-0" />
+                    <span className="text-[var(--klard-slate)] leading-relaxed">
+                      <strong className="text-[var(--klard-teal-d)]">RVG / StBVV-Hinweis:</strong> Bei dieser Berufsgruppe (Anwälte, Steuerberater, Notare) erfolgt die Abrechnung direkt mit der Kanzlei nach gesetzlichen Vorgaben. Klard übermittelt nur die Buchung.
                     </span>
                   </div>
                 )}
@@ -278,58 +278,58 @@ export default function ProviderDetail() {
             </Card>
 
             {/* AI Offer */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  KI-Angebot anfragen
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0 space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  Beschreiben Sie Ihr Anliegen — unsere KI erstellt ein individuelles Angebot.
-                </p>
-                <Textarea
-                  placeholder="z.B. Ich bin Selbstandiger und benotige Hilfe bei meiner Steuererklarung fur 2024 ..."
-                  value={aiInquiry}
-                  onChange={e => setAiInquiry(e.target.value)}
-                  rows={3}
-                  data-testid="textarea-ai-inquiry"
-                />
-                <Button
-                  onClick={handleAiOffer}
-                  disabled={!aiInquiry.trim() || generateOffer.isPending}
-                  className="gap-2"
-                  data-testid="button-generate-offer"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  {generateOffer.isPending ? "Wird erstellt..." : "Angebot generieren"}
-                </Button>
+            <div
+              className="rounded-[20px] p-6 border border-[#3B0764] text-white shadow-md"
+              style={{ background: "linear-gradient(135deg,#1E1B4B 0%,#2E1065 100%)" }}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles className="h-5 w-5 text-[#C4B5FD]" />
+                <h3 className="font-serif text-lg font-semibold">KI-Angebot in 30 Sekunden</h3>
+              </div>
+              <p className="text-sm text-[#C4B5FD] mb-4">
+                Beschreiben Sie Ihr Anliegen — unsere KI erstellt sofort ein individuelles Angebot.
+              </p>
+              <Textarea
+                placeholder="z.B. Ich bin Selbstständiger und benötige Hilfe bei meiner Steuererklärung für 2024 ..."
+                value={aiInquiry}
+                onChange={e => setAiInquiry(e.target.value)}
+                rows={3}
+                data-testid="textarea-ai-inquiry"
+                className="bg-[#312E81]/50 border-[#4C1D95] text-white placeholder:text-[#A78BFA] focus-visible:ring-[#C4B5FD]"
+              />
+              <Button
+                onClick={handleAiOffer}
+                disabled={!aiInquiry.trim() || generateOffer.isPending}
+                className="mt-3 gap-2 bg-white text-[#2E1065] hover:bg-[#EDE9FE] font-bold"
+                data-testid="button-generate-offer"
+              >
+                <Sparkles className="h-4 w-4" />
+                {generateOffer.isPending ? "Wird erstellt …" : "Angebot generieren"}
+              </Button>
 
-                {aiResult && (
-                  <div className="mt-4 p-4 rounded-lg bg-primary/5 border border-primary/20">
-                    <p className="text-sm font-medium text-foreground mb-2">Ihr personliches Angebot:</p>
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{aiResult.offer}</p>
-                    {(aiResult.estimatedPrice || aiResult.estimatedDuration) && (
-                      <div className="flex gap-4 mt-3 pt-3 border-t border-primary/20">
-                        {aiResult.estimatedPrice && (
-                          <div>
-                            <p className="text-xs text-muted-foreground">Geschatzter Preis</p>
-                            <p className="font-semibold text-foreground">{aiResult.estimatedPrice} €</p>
-                          </div>
-                        )}
-                        {aiResult.estimatedDuration && (
-                          <div>
-                            <p className="text-xs text-muted-foreground">Geschatzte Dauer</p>
-                            <p className="font-semibold text-foreground">{aiResult.estimatedDuration}</p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+              {aiResult && (
+                <div className="mt-4 p-4 rounded-xl bg-[#312E81]/60 border border-[#4C1D95]">
+                  <p className="text-sm font-semibold text-white mb-2">Ihr persönliches Angebot</p>
+                  <p className="text-sm text-[#DDD6FE] whitespace-pre-wrap leading-relaxed">{aiResult.offer}</p>
+                  {(aiResult.estimatedPrice || aiResult.estimatedDuration) && (
+                    <div className="flex gap-6 mt-4 pt-3 border-t border-[#4C1D95]">
+                      {aiResult.estimatedPrice && (
+                        <div>
+                          <p className="text-xs text-[#A78BFA]">Geschätzter Preis</p>
+                          <p className="font-serif text-lg font-semibold text-white">{aiResult.estimatedPrice} €</p>
+                        </div>
+                      )}
+                      {aiResult.estimatedDuration && (
+                        <div>
+                          <p className="text-xs text-[#A78BFA]">Geschätzte Dauer</p>
+                          <p className="font-serif text-lg font-semibold text-white">{aiResult.estimatedDuration}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Reviews */}
             <Card>
@@ -386,10 +386,10 @@ export default function ProviderDetail() {
                                 <button
                                   key={slot.id}
                                   onClick={() => setSelectedSlot(slot.id === selectedSlot ? null : slot.id)}
-                                  className={`px-3 py-1.5 rounded-md text-sm border transition-all ${
+                                  className={`px-2.5 py-1.5 rounded-lg text-[0.78rem] font-semibold border-[1.5px] transition-all ${
                                     selectedSlot === slot.id
-                                      ? "border-primary bg-primary text-primary-foreground"
-                                      : "border-border hover:border-primary/40"
+                                      ? "border-[var(--klard-teal-d)] bg-primary text-primary-foreground"
+                                      : "border-[var(--klard-teal-p)] bg-[var(--klard-teal-l)] text-[var(--klard-teal-d)] hover:bg-primary hover:text-white hover:border-primary"
                                   }`}
                                   data-testid={`button-slot-${slot.id}`}
                                 >

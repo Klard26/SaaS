@@ -1,19 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation, useSearch } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Navbar } from "@/components/Navbar";
 import { useListProviders, useListCategories, getListProvidersQueryKey } from "@workspace/api-client-react";
-import { Star, MapPin, CheckCircle, Search, SlidersHorizontal, X, Crown, Briefcase } from "lucide-react";
+import {
+  Search, MapPin, CheckCircle, Crown, Briefcase, Star, X,
+  ShieldCheck, Trophy, Calendar,
+} from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Footer } from "@/components/Footer";
 import { publicUrlForObjectPath } from "@/lib/upload";
 import { formatPriceEUR } from "@/lib/dateFmt";
+
+type ChipKey = "rating45" | "verified" | "top"
+  | "exp1to5" | "exp5to10" | "exp10to20" | "exp20plus";
 
 export default function SearchPage() {
   const rawSearch = useSearch();
@@ -23,221 +23,384 @@ export default function SearchPage() {
 
   const [q, setQ] = useState(params.get("q") ?? "");
   const [city, setCity] = useState(params.get("city") ?? "");
-  const [zip, setZip] = useState(params.get("zip") ?? "");
   const [category, setCategory] = useState(params.get("category") ?? "all");
   const [minPrice, setMinPrice] = useState(params.get("minPrice") ?? "");
   const [maxPrice, setMaxPrice] = useState(params.get("maxPrice") ?? "");
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [radius, setRadius] = useState("25");
+  const [sortBy, setSortBy] = useState<"recommended" | "price-asc" | "rating-desc">("recommended");
+  const [chips, setChips] = useState<Set<ChipKey>>(new Set());
 
   const queryParams = {
     ...(q ? { q } : {}),
     ...(city ? { city } : {}),
-    ...(zip ? { zip } : {}),
     ...(category && category !== "all" ? { category } : {}),
     ...(minPrice ? { minPrice: Number(minPrice) } : {}),
     ...(maxPrice ? { maxPrice: Number(maxPrice) } : {}),
     limit: 50,
   };
 
-  const { data: providers = [], isLoading } = useListProviders(queryParams);
+  const { data: providersRaw = [], isLoading } = useListProviders(queryParams);
   const { data: categories = [] } = useListCategories();
 
-  function handleSearch(e: React.FormEvent) {
+  // Client-side chip filters (visual feedback for filters not yet supported by backend)
+  let providers = [...providersRaw];
+  if (chips.has("rating45")) providers = providers.filter(p => p.rating >= 4.5);
+  if (chips.has("verified")) providers = providers.filter(p => p.verified);
+  if (chips.has("top")) providers = providers.filter(p => p.subscriptionTier === "premium");
+  if (chips.has("exp1to5")) providers = providers.filter(p => (p.yearsExperience ?? 0) >= 1 && (p.yearsExperience ?? 0) < 5);
+  if (chips.has("exp5to10")) providers = providers.filter(p => (p.yearsExperience ?? 0) >= 5 && (p.yearsExperience ?? 0) < 10);
+  if (chips.has("exp10to20")) providers = providers.filter(p => (p.yearsExperience ?? 0) >= 10 && (p.yearsExperience ?? 0) < 20);
+  if (chips.has("exp20plus")) providers = providers.filter(p => (p.yearsExperience ?? 0) >= 20);
+
+  if (sortBy === "price-asc") providers.sort((a, b) => (a.minPrice ?? 9e9) - (b.minPrice ?? 9e9));
+  else if (sortBy === "rating-desc") providers.sort((a, b) => b.rating - a.rating);
+
+  const activeCategory = categories.find(c => c.slug === category);
+
+  function toggleChip(k: ChipKey) {
+    setChips(prev => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k);
+      else next.add(k);
+      return next;
+    });
+  }
+
+  function applyTopFilters(e: React.FormEvent) {
     e.preventDefault();
     qc.invalidateQueries({ queryKey: getListProvidersQueryKey(queryParams) });
   }
 
-  function clearFilters() {
-    setQ("");
-    setCity("");
-    setZip("");
-    setCategory("all");
-    setMinPrice("");
-    setMaxPrice("");
+  function clearAll() {
+    setQ(""); setCity(""); setCategory("all");
+    setMinPrice(""); setMaxPrice(""); setRadius("25");
+    setChips(new Set());
   }
 
-  const hasFilters = q || city || zip || (category && category !== "all") || minPrice || maxPrice;
+  const hasFilters = q || city || (category && category !== "all") || minPrice || maxPrice || chips.size > 0;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-[var(--klard-bg)] flex flex-col">
       <Navbar />
 
-      <div className="border-b border-border bg-muted/30 py-4">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <form onSubmit={handleSearch} className="flex gap-3 flex-col sm:flex-row">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Name, Fachbereich suchen..."
-                className="pl-9 h-11"
+      {/* Top compact search/filter bar */}
+      <div className="bg-white border-b border-border">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-8 py-4">
+          <form onSubmit={applyTopFilters} className="klard-search !shadow-none !border !border-border max-w-none">
+            <div className="klard-search-group">
+              <span className="klard-search-lbl">Branche</span>
+              <select value={category} onChange={e => setCategory(e.target.value)} data-testid="select-category-top">
+                <option value="all">Alle Branchen</option>
+                {categories.map(c => (
+                  <option key={c.id} value={c.slug}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="klard-search-group">
+              <span className="klard-search-lbl">PLZ oder Ort</span>
+              <input
+                type="text"
+                value={city}
+                onChange={e => setCity(e.target.value)}
+                placeholder="z.B. 10115 Berlin"
+                data-testid="input-city"
+              />
+            </div>
+            <div className="klard-search-group">
+              <span className="klard-search-lbl">Leistung</span>
+              <input
+                type="text"
                 value={q}
                 onChange={e => setQ(e.target.value)}
+                placeholder="z.B. Steuererklärung"
                 data-testid="input-search"
               />
             </div>
-            <Input
-              placeholder="Stadt oder PLZ"
-              className="h-11 sm:w-44"
-              value={city}
-              onChange={e => setCity(e.target.value)}
-              data-testid="input-city"
-            />
-            <Button type="submit" className="h-11" data-testid="button-search-submit">
+            <button type="submit" className="klard-search-btn" data-testid="button-search-submit">
+              <Search className="h-4 w-4" />
               Suchen
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="h-11 gap-2"
-              onClick={() => setFiltersOpen(!filtersOpen)}
-              data-testid="button-toggle-filters"
-            >
-              <SlidersHorizontal className="h-4 w-4" />
-              <span className="hidden sm:inline">Filter</span>
-              {hasFilters && <Badge className="h-4 w-4 p-0 flex items-center justify-center text-[10px]">!</Badge>}
-            </Button>
+            </button>
           </form>
-
-          {filtersOpen && (
-            <div className="mt-3 pt-3 border-t border-border flex flex-wrap gap-3 items-end">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Fachbereich</label>
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger className="h-9 w-52" data-testid="select-category">
-                    <SelectValue placeholder="Alle Kategorien" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Alle Kategorien</SelectItem>
-                    {categories.map(cat => (
-                      <SelectItem key={cat.id} value={cat.slug}>{cat.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Preis ab (€)</label>
-                <Input
-                  placeholder="Min."
-                  className="h-9 w-24"
-                  value={minPrice}
-                  onChange={e => setMinPrice(e.target.value)}
-                  type="number"
-                  min={0}
-                  data-testid="input-min-price"
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Preis bis (€)</label>
-                <Input
-                  placeholder="Max."
-                  className="h-9 w-24"
-                  value={maxPrice}
-                  onChange={e => setMaxPrice(e.target.value)}
-                  type="number"
-                  min={0}
-                  data-testid="input-max-price"
-                />
-              </div>
-              {hasFilters && (
-                <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 gap-1.5 text-muted-foreground" data-testid="button-clear-filters">
-                  <X className="h-3.5 w-3.5" /> Filter zuruck
-                </Button>
-              )}
-            </div>
-          )}
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <div className="mb-6 flex items-center justify-between">
-          <p className="text-sm text-muted-foreground" data-testid="text-results-count">
-            {isLoading ? "Lade..." : `${providers.length} Berater gefunden`}
-          </p>
-        </div>
+      {/* Main: sidebar + results */}
+      <div className="max-w-[1280px] w-full mx-auto px-4 sm:px-8 py-7 grid lg:grid-cols-[284px_1fr] gap-6 flex-1">
+        {/* SIDEBAR */}
+        <aside className="hidden lg:flex flex-col gap-3.5 self-start sticky top-[88px]">
+          <FCard title="Filter">
+            <FieldLabel>PLZ / Ort</FieldLabel>
+            <FInput value={city} onChange={setCity} placeholder="10115 Berlin" />
 
-        {isLoading ? (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-44 rounded-xl" />
-            ))}
+            <FieldLabel className="mt-3">Umkreis</FieldLabel>
+            <FSelect value={radius} onChange={setRadius}>
+              <option value="5">5 km</option>
+              <option value="10">10 km</option>
+              <option value="25">25 km</option>
+              <option value="50">50 km</option>
+              <option value="0">Deutschlandweit</option>
+            </FSelect>
+
+            <FieldLabel className="mt-3">Preisbereich (€)</FieldLabel>
+            <div className="flex gap-2">
+              <FInput
+                value={minPrice}
+                onChange={setMinPrice}
+                placeholder="von"
+                type="number"
+                className="text-center"
+                testId="input-min-price"
+              />
+              <FInput
+                value={maxPrice}
+                onChange={setMaxPrice}
+                placeholder="bis"
+                type="number"
+                className="text-center"
+                testId="input-max-price"
+              />
+            </div>
+          </FCard>
+
+          <FCard title="Qualität">
+            <ChipRow>
+              <Chip on={chips.has("rating45")} onClick={() => toggleChip("rating45")}><Star className="h-3 w-3" /> 4.5+</Chip>
+              <Chip on={chips.has("verified")} onClick={() => toggleChip("verified")}><ShieldCheck className="h-3 w-3" /> Verifiziert</Chip>
+              <Chip on={chips.has("top")} onClick={() => toggleChip("top")}><Trophy className="h-3 w-3" /> Premium</Chip>
+            </ChipRow>
+          </FCard>
+
+          <FCard title="Berufserfahrung">
+            <ChipRow>
+              <Chip on={chips.has("exp1to5")} onClick={() => toggleChip("exp1to5")}>1–5 J.</Chip>
+              <Chip on={chips.has("exp5to10")} onClick={() => toggleChip("exp5to10")}>5–10 J.</Chip>
+              <Chip on={chips.has("exp10to20")} onClick={() => toggleChip("exp10to20")}>10–20 J.</Chip>
+              <Chip on={chips.has("exp20plus")} onClick={() => toggleChip("exp20plus")}>20+ J.</Chip>
+            </ChipRow>
+          </FCard>
+
+          {hasFilters && (
+            <button
+              type="button"
+              onClick={clearAll}
+              className="w-full py-2 px-3 bg-transparent border-[1.5px] border-border rounded-lg text-xs font-semibold text-muted-foreground hover:border-destructive hover:text-destructive transition-colors mt-1 flex items-center justify-center gap-1.5"
+              data-testid="button-clear-filters"
+            >
+              <X className="h-3 w-3" /> Filter zurücksetzen
+            </button>
+          )}
+        </aside>
+
+        {/* RESULTS */}
+        <section className="min-w-0">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="font-serif text-xl font-bold text-foreground">
+              {activeCategory ? activeCategory.name : "Alle Branchen"}
+              <span className="font-sans font-normal text-sm text-muted-foreground ml-2">
+                {isLoading ? "lädt …" : `– ${providers.length} Anbieter`}
+              </span>
+            </h2>
+            <select
+              value={sortBy}
+              onChange={e => setSortBy(e.target.value as typeof sortBy)}
+              className="bg-white border-[1.5px] border-border text-foreground px-3 py-1.5 rounded-lg text-xs font-medium outline-none cursor-pointer hover:border-primary transition-colors"
+              data-testid="select-sort"
+            >
+              <option value="recommended">Empfohlen</option>
+              <option value="price-asc">Preis ↑</option>
+              <option value="rating-desc">Bewertung ↓</option>
+            </select>
           </div>
-        ) : providers.length === 0 ? (
-          <div className="text-center py-20 text-muted-foreground">
-            <Search className="h-12 w-12 mx-auto mb-4 opacity-30" />
-            <p className="font-medium">Keine Berater gefunden</p>
-            <p className="text-sm mt-1">Versuchen Sie andere Suchbegriffe oder passen Sie die Filter an.</p>
-            <Button variant="outline" className="mt-4" onClick={clearFilters} data-testid="button-clear-search">
-              Suche zurucksetzen
-            </Button>
-          </div>
-        ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {providers.map(provider => (
-              <Card
-                key={provider.id}
-                className="hover:shadow-md transition-shadow duration-200 cursor-pointer"
-                onClick={() => setLocation(`/providers/${provider.id}`)}
-                data-testid={`card-provider-${provider.id}`}
+
+          {isLoading ? (
+            <div className="space-y-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-44 rounded-[20px]" />
+              ))}
+            </div>
+          ) : providers.length === 0 ? (
+            <div className="bg-white border border-border rounded-[20px] py-16 px-6 text-center text-muted-foreground">
+              <Search className="h-12 w-12 mx-auto mb-3 opacity-30" />
+              <p className="font-semibold text-foreground">Keine Berater gefunden</p>
+              <p className="text-sm mt-1">Versuchen Sie andere Suchbegriffe oder passen Sie die Filter an.</p>
+              <button
+                type="button"
+                onClick={clearAll}
+                className="mt-5 inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-border px-4 py-1.5 text-xs font-semibold hover:border-primary hover:text-primary transition-colors"
+                data-testid="button-clear-search"
               >
-                <CardContent className="p-5">
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-sm font-semibold text-primary overflow-hidden border border-border">
-                      {provider.logoUrl ? (
-                        <img
-                          src={publicUrlForObjectPath(provider.logoUrl)}
-                          alt={`Logo ${provider.displayName}`}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      ) : (
-                        provider.displayName.charAt(0)
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <h3 className="font-semibold text-foreground text-sm truncate">{provider.displayName}</h3>
-                        {provider.verified && <CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" aria-label="Verifiziert" />}
-                        {provider.subscriptionTier === "premium" && (
-                          <Badge variant="secondary" className="h-4 px-1.5 gap-0.5 bg-amber-100 text-amber-900 border-amber-200 text-[10px]">
-                            <Crown className="h-2.5 w-2.5" /> Premium
-                          </Badge>
+                Suche zurücksetzen
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {providers.map(p => (
+                <article
+                  key={p.id}
+                  role="link"
+                  tabIndex={0}
+                  onClick={() => setLocation(`/providers/${p.id}`)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setLocation(`/providers/${p.id}`);
+                    }
+                  }}
+                  aria-label={`${p.displayName} – Profil ansehen`}
+                  className="grid md:grid-cols-[1fr_220px] grid-cols-1 bg-white border-[1.5px] border-border rounded-[20px] overflow-hidden shadow-sm hover:border-primary hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                  data-testid={`card-provider-${p.id}`}
+                >
+                  {/* Main */}
+                  <div className="p-5">
+                    <div className="flex gap-4 mb-3">
+                      <div className="w-14 h-14 rounded-[13px] flex items-center justify-center text-xl font-bold shrink-0 overflow-hidden border border-border bg-gradient-to-br from-[var(--klard-teal-l)] to-[var(--klard-teal-p)] text-[var(--klard-teal-d)]">
+                        {p.logoUrl ? (
+                          <img
+                            src={publicUrlForObjectPath(p.logoUrl)}
+                            alt={`Logo ${p.displayName}`}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                        ) : (
+                          p.displayName.charAt(0)
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground">{provider.category}</p>
-                      {provider.yearsExperience != null && provider.yearsExperience > 0 && (
-                        <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                          <Briefcase className="h-3 w-3" /> {provider.yearsExperience} J. Erfahrung
-                        </p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <h3 className="font-sans font-bold text-base text-foreground">{p.displayName}</h3>
+                          {p.verified && (
+                            <span className="inline-flex items-center gap-1 bg-[var(--klard-green-l)] text-[var(--klard-green)] text-[0.66rem] font-bold px-2 py-0.5 rounded-full">
+                              <CheckCircle className="h-2.5 w-2.5" /> Verifiziert
+                            </span>
+                          )}
+                          {p.subscriptionTier === "premium" && (
+                            <span className="inline-flex items-center gap-1 bg-[var(--klard-gold-l)] text-[var(--klard-gold)] text-[0.66rem] font-bold px-2 py-0.5 rounded-full">
+                              <Crown className="h-2.5 w-2.5" /> Top
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[0.78rem] text-muted-foreground mb-1.5">{p.category}</p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#F59E0B] tracking-tighter text-sm" aria-hidden>
+                            {"★".repeat(Math.round(p.rating))}{"☆".repeat(5 - Math.round(p.rating))}
+                          </span>
+                          <span className="text-sm font-bold">{p.rating.toFixed(1)}</span>
+                          <span className="text-xs text-muted-foreground">({p.reviewCount} Bewertungen)</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-[0.76rem] text-muted-foreground mb-3">
+                      <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {p.city}</span>
+                      {p.yearsExperience != null && p.yearsExperience > 0 && (
+                        <span className="flex items-center gap-1"><Briefcase className="h-3 w-3" /> {p.yearsExperience} J. Erfahrung</span>
                       )}
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" aria-hidden="true" />
-                      <span className="text-sm font-medium" aria-label={`Bewertung ${provider.rating.toFixed(1)} von 5`}>{provider.rating.toFixed(1)}</span>
-                    </div>
+
+                    {p.bio && (
+                      <p className="text-[0.83rem] text-[var(--klard-mid)] leading-relaxed line-clamp-2">{p.bio}</p>
+                    )}
                   </div>
 
-                  {provider.bio && (
-                    <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{provider.bio}</p>
-                  )}
+                  {/* Side */}
+                  <div className="p-4 md:border-l md:border-t-0 border-t border-border bg-[var(--klard-bg)] flex flex-col gap-3">
+                    {p.yearsExperience != null && p.yearsExperience > 0 && (
+                      <div className="bg-white border border-border rounded-lg py-2 px-3 text-center">
+                        <div className="font-serif text-2xl font-semibold text-[var(--klard-teal-d)] leading-none">{p.yearsExperience}</div>
+                        <div className="text-[0.66rem] text-muted-foreground mt-0.5">Jahre Erfahrung</div>
+                      </div>
+                    )}
 
-                  <Separator className="mb-3" />
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
-                      <span>{provider.city}</span>
+                    <div className="text-center mt-auto">
+                      <div className="text-[0.7rem] text-muted-foreground">Preis</div>
+                      <div className="font-serif text-lg font-semibold text-[var(--klard-teal-d)]">
+                        {p.minPrice == null ? "auf Anfrage" : p.minPrice === 0 ? "kostenlos" : `ab ${formatPriceEUR(p.minPrice)}`}
+                      </div>
                     </div>
-                    <span className="text-sm font-medium text-foreground">
-                      ab {provider.minPrice === 0 ? "kostenlos" : formatPriceEUR(provider.minPrice)}
-                    </span>
+
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setLocation(`/providers/${p.id}`); }}
+                      className="w-full py-2.5 bg-primary hover:bg-[var(--klard-teal-d)] text-white rounded-lg text-sm font-bold flex items-center justify-center gap-1.5 transition-colors"
+                      data-testid={`button-book-${p.id}`}
+                    >
+                      <Calendar className="h-4 w-4" /> Termin buchen
+                    </button>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
+
       <Footer />
     </div>
   );
 }
+
+/* ---------- small visual helpers (file-local) ---------- */
+
+function FCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-white border border-border rounded-xl p-4 shadow-sm">
+      <h3 className="text-[0.72rem] font-bold text-[var(--klard-mid)] uppercase tracking-wider mb-3">{title}</h3>
+      {children}
+    </div>
+  );
+}
+
+function FieldLabel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return <label className={`block text-[0.72rem] font-semibold text-muted-foreground mb-1.5 ${className}`}>{children}</label>;
+}
+
+function FInput({
+  value, onChange, placeholder, type = "text", className = "", testId,
+}: {
+  value: string; onChange: (v: string) => void; placeholder?: string;
+  type?: string; className?: string; testId?: string;
+}) {
+  return (
+    <input
+      type={type}
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder}
+      data-testid={testId}
+      className={`w-full bg-secondary border-[1.5px] border-transparent text-foreground px-3 py-2 rounded-lg text-sm outline-none transition-all focus:border-primary focus:bg-white ${className}`}
+    />
+  );
+}
+
+function FSelect({ value, onChange, children }: { value: string; onChange: (v: string) => void; children: React.ReactNode }) {
+  return (
+    <select
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      className="w-full bg-secondary border-[1.5px] border-transparent text-foreground px-3 py-2 rounded-lg text-sm outline-none transition-all focus:border-primary focus:bg-white appearance-none cursor-pointer"
+    >
+      {children}
+    </select>
+  );
+}
+
+function ChipRow({ children }: { children: React.ReactNode }) {
+  return <div className="flex flex-wrap gap-1.5">{children}</div>;
+}
+
+function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex items-center gap-1 text-[0.72rem] font-medium px-3 py-1 rounded-full border-[1.5px] transition-all ${
+        on
+          ? "bg-[var(--klard-teal-l)] border-primary text-[var(--klard-teal-d)] font-semibold"
+          : "bg-secondary border-transparent text-[var(--klard-mid)] hover:border-primary"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
