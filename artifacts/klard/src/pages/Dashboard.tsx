@@ -20,7 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "Ausstehend",
-  confirmed: "Bestatigt",
+  confirmed: "Bestätigt",
   cancelled: "Storniert",
   completed: "Abgeschlossen",
 };
@@ -95,7 +95,7 @@ export default function Dashboard() {
       qc.invalidateQueries({ queryKey: providerBookingsKey(profile?.id ?? 0) });
       toast({ title: "Status aktualisiert" });
     } catch {
-      toast({ title: "Fehler", description: "Status konnte nicht geandert werden.", variant: "destructive" });
+      toast({ title: "Fehler", description: "Status konnte nicht geändert werden.", variant: "destructive" });
     }
   }
 
@@ -103,13 +103,13 @@ export default function Dashboard() {
 
   if (!profileLoading && !profile) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-[var(--klard-bg)]">
         <Navbar />
         <div className="max-w-lg mx-auto px-4 sm:px-6 py-20 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-6">
-            <Users className="h-8 w-8 text-primary" />
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-[var(--klard-teal-l)] mb-6 ring-8 ring-[var(--klard-teal-l)]/40">
+            <Users className="h-10 w-10 text-[var(--klard-teal-d)]" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground mb-3">Kein Berater-Profil</h1>
+          <h1 className="font-serif text-3xl font-semibold text-foreground mb-3 tracking-tight">Kein Berater-Profil</h1>
           <p className="text-muted-foreground mb-8">
             Sie haben noch kein Berater-Profil. Registrieren Sie sich als Berater, um Buchungen entgegenzunehmen und Ihr Dashboard zu verwalten.
           </p>
@@ -123,29 +123,29 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[var(--klard-bg)]">
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="font-serif text-3xl font-semibold text-foreground tracking-tight">Dashboard</h1>
               {isPremium ? (
-                <Badge className="gap-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0">
+                <span className="inline-flex items-center gap-1 bg-[var(--klard-gold-l)] text-[var(--klard-gold)] text-xs font-bold px-2.5 py-1 rounded-full">
                   <Crown className="h-3 w-3" /> Premium
-                </Badge>
+                </span>
               ) : profile && (
-                <Badge variant="outline">Basic</Badge>
+                <span className="inline-flex items-center text-xs font-bold px-2.5 py-1 rounded-full border-[1.5px] border-border text-muted-foreground">Basic</span>
               )}
             </div>
-            {profile && <p className="text-muted-foreground mt-0.5">{profile.displayName}</p>}
+            {profile && <p className="text-[var(--klard-mid)] mt-1">{profile.displayName}</p>}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setLocation("/provider/profile")} className="gap-1.5" data-testid="button-edit-profile">
+            <Button variant="outline" size="sm" onClick={() => setLocation("/provider/profile")} className="gap-1.5 rounded-full border-[1.5px]" data-testid="button-edit-profile">
               <Settings className="h-4 w-4" /> Profil
             </Button>
-            <Button size="sm" onClick={() => setLocation("/provider/availability")} className="gap-1.5" data-testid="button-manage-availability">
-              <Calendar className="h-4 w-4" /> Verfugbarkeit
+            <Button size="sm" onClick={() => setLocation("/provider/availability")} className="gap-1.5 rounded-full" data-testid="button-manage-availability">
+              <Calendar className="h-4 w-4" /> Verfügbarkeit
             </Button>
           </div>
         </div>
@@ -160,18 +160,18 @@ export default function Dashboard() {
             {[
               { icon: Calendar, label: "Gesamte Buchungen", value: stats.totalBookings, sub: `${stats.pendingBookings} ausstehend` },
               { icon: DollarSign, label: "Gesamtumsatz", value: `${stats.totalRevenue} €`, sub: "Alle Zeiten" },
-              { icon: Star, label: "Bewertung", value: stats.averageRating?.toFixed(1) ?? "–", sub: `${stats.confirmedBookings} bestatigt` },
+              { icon: Star, label: "Bewertung", value: stats.averageRating?.toFixed(1) ?? "–", sub: `${stats.confirmedBookings} bestätigt` },
               { icon: TrendingUp, label: "Abgeschlossen", value: stats.completedBookings, sub: "Abgeschlossene Termine" },
             ].map(({ icon: Icon, label, value, sub }) => (
-              <Card key={label}>
+              <Card key={label} className="rounded-[20px] border-[1.5px] shadow-sm hover:shadow-md transition-shadow">
                 <CardContent className="p-5">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="p-2 rounded-lg bg-primary/10">
-                      <Icon className="h-4 w-4 text-primary" />
+                    <div className="p-2 rounded-lg bg-[var(--klard-teal-l)]">
+                      <Icon className="h-4 w-4 text-[var(--klard-teal-d)]" />
                     </div>
-                    <span className="text-sm text-muted-foreground">{label}</span>
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{label}</span>
                   </div>
-                  <p className="text-3xl font-bold text-foreground">{value}</p>
+                  <p className="font-serif text-3xl font-semibold text-foreground tracking-tight">{value}</p>
                   <p className="text-xs text-muted-foreground mt-1">{sub}</p>
                 </CardContent>
               </Card>
@@ -182,20 +182,20 @@ export default function Dashboard() {
         {/* Premium upsell or calendar sync */}
         {profile && (isPremium ? (
           calendarFeedUrl && (
-            <Card className="mb-6 border-primary/20 bg-primary/5">
+            <Card className="mb-6 rounded-[20px] border-[1.5px] border-[var(--klard-teal-p)] bg-[var(--klard-teal-l)]/40 shadow-sm">
               <CardContent className="p-5">
                 <div className="flex items-start justify-between gap-4 flex-col sm:flex-row">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1.5">
-                      <Calendar className="h-4 w-4 text-primary" />
-                      <span className="font-semibold text-sm text-foreground">Kalender synchronisieren</span>
+                      <Calendar className="h-4 w-4 text-[var(--klard-teal-d)]" />
+                      <span className="font-serif text-base font-semibold text-foreground">Kalender synchronisieren</span>
                     </div>
-                    <p className="text-xs text-muted-foreground mb-2">
+                    <p className="text-xs text-[var(--klard-mid)] mb-2 leading-relaxed">
                       Abonnieren Sie diesen iCal-Link in Apple Calendar, Google Calendar oder Outlook, um alle bestätigten Buchungen automatisch in Ihrem Kalender zu sehen.
                     </p>
-                    <code className="text-xs bg-background px-2 py-1 rounded border border-border block truncate font-mono">{calendarFeedUrl}</code>
+                    <code className="text-xs bg-white px-2 py-1.5 rounded border border-border block truncate font-mono">{calendarFeedUrl}</code>
                   </div>
-                  <Button size="sm" variant="outline" onClick={copyCalendarUrl} className="gap-1.5 shrink-0" data-testid="button-copy-calendar">
+                  <Button size="sm" variant="outline" onClick={copyCalendarUrl} className="gap-1.5 shrink-0 rounded-full border-[1.5px]" data-testid="button-copy-calendar">
                     <Copy className="h-3.5 w-3.5" /> Link kopieren
                   </Button>
                 </div>
@@ -203,18 +203,18 @@ export default function Dashboard() {
             </Card>
           )
         ) : (
-          <Card className="mb-6 border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10">
+          <Card className="mb-6 rounded-[20px] border-[1.5px] border-[var(--klard-gold-l)] bg-gradient-to-r from-[var(--klard-gold-l)]/40 to-amber-50 shadow-sm">
             <CardContent className="p-5 flex items-start justify-between gap-4 flex-col sm:flex-row">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1.5">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  <span className="font-semibold text-sm text-foreground">Mehr Mandanten mit Premium</span>
+                  <Sparkles className="h-4 w-4 text-[var(--klard-gold)]" />
+                  <span className="font-serif text-base font-semibold text-foreground">Mehr Mandanten mit Premium</span>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Premium-Berater erhalten priorisierte Suchplatzierung, Kalendersynchronisierung, AI-Tools und 4 % statt 9 % Provision — ab 89 €/Monat.
+                <p className="text-sm text-[var(--klard-mid)] leading-relaxed">
+                  Premium-Berater erhalten priorisierte Suchplatzierung, Kalendersynchronisierung, KI-Tools und 4 % statt 9 % Provision — ab 89 €/Monat.
                 </p>
               </div>
-              <Button size="sm" className="gap-1.5 shrink-0" onClick={() => setLocation("/pricing")} data-testid="button-upgrade-dashboard">
+              <Button size="sm" className="gap-1.5 shrink-0 rounded-full bg-[var(--klard-gold)] hover:bg-[#92400E] text-white" onClick={() => setLocation("/pricing")} data-testid="button-upgrade-dashboard">
                 <Crown className="h-3.5 w-3.5" /> Upgrade auf Premium
               </Button>
             </CardContent>
@@ -223,24 +223,29 @@ export default function Dashboard() {
 
         {/* Quick Actions */}
         <div className="grid sm:grid-cols-3 gap-3 mb-8">
-          <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => setLocation("/provider/services")} data-testid="button-manage-services">
-            <PlusCircle className="h-5 w-5" />
-            <span className="text-sm">Leistungen verwalten</span>
-          </Button>
-          <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => setLocation("/provider/availability")} data-testid="button-add-slots">
-            <Clock className="h-5 w-5" />
-            <span className="text-sm">Termine hinzufugen</span>
-          </Button>
-          <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => profile && setLocation(`/providers/${profile.id}`)} data-testid="button-view-profile">
-            <Users className="h-5 w-5" />
-            <span className="text-sm">Offentliches Profil</span>
-          </Button>
+          {[
+            { icon: PlusCircle, label: "Leistungen verwalten", to: "/provider/services", testId: "button-manage-services" },
+            { icon: Clock, label: "Termine hinzufügen", to: "/provider/availability", testId: "button-add-slots" },
+            { icon: Users, label: "Öffentliches Profil", to: profile ? `/providers/${profile.id}` : "#", testId: "button-view-profile" },
+          ].map(({ icon: Icon, label, to, testId }) => (
+            <button
+              key={testId}
+              onClick={() => setLocation(to)}
+              data-testid={testId}
+              className="bg-white border-[1.5px] border-border rounded-[16px] py-5 px-4 flex flex-col items-center gap-2 hover:border-primary hover:-translate-y-0.5 transition-all shadow-sm"
+            >
+              <div className="p-2.5 rounded-full bg-[var(--klard-teal-l)]">
+                <Icon className="h-5 w-5 text-[var(--klard-teal-d)]" />
+              </div>
+              <span className="text-sm font-semibold text-foreground">{label}</span>
+            </button>
+          ))}
         </div>
 
         {/* Recent Bookings */}
-        <Card>
+        <Card className="rounded-[20px] border-[1.5px] shadow-sm">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Buchungen</CardTitle>
+            <CardTitle className="font-serif text-lg font-semibold">Buchungen</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
             {bookingsLoading ? (
@@ -283,17 +288,17 @@ export default function Dashboard() {
                         <td className="py-3 pl-4">
                           {booking.status === "pending" && (
                             <div className="flex gap-1">
-                              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleStatusChange(booking.id, "confirmed")} data-testid={`button-confirm-${booking.id}`}>
-                                Bestatigen
+                              <Button size="sm" variant="outline" className="h-7 text-xs rounded-full border-[1.5px]" onClick={() => handleStatusChange(booking.id, "confirmed")} data-testid={`button-confirm-${booking.id}`}>
+                                Bestätigen
                               </Button>
-                              <Button size="sm" variant="ghost" className="h-7 text-xs text-destructive" onClick={() => handleStatusChange(booking.id, "cancelled")} data-testid={`button-cancel-${booking.id}`}>
+                              <Button size="sm" variant="ghost" className="h-7 text-xs text-destructive rounded-full" onClick={() => handleStatusChange(booking.id, "cancelled")} data-testid={`button-cancel-${booking.id}`}>
                                 Ablehnen
                               </Button>
                             </div>
                           )}
                           {booking.status === "confirmed" && (
-                            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleStatusChange(booking.id, "completed")} data-testid={`button-complete-${booking.id}`}>
-                              Abschliessen
+                            <Button size="sm" variant="outline" className="h-7 text-xs rounded-full border-[1.5px]" onClick={() => handleStatusChange(booking.id, "completed")} data-testid={`button-complete-${booking.id}`}>
+                              Abschließen
                             </Button>
                           )}
                         </td>

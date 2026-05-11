@@ -67,34 +67,35 @@ export default function BookingConfirmation() {
 
   if (confirmed) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-[var(--klard-bg)]">
         <Navbar />
         <div className="max-w-lg mx-auto px-4 sm:px-6 py-20 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-6">
-            <CheckCircle className="h-8 w-8 text-primary" />
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-[var(--klard-green-l)] mb-6 ring-8 ring-[var(--klard-green-l)]/40">
+            <CheckCircle className="h-10 w-10 text-[var(--klard-green)]" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground mb-3">Buchung bestätigt!</h1>
-          <p className="text-muted-foreground mb-6">
-            Ihre Buchung bei <strong>{provider?.displayName}</strong> wurde erfolgreich übermittelt.
-            Sie erhalten in Kürze eine Bestätigung.
+          <h1 className="font-serif text-3xl font-semibold text-foreground mb-3 tracking-tight">Buchung bestätigt</h1>
+          <p className="text-[var(--klard-mid)] mb-6 leading-relaxed">
+            Ihre Buchung bei <strong className="text-foreground">{provider?.displayName}</strong> wurde erfolgreich übermittelt.
+            Sie erhalten in Kürze eine Bestätigungs-E-Mail.
           </p>
           {provider?.requiresDirectBilling && (
-            <p className="text-sm text-muted-foreground mb-6 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-md p-3">
-              Die Abrechnung erfolgt direkt mit der Kanzlei nach RVG/StBVV.
-            </p>
+            <div className="text-sm mb-6 bg-gradient-to-br from-[#EFF6FF] to-[var(--klard-teal-p)] border border-[#BAE6FD] rounded-xl p-3.5 text-left">
+              <strong className="text-[var(--klard-teal-d)]">RVG / StBVV-Hinweis:</strong>
+              <span className="text-[var(--klard-slate)]"> Die Abrechnung erfolgt direkt mit der Kanzlei nach gesetzlichen Vorgaben.</span>
+            </div>
           )}
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             {bookingId && (
               <a href={getGetBookingCalendarFileUrl(bookingId)} download data-testid="link-ics-confirmation">
-                <Button variant="outline" className="gap-1.5">
-                  <Download className="h-4 w-4" /> Zum Kalender hinzufügen
+                <Button variant="outline" className="gap-1.5 rounded-full border-[1.5px]">
+                  <Download className="h-4 w-4" /> Zum Kalender
                 </Button>
               </a>
             )}
-            <Button onClick={() => setLocation("/bookings")} data-testid="button-my-bookings">
+            <Button onClick={() => setLocation("/bookings")} className="rounded-full" data-testid="button-my-bookings">
               Meine Buchungen
             </Button>
-            <Button variant="outline" onClick={() => setLocation("/")} data-testid="button-home">
+            <Button variant="outline" onClick={() => setLocation("/")} className="rounded-full border-[1.5px]" data-testid="button-home">
               Zur Startseite
             </Button>
           </div>
@@ -104,23 +105,23 @@ export default function BookingConfirmation() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[var(--klard-bg)]">
       <Navbar />
       <div className="max-w-lg mx-auto px-4 sm:px-6 py-10">
-        <h1 className="text-2xl font-bold text-foreground mb-6">Buchung bestatigen</h1>
+        <h1 className="font-serif text-3xl font-semibold text-foreground mb-6 tracking-tight">Buchung bestätigen</h1>
 
         {isLoading ? (
-          <Skeleton className="h-64 rounded-xl" />
+          <Skeleton className="h-64 rounded-[20px]" />
         ) : (
-          <Card>
+          <Card className="rounded-[20px] border-[1.5px] shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Buchungsdetails</CardTitle>
             </CardHeader>
             <CardContent className="pt-0 space-y-4">
               <div className="space-y-3 text-sm">
                 <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <span className="text-primary font-semibold text-xs">{provider?.displayName.charAt(0)}</span>
+                  <div className="w-11 h-11 rounded-[12px] bg-gradient-to-br from-[var(--klard-teal-l)] to-[var(--klard-teal-p)] flex items-center justify-center shrink-0 border border-border">
+                    <span className="text-[var(--klard-teal-d)] font-bold text-sm">{provider?.displayName.charAt(0)}</span>
                   </div>
                   <div>
                     <p className="font-semibold text-foreground">{provider?.displayName}</p>
@@ -173,7 +174,7 @@ export default function BookingConfirmation() {
                   Anmerkungen (optional)
                 </label>
                 <Textarea
-                  placeholder="Besondere Wunsche oder Informationen fur den Berater..."
+                  placeholder="Besondere Wünsche oder Informationen für den Berater …"
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
                   rows={3}
@@ -181,17 +182,17 @@ export default function BookingConfirmation() {
                 />
               </div>
 
-              <div className="text-xs text-muted-foreground bg-muted/40 rounded-lg p-3">
-                Mit der Buchung bestatigen Sie, dass Sie die Nutzungsbedingungen von Klard gelesen und akzeptiert haben.
+              <div className="text-xs text-[var(--klard-mid)] bg-[var(--klard-bg)] border border-border rounded-xl p-3">
+                Mit der Buchung bestätigen Sie, dass Sie die Nutzungsbedingungen von Klard gelesen und akzeptiert haben.
               </div>
 
               <Button
-                className="w-full"
+                className="w-full h-11 rounded-full font-bold"
                 onClick={handleConfirm}
                 disabled={createBooking.isPending}
                 data-testid="button-confirm-booking"
               >
-                {createBooking.isPending ? "Buchung wird bestatigt..." : "Buchung jetzt bestatigen"}
+                {createBooking.isPending ? "Buchung wird bestätigt …" : "Buchung jetzt bestätigen"}
               </Button>
             </CardContent>
           </Card>

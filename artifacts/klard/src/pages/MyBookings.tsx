@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "Ausstehend",
-  confirmed: "Bestatigt",
+  confirmed: "Bestätigt",
   cancelled: "Storniert",
   completed: "Abgeschlossen",
 };
@@ -75,12 +75,12 @@ export default function MyBookings() {
 
   function BookingCard({ booking }: { booking: typeof bookings[0] }) {
     return (
-      <Card key={booking.id} className="hover:shadow-sm transition-shadow" data-testid={`card-booking-${booking.id}`}>
+      <Card key={booking.id} className="rounded-[20px] border-[1.5px] shadow-sm hover:border-primary hover:shadow-md hover:-translate-y-0.5 transition-all" data-testid={`card-booking-${booking.id}`}>
         <CardContent className="p-5">
           <div className="flex items-start justify-between gap-3 mb-3">
-            <div>
-              <p className="font-semibold text-foreground">{booking.serviceName ?? "Leistung"}</p>
-              <p className="text-sm text-muted-foreground">{booking.providerName}</p>
+            <div className="min-w-0">
+              <p className="font-serif text-lg font-semibold text-foreground tracking-tight">{booking.serviceName ?? "Leistung"}</p>
+              <p className="text-sm text-[var(--klard-mid)]">{booking.providerName}</p>
             </div>
             <Badge variant={STATUS_VARIANTS[booking.status] ?? "outline"} data-testid={`status-booking-${booking.id}`}>
               {STATUS_LABELS[booking.status] ?? booking.status}
@@ -98,30 +98,30 @@ export default function MyBookings() {
             </div>
             <div className="mt-3 pt-3 border-t border-border space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <span className="font-semibold text-foreground">
+                <span className="font-serif text-xl font-semibold text-[var(--klard-teal-d)]">
                   {booking.totalPrice === 0 ? "Kostenlos" : `${booking.totalPrice} €`}
                 </span>
                 <div className="flex items-center gap-1.5">
                   {booking.paymentRequired && booking.paymentStatus === "pending" && booking.status !== "cancelled" && (
-                    <Badge variant="secondary" className="text-xs">Zahlung offen</Badge>
+                    <span className="inline-flex items-center text-[0.7rem] font-bold px-2 py-0.5 rounded-full bg-[var(--klard-gold-l)] text-[var(--klard-gold)]">Zahlung offen</span>
                   )}
                   {booking.paymentStatus === "paid" && (
-                    <Badge className="text-xs bg-green-600 hover:bg-green-600">Bezahlt</Badge>
+                    <span className="inline-flex items-center text-[0.7rem] font-bold px-2 py-0.5 rounded-full bg-[var(--klard-green-l)] text-[var(--klard-green)]">Bezahlt</span>
                   )}
                   {!booking.paymentRequired && booking.totalPrice > 0 && (
-                    <Badge variant="outline" className="text-xs">Direkt mit Berater</Badge>
+                    <span className="inline-flex items-center text-[0.7rem] font-bold px-2 py-0.5 rounded-full bg-[var(--klard-teal-l)] text-[var(--klard-teal-d)]">Direkt mit Berater</span>
                   )}
                 </div>
               </div>
               <div className="flex items-center gap-1.5 flex-wrap">
                 {booking.paymentRequired && booking.paymentStatus === "pending" && booking.status !== "cancelled" && (
-                  <Button size="sm" className="gap-1.5 h-8" onClick={() => handlePay(booking.id)} data-testid={`button-pay-${booking.id}`}>
+                  <Button size="sm" className="gap-1.5 h-8 rounded-full" onClick={() => handlePay(booking.id)} data-testid={`button-pay-${booking.id}`}>
                     <CreditCard className="h-3.5 w-3.5" /> Jetzt bezahlen
                   </Button>
                 )}
                 {booking.status === "confirmed" && (
                   <a href={getGetBookingCalendarFileUrl(booking.id)} download data-testid={`link-ics-${booking.id}`}>
-                    <Button size="sm" variant="outline" className="gap-1.5 h-8">
+                    <Button size="sm" variant="outline" className="gap-1.5 h-8 rounded-full border-[1.5px]">
                       <Download className="h-3.5 w-3.5" /> Zum Kalender
                     </Button>
                   </a>
@@ -130,7 +130,7 @@ export default function MyBookings() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="gap-1.5 h-8"
+                    className="gap-1.5 h-8 rounded-full border-[1.5px]"
                     onClick={() => { setReviewBookingId(booking.id); setReviewProviderId(booking.providerId); }}
                     data-testid={`button-review-${booking.id}`}
                   >
@@ -141,7 +141,7 @@ export default function MyBookings() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-8"
+                    className="h-8 rounded-full border-[1.5px]"
                     onClick={() => setLocation(`/providers/${booking.providerId}`)}
                     data-testid={`button-provider-${booking.id}`}
                   >
@@ -157,21 +157,21 @@ export default function MyBookings() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[var(--klard-bg)]">
       <Navbar />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
-        <h1 className="text-2xl font-bold text-foreground mb-8">Meine Buchungen</h1>
+        <h1 className="font-serif text-3xl font-semibold text-foreground mb-8 tracking-tight">Meine Buchungen</h1>
 
         {isLoading ? (
           <div className="space-y-4">
             {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-36 rounded-xl" />)}
           </div>
         ) : bookings.length === 0 ? (
-          <div className="text-center py-20 text-muted-foreground">
-            <Calendar className="h-12 w-12 mx-auto mb-4 opacity-30" />
-            <p className="font-medium">Keine Buchungen vorhanden</p>
+          <div className="bg-white border border-border rounded-[20px] py-16 px-6 text-center text-muted-foreground">
+            <Calendar className="h-12 w-12 mx-auto mb-3 opacity-30" />
+            <p className="font-semibold text-foreground">Keine Buchungen vorhanden</p>
             <p className="text-sm mt-1">Buchen Sie Ihren ersten Berater.</p>
-            <Button className="mt-4" onClick={() => setLocation("/search")} data-testid="button-find-providers">
+            <Button className="mt-5 rounded-full" onClick={() => setLocation("/search")} data-testid="button-find-providers">
               Berater finden
             </Button>
           </div>
