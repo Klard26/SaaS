@@ -25,6 +25,8 @@ const CATEGORIES: Array<{ name: string; slug: string; icon: string; requiresDire
   { name: "Business- & Life-Coach", slug: "business-life-coach", icon: "sparkles" },
   { name: "Mediator", slug: "mediator", icon: "handshake" },
   { name: "Psychologische Beratung", slug: "psychologische-beratung", icon: "brain" },
+  { name: "Verkehrspsychologie", slug: "verkehrspsychologie", icon: "car" },
+  { name: "MPU-Beratung", slug: "mpu-beratung", icon: "clipboard-list" },
   { name: "Ernährungsberater", slug: "ernaehrungsberater", icon: "apple" },
   { name: "Gesundheitscoach", slug: "gesundheitscoach", icon: "heart-pulse" },
   { name: "Energieberater", slug: "energieberater", icon: "zap" },
