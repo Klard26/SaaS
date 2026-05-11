@@ -11,6 +11,13 @@ import {
 } from "@workspace/api-zod";
 import { eq, and } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
+import {
+  sendBookingConfirmationToCustomer,
+  sendNewBookingToProvider,
+  sendBookingCancellation,
+  type BookingEmailContext,
+} from "../lib/email";
+import { buildIcs } from "../lib/icsBuilder";
 
 const router: IRouter = Router();
 
@@ -119,6 +126,36 @@ router.post("/bookings", async (req, res): Promise<void> => {
 
       return b;
     });
+
+    if (booking) {
+      const ctx: BookingEmailContext = {
+        bookingId: booking.id,
+        scheduledAt: booking.scheduledAt,
+        serviceName: booking.serviceName,
+        providerName: booking.providerName,
+        customerName: booking.customerName,
+        customerEmail: booking.customerEmail,
+        providerEmail: provider.email,
+        totalPrice: booking.totalPrice,
+        paymentRequired: booking.paymentRequired,
+        notes: booking.notes,
+      };
+      const ics = buildIcs(
+        [
+          {
+            uid: `booking-${booking.id}@klard`,
+            summary: `Termin: ${booking.serviceName} bei ${booking.providerName}`,
+            description: `Buchung #${booking.id}\nPreis: ${booking.totalPrice} EUR`,
+            start: booking.scheduledAt,
+            durationMinutes: service.durationMinutes ?? 60,
+            location: provider.address ?? `${provider.zip ?? ""} ${provider.city}`.trim(),
+          },
+        ],
+        `Klard Termin #${booking.id}`,
+      );
+      void sendBookingConfirmationToCustomer(ctx, ics);
+      void sendNewBookingToProvider(ctx);
+    }
 
     res.status(201).json(booking);
   } catch (err) {
@@ -260,6 +297,21 @@ router.patch("/bookings/:id/status", async (req, res): Promise<void> => {
         .update(timeSlotsTable)
         .set({ isAvailable: true })
         .where(eq(timeSlotsTable.id, updated.slotId));
+
+      void sendBookingCancellation(
+        {
+          bookingId: updated.id,
+          scheduledAt: updated.scheduledAt,
+          serviceName: updated.serviceName,
+          providerName: updated.providerName,
+          customerName: updated.customerName,
+          customerEmail: updated.customerEmail,
+          providerEmail: providerRow?.email ?? null,
+          totalPrice: updated.totalPrice,
+          paymentRequired: updated.paymentRequired,
+        },
+        isProviderOwner ? "provider" : "customer",
+      );
     }
 
     res.json(updated);

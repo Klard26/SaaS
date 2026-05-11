@@ -4,6 +4,7 @@ import { db } from "@workspace/db";
 import { providersTable, bookingsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { getUncachableStripeClient } from "../lib/stripeClient";
+import { sendPaymentConfirmation } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -66,10 +67,24 @@ router.post(
           } else if (kind === "booking") {
             const bookingId = Number(session.metadata?.["bookingId"]);
             if (Number.isFinite(bookingId) && session.payment_status === "paid") {
-              await db
+              const [updated] = await db
                 .update(bookingsTable)
                 .set({ paymentStatus: "paid" })
-                .where(eq(bookingsTable.id, bookingId));
+                .where(eq(bookingsTable.id, bookingId))
+                .returning();
+              if (updated) {
+                void sendPaymentConfirmation({
+                  bookingId: updated.id,
+                  scheduledAt: updated.scheduledAt,
+                  serviceName: updated.serviceName,
+                  providerName: updated.providerName,
+                  customerName: updated.customerName,
+                  customerEmail: updated.customerEmail,
+                  providerEmail: null,
+                  totalPrice: updated.totalPrice,
+                  paymentRequired: updated.paymentRequired,
+                });
+              }
             }
           }
           break;

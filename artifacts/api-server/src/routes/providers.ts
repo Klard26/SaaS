@@ -12,6 +12,7 @@ import { eq, ilike, or, and, desc, type SQL, sql } from "drizzle-orm";
 import { getAuth, clerkClient } from "@clerk/express";
 import { randomBytes } from "node:crypto";
 import { slugify } from "../lib/slugify";
+import { sendProviderWelcome } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -157,6 +158,11 @@ router.post("/providers", async (req, res): Promise<void> => {
         icalToken: randomBytes(24).toString("hex"),
       })
       .returning();
+
+    if (provider && email) {
+      void sendProviderWelcome({ email, displayName: provider.displayName });
+    }
+
     res.status(201).json(provider);
   } catch (err) {
     req.log.error({ err }, "Failed to create provider");

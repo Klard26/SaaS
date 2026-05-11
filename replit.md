@@ -21,6 +21,7 @@ Klard is a Doctolib-style booking marketplace for German consultants (Berater) �
 - Auth: Clerk (managed by Replit) via `@clerk/react` + `@clerk/express`
 - AI: Anthropic Claude (via Replit AI Integrations proxy) for AI offer generation
 - Payments: Stripe (via Replit-managed connector) for premium subscriptions + booking payments
+- Email: Resend (via Replit-managed connector) for transactional emails
 - Calendar: hand-rolled iCal feed builder (RFC 5545), no external library
 - API codegen: Orval (from OpenAPI spec → React Query hooks + Zod schemas)
 - Build: esbuild (CJS bundle)
@@ -71,6 +72,18 @@ Klard is a Doctolib-style booking marketplace for German consultants (Berater) �
 - `PATCH /bookings/:id/status` — customer can only `cancelled`; provider owner can set any status; otherwise 403.
 - `GET /providers/:id/bookings` — only the provider owner; otherwise 403.
 - Booking creation validates `service.providerId === providerId` and `slot.providerId === providerId` to prevent cross-provider tampering.
+
+## Email Notifications
+
+- **Provider**: Resend via Replit connector. Client in `artifacts/api-server/src/lib/resendClient.ts` (never cached). Templates in `artifacts/api-server/src/lib/email.ts`.
+- **From address**: connector's `from_email`, fallback `RESEND_FROM_EMAIL`, default `Klard <onboarding@resend.dev>`. To send from `noreply@klard.de`, verify the domain in Resend (DNS records) and set the verified address as `RESEND_FROM_EMAIL`.
+- **Triggers**:
+  - Welcome email on `POST /providers` (provider's Clerk email).
+  - Booking confirmation to customer (with `.ics` attachment) + new-booking notice to provider on `POST /bookings`.
+  - Cancellation to both parties on `PATCH /bookings/:id/status` → `cancelled`.
+  - Payment confirmation to customer in Stripe webhook on `checkout.session.completed` (kind=booking, status=paid).
+  - 24h reminder via in-process scheduler (`reminderScheduler.ts`): polls every 15 min for bookings 24–25h ahead with status `pending`/`confirmed` and `reminderSentAt IS NULL`; marks `reminderSentAt` after sending.
+- All sends are fire-and-forget (`void`) so a Resend outage never blocks the API response. Failures are logged.
 
 ## Calendar Sync (iCal)
 
