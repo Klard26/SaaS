@@ -1,5 +1,6 @@
 import { pgTable, text, serial, integer, boolean, real, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
+import { sql } from "drizzle-orm";
 import { z } from "zod/v4";
 
 export const providersTable = pgTable("providers", {
@@ -18,6 +19,11 @@ export const providersTable = pgTable("providers", {
   avatarUrl: text("avatar_url"),
   logoUrl: text("logo_url"),
   yearsExperience: integer("years_experience"),
+  companyLegalName: text("company_legal_name"),
+  taxId: text("tax_id"),
+  responseTime: text("response_time"),
+  consultationMode: text("consultation_mode").notNull().default("both"),
+  certificates: text("certificates").array().notNull().default(sql`'{}'::text[]`),
   rating: real("rating").notNull().default(0),
   reviewCount: integer("review_count").notNull().default(0),
   verified: boolean("verified").notNull().default(false),

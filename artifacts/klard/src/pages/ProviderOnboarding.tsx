@@ -19,6 +19,8 @@ import { useFileUploader, publicUrlForObjectPath } from "@/lib/upload";
 
 const schema = z.object({
   displayName: z.string().min(2, "Mindestens 2 Zeichen"),
+  companyLegalName: z.string().optional(),
+  taxId: z.string().optional(),
   bio: z.string().min(20, "Mindestens 20 Zeichen"),
   category: z.string().min(1, "Bitte wählen Sie einen Fachbereich"),
   yearsExperience: z.coerce.number().int().min(0).max(80).optional(),
@@ -28,6 +30,9 @@ const schema = z.object({
   phone: z.string().optional(),
   website: z.string().optional(),
   logoUrl: z.string().optional(),
+  consultationMode: z.enum(["both", "online", "in-person"]).default("both"),
+  responseTime: z.string().optional(),
+  certificatesText: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -45,8 +50,9 @@ export default function ProviderOnboarding() {
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
-      displayName: "", bio: "", category: "", city: "", zip: "",
+      displayName: "", companyLegalName: "", taxId: "", bio: "", category: "", city: "", zip: "",
       address: "", phone: "", website: "", logoUrl: "",
+      consultationMode: "both", responseTime: "Innerhalb 24 Stunden", certificatesText: "",
     },
   });
 
@@ -70,7 +76,12 @@ export default function ProviderOnboarding() {
 
   async function onSubmit(values: FormData) {
     try {
-      await createProvider.mutateAsync({ data: values });
+      const { certificatesText, ...rest } = values;
+      const certificates = (certificatesText ?? "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      await createProvider.mutateAsync({ data: { ...rest, certificates } });
       qc.invalidateQueries({ queryKey: getGetMyProviderProfileQueryKey() });
       toast({ title: "Willkommen!", description: "Ihr Berater-Profil wurde erstellt." });
       setLocation("/dashboard");
@@ -232,6 +243,87 @@ export default function ProviderOnboarding() {
                       <FormMessage />
                     </FormItem>
                   )} />
+                </div>
+
+                <div className="pt-4 border-t border-border">
+                  <h3 className="text-sm font-semibold text-foreground mb-1">Unternehmensdaten für Angebote</h3>
+                  <p className="text-xs text-muted-foreground mb-4">Diese Angaben erscheinen automatisch im KI-generierten Angebot an Ihre Mandanten.</p>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <FormField control={form.control} name="companyLegalName" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Firmenname für Rechnung (optional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="z.B. Hoffmann Steuerberatung GmbH" {...field} data-testid="input-companyLegalName" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="taxId" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Steuernummer / USt-IdNr. (optional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="z.B. DE123456789" {...field} data-testid="input-taxId" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-border">
+                  <h3 className="text-sm font-semibold text-foreground mb-1">Beratungsangebot</h3>
+                  <p className="text-xs text-muted-foreground mb-4">Wie und wie schnell beraten Sie Ihre Mandanten?</p>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <FormField control={form.control} name="consultationMode" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Beratungsform *</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-consultationMode">
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="both">Online & Vor-Ort</SelectItem>
+                            <SelectItem value="online">Nur Online</SelectItem>
+                            <SelectItem value="in-person">Nur Vor-Ort</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="responseTime" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Reaktionszeit</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-responseTime">
+                              <SelectValue placeholder="Reaktionszeit wählen" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Innerhalb 2 Stunden">Innerhalb 2 Stunden</SelectItem>
+                            <SelectItem value="Innerhalb 6 Stunden">Innerhalb 6 Stunden</SelectItem>
+                            <SelectItem value="Innerhalb 24 Stunden">Innerhalb 24 Stunden</SelectItem>
+                            <SelectItem value="Innerhalb 48 Stunden">Innerhalb 48 Stunden</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
+                  <div className="mt-4">
+                    <FormField control={form.control} name="certificatesText" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Zertifikate / Mitgliedschaften (optional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="z.B. StB-Kammer Berlin, DATEV-Mitglied, ISO 27001" {...field} data-testid="input-certificates" />
+                        </FormControl>
+                        <p className="text-xs text-muted-foreground mt-1">Mehrere Einträge mit Komma trennen.</p>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
                 </div>
 
                 <Button type="submit" className="w-full" disabled={createProvider.isPending} data-testid="button-submit-onboarding">

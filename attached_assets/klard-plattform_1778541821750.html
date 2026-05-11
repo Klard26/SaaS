@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Klard – Berater finden, Preise vergleichen, sofort buchen</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#F7F9FC; --white:#FFFFFF; --ink:#0D1117; --slate:#2D3748;
+  --mid:#4A5568; --muted:#718096; --light:#EDF2F7; --border:#E2E8F0;
+  --teal:#0891B2; --teald:#0E7490; --teall:#E0F7FA; --tealp:#F0FDFF;
+  --green:#059669; --greenl:#D1FAE5; --gold:#D97706; --goldl:#FEF3C7;
+  --red:#DC2626; --redl:#FEE2E2; --violet:#7C3AED; --violetl:#EDE9FE;
+  --sh:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+  --shm:0 4px 16px rgba(0,0,0,.08),0 2px 8px rgba(0,0,0,.04);
+  --shl:0 12px 40px rgba(0,0,0,.12),0 4px 16px rgba(0,0,0,.06);
+  --r:12px; --rs:8px; --rl:20px;
+  --sans:'Sora',system-ui,sans-serif; --serif:'Lora',Georgia,serif;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;min-height:100vh}
+
+/* NAV */
+nav{background:var(--white);border-bottom:1px solid var(--border);padding:0 32px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;box-shadow:var(--sh)}
+.nav-logo{font-family:var(--serif);font-size:1.5rem;font-weight:600;color:var(--ink);text-decoration:none}
+.nav-logo span{color:var(--teal)}
+.nav-mid{display:flex;align-items:center;flex:1;max-width:480px;margin:0 32px}
+.nsw{flex:1;display:flex;align-items:center;background:var(--light);border:1.5px solid transparent;border-radius:100px;padding:0 14px;height:38px;transition:all .2s}
+.nsw:focus-within{background:var(--white);border-color:var(--teal);box-shadow:0 0 0 3px rgba(8,145,178,.1)}
+.nsw input{flex:1;border:none;background:transparent;font-family:var(--sans);font-size:.84rem;color:var(--ink);outline:none}
+.nsw input::placeholder{color:var(--muted)}
+.nav-acts{display:flex;gap:10px;align-items:center}
+.btn-ghost{background:transparent;border:1.5px solid var(--border);color:var(--slate);font-family:var(--sans);font-size:.82rem;font-weight:600;padding:7px 16px;border-radius:100px;cursor:pointer;transition:all .2s}
+.btn-ghost:hover{border-color:var(--teal);color:var(--teal)}
+.btn-primary{background:var(--teal);border:none;color:var(--white);font-family:var(--sans);font-size:.82rem;font-weight:600;padding:8px 18px;border-radius:100px;cursor:pointer;transition:all .2s}
+.btn-primary:hover{background:var(--teald);transform:translateY(-1px)}
+
+/* HERO */
+.hero{background:linear-gradient(160deg,#0E7490 0%,#0891B2 50%,#0EA5C9 100%);padding:72px 32px 88px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Ccircle cx='20' cy='20' r='1'/%3E%3C/g%3E%3C/svg%3E")}
+.hero-tag{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.92);font-size:.72rem;font-weight:700;padding:5px 14px;border-radius:100px;letter-spacing:.5px;text-transform:uppercase;margin-bottom:22px}
+.hero-tag .dot{width:6px;height:6px;border-radius:50%;background:#fff;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.hero h1{font-family:var(--serif);font-size:clamp(2rem,5vw,3.2rem);font-weight:600;color:var(--white);line-height:1.12;letter-spacing:-.5px;margin-bottom:14px;position:relative}
+.hero h1 em{font-style:italic}
+.hero-sub{font-size:.98rem;color:rgba(255,255,255,.75);max-width:500px;margin:0 auto 44px;line-height:1.75;font-weight:300;position:relative}
+
+/* HERO SEARCH */
+.hero-search{background:var(--white);border-radius:var(--rl);padding:8px;max-width:820px;margin:0 auto;display:flex;gap:6px;align-items:center;box-shadow:var(--shl);position:relative}
+.hs-group{flex:1;display:flex;flex-direction:column;padding:6px 14px;border-right:1px solid var(--border);min-width:0}
+.hs-group:last-of-type{border-right:none}
+.hs-lbl{font-size:.62rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px}
+.hs-group input,.hs-group select{border:none;outline:none;font-family:var(--sans);font-size:.87rem;color:var(--ink);background:transparent;appearance:none;cursor:pointer;width:100%}
+.hs-group input::placeholder{color:var(--muted)}
+.hs-group select option{background:#fff}
+.btn-search{background:var(--teal);color:var(--white);border:none;border-radius:var(--r);padding:13px 26px;font-family:var(--sans);font-size:.87rem;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap;display:flex;align-items:center;gap:7px;flex-shrink:0}
+.btn-search:hover{background:var(--teald);transform:translateY(-1px)}
+
+/* HERO STATS */
+.hero-stats{display:flex;justify-content:center;gap:48px;margin-top:44px;position:relative}
+.hstat .n{font-family:var(--serif);font-size:2rem;font-weight:600;color:var(--white);display:block;line-height:1}
+.hstat .l{font-size:.72rem;color:rgba(255,255,255,.6);margin-top:4px}
+
+/* CAT PILLS */
+.cats-bar{background:var(--white);border-bottom:1px solid var(--border);padding:0 32px}
+.cats-row{display:flex;gap:8px;overflow-x:auto;padding:13px 0;scrollbar-width:none}
+.cats-row::-webkit-scrollbar{display:none}
+.cpill{display:flex;align-items:center;gap:7px;background:transparent;border:1.5px solid var(--border);color:var(--mid);font-family:var(--sans);font-size:.78rem;font-weight:500;padding:6px 14px;border-radius:100px;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0}
+.cpill:hover{border-color:var(--teal);color:var(--teal);background:var(--tealp)}
+.cpill.active{background:var(--teal);border-color:var(--teal);color:var(--white)}
+
+/* MAIN */
+.main{display:grid;grid-template-columns:284px 1fr;gap:24px;max-width:1280px;margin:0 auto;padding:28px 32px}
+
+/* SIDEBAR */
+.sidebar{display:flex;flex-direction:column;gap:14px;position:sticky;top:80px;align-self:start}
+.fcard{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:18px;box-shadow:var(--sh)}
+.fcard h3{font-size:.75rem;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.fg2{margin-bottom:13px}
+.fg2 label{display:block;font-size:.74rem;font-weight:600;color:var(--muted);margin-bottom:5px}
+.fg2 input,.fg2 select{width:100%;background:var(--light);border:1.5px solid transparent;color:var(--ink);padding:8px 11px;border-radius:var(--rs);font-family:var(--sans);font-size:.84rem;outline:none;appearance:none;transition:all .2s}
+.fg2 input:focus,.fg2 select:focus{border-color:var(--teal);background:var(--white)}
+.fchips{display:flex;flex-wrap:wrap;gap:6px}
+.fchip{background:var(--light);border:1.5px solid transparent;color:var(--mid);font-size:.73rem;font-weight:500;padding:4px 11px;border-radius:100px;cursor:pointer;transition:all .2s}
+.fchip.on{background:var(--teall);border-color:var(--teal);color:var(--teald);font-weight:600}
+.fchip:hover{border-color:var(--teal)}
+.btn-reset{width:100%;padding:8px;background:transparent;border:1.5px solid var(--border);border-radius:var(--rs);font-family:var(--sans);font-size:.78rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all .2s;margin-top:4px}
+.btn-reset:hover{border-color:var(--red);color:var(--red)}
+
+/* RESULTS */
+.results{min-width:0}
+.res-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.res-head h2{font-size:1.02rem;font-weight:700}
+.res-head h2 span{color:var(--muted);font-weight:400;font-size:.88rem}
+.sort-sel{background:var(--white);border:1.5px solid var(--border);color:var(--ink);padding:6px 10px;border-radius:var(--rs);font-family:var(--sans);font-size:.78rem;outline:none;cursor:pointer}
+
+/* PROVIDER CARDS */
+.plist{display:flex;flex-direction:column;gap:16px}
+.pcard{background:var(--white);border:1.5px solid var(--border);border-radius:var(--rl);overflow:hidden;box-shadow:var(--sh);transition:all .25s;display:grid;grid-template-columns:1fr 210px}
+.pcard:hover{border-color:var(--teal);box-shadow:var(--shm);transform:translateY(-2px)}
+.pc-main{padding:22px 22px 18px}
+.pc-top{display:flex;gap:14px;margin-bottom:14px}
+.pc-avatar{width:58px;height:58px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:1.55rem;flex-shrink:0}
+.pc-info{flex:1;min-width:0}
+.pc-name-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:3px}
+.pc-name{font-size:.97rem;font-weight:700}
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:.66rem;font-weight:700;padding:2px 7px;border-radius:100px}
+.badge-v{background:var(--greenl);color:var(--green)}
+.badge-t{background:var(--goldl);color:var(--gold)}
+.badge-f{background:var(--teall);color:var(--teald)}
+.pc-cat{font-size:.76rem;color:var(--muted);margin-bottom:5px}
+.stars{color:#F59E0B;font-size:.8rem;letter-spacing:-1px}
+.rat-val{font-size:.8rem;font-weight:700}
+.rat-cnt{font-size:.73rem;color:var(--muted)}
+.pc-meta{display:flex;gap:14px;margin-bottom:14px;font-size:.76rem;color:var(--muted);flex-wrap:wrap}
+.pc-meta span{display:flex;align-items:center;gap:3px}
+
+/* Availability slots */
+.avail-lbl{font-size:.69rem;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px}
+.avail-row{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none}
+.avail-row::-webkit-scrollbar{display:none}
+.aslot{flex-shrink:0;padding:5px 11px;border-radius:var(--rs);font-size:.73rem;font-weight:600;cursor:pointer;transition:all .2s;border:1.5px solid var(--border);color:var(--teald);background:var(--tealp)}
+.aslot:hover,.aslot.picked{background:var(--teal);color:var(--white);border-color:var(--teal)}
+
+/* Services */
+.svc-lbl{font-size:.69rem;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px}
+.svcs{display:flex;flex-direction:column;gap:5px}
+.srow{display:flex;justify-content:space-between;align-items:center;padding:8px 11px;background:var(--bg);border-radius:var(--rs);cursor:pointer;transition:all .2s;border:1.5px solid transparent}
+.srow:hover{background:var(--tealp);border-color:rgba(8,145,178,.2)}
+.srow.sel{background:var(--tealp);border-color:var(--teal)}
+.svc-name{font-size:.8rem;font-weight:500}
+.svc-dur{font-size:.7rem;color:var(--muted);margin-top:1px}
+.svc-price{font-family:var(--serif);font-size:.97rem;font-weight:600;color:var(--teald);white-space:nowrap}
+
+/* Card sidebar */
+.pc-side{padding:18px;border-left:1px solid var(--border);background:var(--bg);display:flex;flex-direction:column;gap:10px}
+.loc-bl{font-size:.76rem;color:var(--muted);line-height:1.55}
+.loc-bl strong{color:var(--ink);display:block;margin-bottom:2px;font-size:.79rem}
+.exp-box{background:var(--white);border:1px solid var(--border);border-radius:var(--rs);padding:9px 11px;text-align:center}
+.exp-n{font-family:var(--serif);font-size:1.45rem;color:var(--teald);font-weight:600;line-height:1}
+.exp-l{font-size:.66rem;color:var(--muted);margin-top:2px}
+.certs{display:flex;flex-wrap:wrap;gap:4px}
+.cert{background:var(--white);border:1px solid var(--border);color:var(--mid);font-size:.64rem;font-weight:600;padding:2px 6px;border-radius:4px}
+.rt{font-size:.7rem;color:var(--green);font-weight:600;display:flex;align-items:center;gap:4px;justify-content:center}
+.btn-book{width:100%;padding:10px;background:var(--teal);color:var(--white);border:none;border-radius:var(--rs);font-family:var(--sans);font-size:.83rem;font-weight:700;cursor:pointer;transition:all .2s;margin-top:auto}
+.btn-book:hover{background:var(--teald)}
+.btn-ai{width:100%;padding:8px;background:transparent;border:1.5px solid var(--violet);color:var(--violet);border-radius:var(--rs);font-family:var(--sans);font-size:.78rem;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-ai:hover{background:var(--violetl)}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(13,17,23,.6);z-index:1000;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.overlay.open{display:flex}
+.modal{background:var(--white);border-radius:var(--rl);width:100%;max-width:680px;max-height:92vh;overflow-y:auto;box-shadow:var(--shl);animation:mIn .28s cubic-bezier(.34,1.56,.64,1)}
+@keyframes mIn{from{opacity:0;transform:scale(.94) translateY(16px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.mhead{padding:22px 26px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start}
+.mhead h2{font-family:var(--serif);font-size:1.28rem;color:var(--ink)}
+.mhead p{font-size:.78rem;color:var(--muted);margin-top:3px}
+.mclose{background:var(--light);border:none;color:var(--mid);width:30px;height:30px;border-radius:50%;font-size:.95rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.mclose:hover{background:var(--redl);color:var(--red)}
+.mbody{padding:22px 26px}
+
+/* Step dots */
+.sdots{display:flex;gap:7px;margin-bottom:26px}
+.sdot{flex:1;height:4px;border-radius:2px;background:var(--border);transition:background .3s}
+.sdot.done{background:var(--green)}.sdot.active{background:var(--teal)}
+
+/* Calendar */
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}
+.cal-month{font-size:.93rem;font-weight:700}
+.cal-nav{background:var(--light);border:none;width:28px;height:28px;border-radius:var(--rs);cursor:pointer;font-size:.88rem;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.cal-nav:hover{background:var(--teall);color:var(--teald)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cdl{text-align:center;font-size:.65rem;font-weight:700;color:var(--muted);padding-bottom:7px}
+.cday{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:var(--rs);font-size:.8rem;cursor:pointer;transition:all .2s;border:1.5px solid transparent;flex-direction:column;gap:1px}
+.cday:hover:not(.empty):not(.past){background:var(--tealp);border-color:var(--teal);color:var(--teald)}
+.cday.has-slots{font-weight:600}
+.cday.has-slots::after{content:'';display:block;width:4px;height:4px;border-radius:50%;background:var(--teal)}
+.cday.selected{background:var(--teal);color:var(--white);border-color:var(--teal);font-weight:700}
+.cday.selected::after{background:rgba(255,255,255,.6)}
+.cday.today{border-color:var(--teal);color:var(--teald);font-weight:700}
+.cday.past{color:var(--border);cursor:not-allowed}
+.cday.empty{cursor:default}
+.tslots{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:18px}
+.tslot{padding:8px 5px;text-align:center;border-radius:var(--rs);border:1.5px solid var(--border);font-size:.78rem;font-weight:600;color:var(--teald);cursor:pointer;transition:all .2s;background:var(--tealp)}
+.tslot:hover,.tslot.picked{background:var(--teal);color:var(--white);border-color:var(--teal)}
+.tslot.busy{background:var(--light);color:var(--muted);cursor:not-allowed;border-color:transparent;font-weight:400}
+
+/* Booking form */
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.fg3{margin-bottom:14px}
+.fg3 label{display:block;font-size:.72rem;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.fg3 input,.fg3 select,.fg3 textarea{width:100%;background:var(--bg);border:1.5px solid var(--border);color:var(--ink);padding:10px 13px;border-radius:var(--rs);font-family:var(--sans);font-size:.86rem;outline:none;transition:all .2s}
+.fg3 input:focus,.fg3 select:focus,.fg3 textarea:focus{border-color:var(--teal);background:var(--white);box-shadow:0 0 0 3px rgba(8,145,178,.08)}
+.fg3 textarea{min-height:75px;resize:vertical}
+.fg3 input::placeholder,.fg3 textarea::placeholder{color:var(--muted)}
+
+/* Doctolib notice */
+.doc-notice{background:linear-gradient(135deg,#EFF6FF,#E0F7FA);border:1px solid #BAE6FD;border-radius:var(--r);padding:13px 15px;margin-bottom:18px;display:flex;gap:11px;align-items:flex-start}
+.doc-notice .ni{font-size:1.25rem;flex-shrink:0}
+.doc-notice .nt{font-size:.8rem;color:var(--slate);line-height:1.55}
+.doc-notice .nt strong{color:var(--teald)}
+
+/* Summary */
+.bsummary{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:18px}
+.srow2{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:.83rem}
+.srow2 .k{color:var(--muted)}.srow2 .v{font-weight:600}
+.srow2.tot .v{font-family:var(--serif);font-size:1.05rem;color:var(--teald)}
+.sdiv{height:1px;background:var(--border);margin:7px 0}
+
+/* Modal actions */
+.macts{display:flex;gap:9px}
+.btn-mp{flex:1;padding:12px 18px;background:var(--teal);color:var(--white);border:none;border-radius:var(--rs);font-family:var(--sans);font-size:.86rem;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-mp:hover{background:var(--teald)}
+.btn-ms{padding:12px 18px;background:transparent;color:var(--mid);border:1.5px solid var(--border);border-radius:var(--rs);font-family:var(--sans);font-size:.86rem;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-ms:hover{border-color:var(--muted)}
+
+/* Success */
+.success{text-align:center;padding:26px 0;display:none}
+.success.show{display:block}
+.success .si{font-size:3.2rem;margin-bottom:14px}
+.success h3{font-family:var(--serif);font-size:1.45rem;color:var(--ink);margin-bottom:9px}
+.success p{font-size:.86rem;color:var(--muted);line-height:1.65;max-width:380px;margin:0 auto}
+.bref{display:inline-block;background:var(--tealp);border:1.5px solid var(--teal);border-radius:var(--rs);padding:8px 22px;font-family:var(--serif);font-size:1.05rem;letter-spacing:2px;color:var(--teald);font-weight:600;margin:14px 0}
+
+/* AI Modal */
+.ai-box{background:linear-gradient(135deg,#1E1B4B,#2E1065);border-radius:var(--r);padding:16px;color:var(--white);font-size:.83rem;line-height:1.7;margin-top:14px;display:none}
+.ai-box.show{display:block}
+.ai-loader{display:flex;gap:5px;align-items:center;padding:10px 0}
+.ai-dot{width:7px;height:7px;border-radius:50%;background:rgba(167,139,250,.7);animation:dp 1.4s infinite}
+.ai-dot:nth-child(2){animation-delay:.2s}.ai-dot:nth-child(3){animation-delay:.4s}
+@keyframes dp{0%,80%,100%{transform:scale(.8);opacity:.4}40%{transform:scale(1.2);opacity:1}}
+
+/* Auth modal */
+.atabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:22px}
+.atab{flex:1;padding:10px;text-align:center;font-size:.83rem;font-weight:600;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s}
+.atab.active{color:var(--teal);border-bottom-color:var(--teal)}
+.apanel{display:none}.apanel.active{display:block}
+.reg-notice{background:linear-gradient(135deg,var(--tealp),#EFF6FF);border:1px solid #BAE6FD;border-radius:var(--rs);padding:11px 13px;font-size:.76rem;color:var(--teald);margin-bottom:16px;line-height:1.5}
+
+/* HOW IT WORKS */
+.hiw{background:var(--white);border-top:1px solid var(--border);padding:72px 32px}
+.sec-head{text-align:center;margin-bottom:52px}
+.sec-tag{display:inline-block;background:var(--teall);color:var(--teald);font-size:.7rem;font-weight:700;padding:4px 12px;border-radius:100px;margin-bottom:11px;letter-spacing:.5px}
+.sec-head h2{font-family:var(--serif);font-size:clamp(1.5rem,3vw,2.2rem);font-weight:600}
+.sec-head p{color:var(--muted);font-size:.9rem;margin-top:9px;max-width:460px;margin-left:auto;margin-right:auto;line-height:1.65}
+.steps-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:30px;max-width:920px;margin:0 auto}
+.hiw-step{text-align:center}
+.step-n{width:46px;height:46px;border-radius:50%;background:var(--teal);color:var(--white);font-family:var(--serif);font-size:1.18rem;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.hiw-step h4{font-size:.92rem;font-weight:700;margin-bottom:7px}
+.hiw-step p{font-size:.8rem;color:var(--muted);line-height:1.6}
+
+/* FOOTER */
+footer{background:var(--ink);color:rgba(255,255,255,.45);padding:52px 32px 30px}
+.fg-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:36px;max-width:1100px;margin:0 auto 36px}
+.fb-name{font-family:var(--serif);font-size:1.35rem;color:var(--white);margin-bottom:9px}
+.fb-name span{color:rgba(8,145,178,.8)}
+.fb p{font-size:.78rem;line-height:1.7;max-width:250px}
+.fc h4{color:rgba(255,255,255,.7);font-size:.74rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:13px}
+.fc a{display:block;color:rgba(255,255,255,.35);font-size:.78rem;text-decoration:none;margin-bottom:8px;transition:color .2s}
+.fc a:hover{color:rgba(255,255,255,.7)}
+.fbot{border-top:1px solid rgba(255,255,255,.07);padding-top:22px;text-align:center;font-size:.7rem;max-width:1100px;margin:0 auto}
+
+@media(max-width:1024px){.main{grid-template-columns:1fr}.sidebar{display:none}.pcard{grid-template-columns:1fr}.pc-side{border-left:none;border-top:1px solid var(--border)}.fg-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:640px){nav{padding:0 16px}.nav-mid{display:none}.hero{padding:48px 16px 56px}.hero-search{flex-direction:column;padding:10px}.hs-group{border-right:none;border-bottom:1px solid var(--border);padding:7px 10px}.hero-stats{gap:22px}.main{padding:16px}.tslots{grid-template-columns:repeat(3,1fr)}.frow{grid-template-columns:1fr}.mbody,.mhead{padding:16px 18px}}
+
+/* ── ONBOARDING MODAL ───────────────────────────────────────────────────── */
+.onb-modal { max-width: 820px; }
+.onb-progress { display:flex; gap:6px; margin-bottom:24px; padding:0 4px; }
+.onb-step { flex:1; height:5px; background:var(--border); border-radius:3px; transition:all .3s; position:relative; }
+.onb-step.done { background:var(--green); }
+.onb-step.active { background:var(--teal); }
+.onb-step-label { position:absolute; top:10px; left:0; right:0; text-align:center; font-size:.66rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; }
+.onb-step.active .onb-step-label { color:var(--teal); }
+.onb-step.done .onb-step-label { color:var(--green); }
+.onb-panel { display:none; margin-top:32px; }
+.onb-panel.active { display:block; animation:slideIn .35s ease; }
+@keyframes slideIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+.onb-title { font-family:var(--serif); font-size:1.35rem; color:var(--ink); margin-bottom:6px; }
+.onb-sub { font-size:.85rem; color:var(--muted); line-height:1.55; margin-bottom:22px; }
+.branch-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(165px,1fr)); gap:10px; }
+.branch-pick {
+  background:var(--white); border:1.5px solid var(--border); border-radius:12px;
+  padding:14px 12px; cursor:pointer; transition:all .2s; text-align:left;
+  display:flex; flex-direction:column; gap:6px; min-height:90px;
+}
+.branch-pick:hover { border-color:var(--teal); background:var(--teal-pale); transform:translateY(-1px); }
+.branch-pick.sel { border-color:var(--teal); background:var(--teal-pale); box-shadow:0 0 0 3px rgba(8,145,178,.1); }
+.branch-pick .bp-icon { font-size:1.5rem; }
+.branch-pick .bp-name { font-size:.85rem; font-weight:600; color:var(--ink); line-height:1.3; }
+.branch-pick .bp-count { font-size:.7rem; color:var(--muted); }
+.branch-pick.sel .bp-count { color:var(--teal-d); font-weight:600; }
+.svc-cat-section { margin-bottom:16px; }
+.svc-cat-head { font-size:.7rem; font-weight:700; color:var(--mid); text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; padding:6px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; }
+.svc-cat-head span:last-child { color:var(--muted); font-weight:500; }
+.svc-pick {
+  display:grid; grid-template-columns:auto 1fr auto; gap:12px; align-items:center;
+  padding:11px 12px; background:var(--white); border:1.5px solid var(--border);
+  border-radius:10px; margin-bottom:6px; cursor:pointer; transition:all .15s;
+}
+.svc-pick:hover { border-color:var(--teal); background:var(--teal-pale); }
+.svc-pick.checked { border-color:var(--teal); background:var(--teal-pale); }
+.svc-check {
+  width:20px; height:20px; border:2px solid var(--border); border-radius:5px;
+  display:flex; align-items:center; justify-content:center; transition:all .2s;
+  font-size:0; color:var(--white); font-weight:bold;
+}
+.svc-pick.checked .svc-check { background:var(--teal); border-color:var(--teal); font-size:13px; }
+.svc-info .sn { font-size:.85rem; font-weight:500; color:var(--ink); line-height:1.35; }
+.svc-info .sd { font-size:.72rem; color:var(--muted); margin-top:2px; display:flex; gap:8px; }
+.svc-info .sd .sp { color:var(--teal-d); font-weight:600; }
+.svc-price-input {
+  display:flex; align-items:center; gap:6px; opacity:.5; transition:opacity .2s;
+}
+.svc-pick.checked .svc-price-input { opacity:1; }
+.svc-price-input input {
+  width:80px; padding:5px 8px; border:1.5px solid var(--border); border-radius:6px;
+  font-family:var(--sans); font-size:.82rem; text-align:right; outline:none; background:var(--white);
+}
+.svc-price-input input:focus { border-color:var(--teal); }
+.svc-price-input select {
+  padding:5px 6px; border:1.5px solid var(--border); border-radius:6px;
+  font-family:var(--sans); font-size:.72rem; outline:none; background:var(--white);
+  color:var(--mid); cursor:pointer; max-width:90px;
+}
+.onb-search { margin-bottom:14px; }
+.onb-search input {
+  width:100%; padding:9px 14px; border:1.5px solid var(--border); border-radius:10px;
+  font-family:var(--sans); font-size:.85rem; outline:none; background:var(--bg);
+  transition:all .2s;
+}
+.onb-search input:focus { border-color:var(--teal); background:var(--white); box-shadow:0 0 0 3px rgba(8,145,178,.08); }
+.svc-summary {
+  background:linear-gradient(135deg,#F0FDFF,#E0F7FA); border:1.5px solid #BAE6FD;
+  border-radius:10px; padding:11px 14px; margin-bottom:12px;
+  font-size:.82rem; color:var(--teal-d); font-weight:500;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.svc-summary strong { font-family:var(--serif); font-size:1rem; }
+.add-custom-svc {
+  width:100%; padding:11px; background:transparent; border:2px dashed var(--border);
+  border-radius:10px; font-family:var(--sans); font-size:.82rem; color:var(--muted);
+  cursor:pointer; transition:all .2s; margin-top:10px;
+}
+.add-custom-svc:hover { border-color:var(--teal); color:var(--teal); background:var(--teal-pale); }
+.onb-actions { display:flex; gap:10px; margin-top:24px; padding-top:18px; border-top:1px solid var(--border); }
+.onb-actions .btn-back { flex:0 0 auto; padding:11px 20px; background:transparent; border:1.5px solid var(--border); color:var(--mid); border-radius:8px; font-family:var(--sans); font-size:.85rem; font-weight:600; cursor:pointer; transition:all .2s; }
+.onb-actions .btn-back:hover { border-color:var(--muted); }
+.onb-actions .btn-next { flex:1; padding:11px 20px; background:var(--teal); color:var(--white); border:none; border-radius:8px; font-family:var(--sans); font-size:.88rem; font-weight:700; cursor:pointer; transition:all .2s; }
+.onb-actions .btn-next:hover { background:var(--teal-d); }
+.onb-actions .btn-next:disabled { background:var(--border); color:var(--muted); cursor:not-allowed; }
+.onb-summary-card {
+  background:var(--bg); border:1px solid var(--border); border-radius:12px;
+  padding:18px 20px; margin-bottom:12px;
+}
+.onb-summary-card h4 { font-size:.72rem; font-weight:700; color:var(--mid); text-transform:uppercase; letter-spacing:.5px; margin-bottom:10px; }
+.onb-sum-row { display:flex; justify-content:space-between; padding:5px 0; font-size:.85rem; }
+.onb-sum-row .k { color:var(--muted); }
+.onb-sum-row .v { font-weight:600; color:var(--ink); }
+.onb-svc-preview { display:flex; flex-direction:column; gap:5px; margin-top:8px; }
+.onb-svc-preview .ssp {
+  display:flex; justify-content:space-between; padding:7px 10px;
+  background:var(--white); border-radius:6px; font-size:.78rem;
+}
+.onb-svc-preview .ssp .sname { color:var(--ink); }
+.onb-svc-preview .ssp .sprice { color:var(--teal-d); font-weight:600; }
+.onb-success { text-align:center; padding:28px 0; }
+.onb-success .icon { font-size:3.5rem; margin-bottom:14px; }
+.onb-success h3 { font-family:var(--serif); font-size:1.5rem; color:var(--ink); margin-bottom:10px; }
+.onb-success p { font-size:.88rem; color:var(--muted); line-height:1.6; max-width:420px; margin:0 auto 18px; }
+.benefit-list { display:flex; flex-direction:column; gap:8px; margin-bottom:18px; }
+.benefit-item {
+  display:flex; gap:10px; align-items:flex-start; padding:10px 12px;
+  background:var(--bg); border-radius:8px; text-align:left;
+}
+.benefit-item .b-ic { font-size:1.1rem; flex-shrink:0; }
+.benefit-item .b-tx { font-size:.78rem; color:var(--mid); line-height:1.45; }
+.benefit-item .b-tx strong { color:var(--ink); }
+
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#" class="nav-logo">klar<span>d</span></a>
+  <div class="nav-mid">
+    <div class="nsw">
+      <input type="text" placeholder="Branche, Anbieter oder Leistung suchen...">
+    </div>
+  </div>
+  <div class="nav-acts">
+    <button class="btn-ghost" onclick="openLogin()">Einloggen</button>
+    <button class="btn-primary" onclick="openLogin('reg')">Kostenlos registrieren</button>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-tag"><span class="dot"></span>Klare Preise für alle Berater in Deutschland</div>
+  <h1>Den richtigen Berater finden.<br><em>Preis sehen. Sofort buchen.</em></h1>
+  <p class="hero-sub">Steuerberater, Energieberater, Rechtsanwälte und 47+ Branchen – echte Festpreise, verifizierte Profile, Direktbuchung wie beim Arzt.</p>
+  <div class="hero-search">
+    <div class="hs-group">
+      <span class="hs-lbl">Branche</span>
+      <select onchange="setCat(this.value,null)">
+        <option value="Alle">Alle Branchen</option>
+        <option>Steuerberatung</option><option>Energieberatung</option><option>Rechtsberatung</option>
+        <option>Unternehmensberatung</option><option>Finanzberatung</option><option>IT & Digitalisierung</option>
+        <option>Marketingberatung</option><option>Versicherungsberatung</option>
+      </select>
+    </div>
+    <div class="hs-group">
+      <span class="hs-lbl">PLZ oder Ort</span>
+      <input type="text" id="heroPlz" placeholder="z.B. 10115 Berlin">
+    </div>
+    <div class="hs-group">
+      <span class="hs-lbl">Leistung</span>
+      <input type="text" placeholder="z.B. Steuererklärung">
+    </div>
+    <button class="btn-search" onclick="document.querySelector('.results').scrollIntoView({behavior:'smooth'})">🔍 Suchen</button>
+  </div>
+  <div class="hero-stats">
+    <div class="hstat"><span class="n">2.400+</span><span class="l">Geprüfte Anbieter</span></div>
+    <div class="hstat"><span class="n">47</span><span class="l">Branchen</span></div>
+    <div class="hstat"><span class="n">∅ 23%</span><span class="l">Kundensparnis</span></div>
+    <div class="hstat"><span class="n">30 Sek.</span><span class="l">KI-Angebot</span></div>
+  </div>
+</div>
+
+<div class="cats-bar"><div class="cats-row" id="catRow"></div></div>
+
+<div class="main">
+  <aside class="sidebar">
+    <div class="fcard">
+      <h3>Filter</h3>
+      <div class="fg2"><label>PLZ / Ort</label><input type="text" placeholder="10115 Berlin"></div>
+      <div class="fg2"><label>Umkreis</label>
+        <select><option>5 km</option><option>10 km</option><option>25 km</option><option>50 km</option><option>Deutschlandweit</option></select>
+      </div>
+      <div class="fg2"><label>Preisbereich (€)</label>
+        <div style="display:flex;gap:8px">
+          <input type="number" placeholder="von" style="width:80px;text-align:center">
+          <input type="number" placeholder="bis" style="width:80px;text-align:center">
+        </div>
+      </div>
+    </div>
+    <div class="fcard">
+      <h3>Verfügbarkeit</h3>
+      <div class="fchips">
+        <span class="fchip on" onclick="this.classList.toggle('on')">Heute</span>
+        <span class="fchip" onclick="this.classList.toggle('on')">Morgen</span>
+        <span class="fchip" onclick="this.classList.toggle('on')">Diese Woche</span>
+        <span class="fchip" onclick="this.classList.toggle('on')">Online</span>
+        <span class="fchip" onclick="this.classList.toggle('on')">Vor-Ort</span>
+      </div>
+    </div>
+    <div class="fcard">
+      <h3>Qualität</h3>
+      <div class="fchips">
+        <span class="fchip on" onclick="this.classList.toggle('on')">★ 4.5+</span>
+        <span class="fchip" onclick="this.classList.toggle('on')">✓ Verifiziert</span>
+        <span class="fchip" onclick="this.classList.toggle('on')">🏆 Top-Anbieter</span>
+        <span class="fchip" onclick="this.classList.toggle('on')">⚡ Schnell</span>
+      </div>
+    </div>
+    <div class="fcard">
+      <h3>Berufserfahrung</h3>
+      <div class="fchips">
+        <span class="fchip" onclick="this.classList.toggle('on')">1–5 J.</span>
+        <span class="fchip on" onclick="this.classList.toggle('on')">5–10 J.</span>
+        <span class="fchip" onclick="this.classList.toggle('on')">10–20 J.</span>
+        <span class="fchip" onclick="this.classList.toggle('on')">20+ J.</span>
+      </div>
+    </div>
+    <button class="btn-reset" onclick="document.querySelectorAll('.fchip').forEach(c=>c.classList.remove('on'))">✕ Filter zurücksetzen</button>
+  </aside>
+
+  <div class="results">
+    <div class="res-head">
+      <h2 id="resTitle">Steuerberatung <span id="resCnt"></span></h2>
+      <select class="sort-sel"><option>Empfohlen</option><option>Preis ↑</option><option>Bewertung ↓</option><option>Verfügbarkeit</option></select>
+    </div>
+    <div class="plist" id="plist"></div>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<section class="hiw">
+  <div class="sec-head">
+    <div class="sec-tag">So funktioniert Klard</div>
+    <h2>Buchen wie beim Arzt – für alle Berater</h2>
+    <p>Kein Anruf. Kein Warten auf Angebote. Einfach suchen, vergleichen und direkt buchen.</p>
+  </div>
+  <div class="steps-row">
+    <div class="hiw-step"><div class="step-n">1</div><h4>Suchen & vergleichen</h4><p>PLZ eingeben, Branche wählen, Preise sofort sehen. Kein Anruf nötig.</p></div>
+    <div class="hiw-step"><div class="step-n">2</div><h4>Termin wählen</h4><p>Freie Slots direkt im Live-Kalender sehen und sofort reservieren.</p></div>
+    <div class="hiw-step"><div class="step-n">3</div><h4>Schnell registrieren</h4><p>Name + E-Mail + Passwort – fertig in 30 Sekunden. Keine Legitimierung.</p></div>
+    <div class="hiw-step"><div class="step-n">4</div><h4>Verbindlich buchen</h4><p>Zahlung, Bestätigung und Rechnung – alles automatisch.</p></div>
+  </div>
+</section>
+
+<footer>
+  <div class="fg-grid">
+    <div class="fb"><div class="fb-name">klar<span>d</span></div><p>Klare Preise. Geprüfte Berater. Direkt buchbar. Die erste transparente Plattform für alle Beratungsdienstleistungen in Deutschland.</p></div>
+    <div class="fc"><h4>Für Kunden</h4><a>Berater finden</a><a>Preisvergleich</a><a>KI-Angebot</a><a>Bewertungen</a></div>
+    <div class="fc"><h4>Für Anbieter</h4><a>Profil erstellen</a><a>Preise pflegen</a><a>Buchungen</a><a>Premium-Profil</a></div>
+    <div class="fc"><h4>Rechtliches</h4><a>Datenschutz</a><a>AGB</a><a>Impressum</a><a>DSGVO</a></div>
+  </div>
+  <div class="fbot">© 2025 Klard GmbH · klard.de · Alle Preise inkl. MwSt. · Geprüfte Anbieter</div>
+</footer>
+
+<!-- BOOKING MODAL -->
+<div class="overlay" id="bookModal">
+  <div class="modal">
+    <div class="mhead">
+      <div><h2 id="bm-title">Termin buchen</h2><p id="bm-sub">Datum, Zeit und Leistung wählen</p></div>
+      <button class="mclose" onclick="closeM('bookModal')">✕</button>
+    </div>
+    <div class="mbody">
+      <div class="sdots"><div class="sdot active" id="sd1"></div><div class="sdot" id="sd2"></div><div class="sdot" id="sd3"></div></div>
+      <!-- Step 1 -->
+      <div id="bm1">
+        <div class="cal-head">
+          <button class="cal-nav" onclick="chgMonth(-1)">‹</button>
+          <span class="cal-month" id="calM">Mai 2025</span>
+          <button class="cal-nav" onclick="chgMonth(1)">›</button>
+        </div>
+        <div class="cal-grid" id="calG"></div>
+        <div class="tslots" id="tslots"></div>
+        <div style="display:flex;justify-content:flex-end;margin-top:18px">
+          <button class="btn-mp" style="width:auto;padding:10px 26px" onclick="goStep(2)">Weiter →</button>
+        </div>
+      </div>
+      <!-- Step 2 -->
+      <div id="bm2" style="display:none">
+        <div class="bsummary" id="bm-sum"></div>
+        <div class="doc-notice">
+          <div class="ni">⚡</div>
+          <div class="nt"><strong>Schnell & ohne Hürden:</strong> Einfach Name und E-Mail – keine Legitimierung, keine Warteschleife. Schon beim nächsten Mal noch schneller mit gespeichertem Profil.</div>
+        </div>
+        <div class="frow">
+          <div class="fg3"><label>Vorname</label><input id="bm-fn" type="text" placeholder="Max"></div>
+          <div class="fg3"><label>Nachname</label><input id="bm-ln" type="text" placeholder="Mustermann"></div>
+        </div>
+        <div class="fg3"><label>E-Mail</label><input id="bm-em" type="email" placeholder="max@beispiel.de"></div>
+        <div class="fg3"><label>Telefon (optional)</label><input type="tel" placeholder="+49 151 ..."></div>
+        <div class="fg3"><label>Anmerkungen</label><textarea placeholder="Beschreiben Sie kurz Ihr Anliegen..."></textarea></div>
+        <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:.8rem;color:var(--mid);margin-bottom:14px">
+          <input type="checkbox" id="bm-agb" style="margin-top:2px;accent-color:var(--teal)"> Ich akzeptiere die <a href="#" style="color:var(--teal)">AGB</a> und <a href="#" style="color:var(--teal)">Datenschutzrichtlinie</a> von Klard.
+        </label>
+        <div class="macts">
+          <button class="btn-ms" onclick="goStep(1)">← Zurück</button>
+          <button class="btn-mp" onclick="confirmBook()">✓ Verbindlich buchen</button>
+        </div>
+      </div>
+      <!-- Success -->
+      <div class="success" id="bm-ok">
+        <div class="si">🎉</div>
+        <h3>Buchung bestätigt!</h3>
+        <p>Ihre Buchungsbestätigung wurde an Ihre E-Mail gesendet. Der Anbieter freut sich auf Sie.</p>
+        <div class="bref" id="bm-ref">–</div>
+        <button class="btn-mp" style="margin-top:18px;width:auto;padding:10px 26px" onclick="closeM('bookModal')">Fertig</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AI MODAL -->
+<div class="overlay" id="aiModal">
+  <div class="modal" style="max-width:600px">
+    <div class="mhead">
+      <div><h2>✨ KI-Angebot anfordern</h2><p id="ai-sub">Individuelles Angebot in 30 Sekunden</p></div>
+      <button class="mclose" onclick="closeM('aiModal')">✕</button>
+    </div>
+    <div class="mbody">
+      <div class="fg3"><label>Ihr individueller Bedarf</label>
+        <textarea id="aiP" placeholder="Beschreiben Sie Ihre Situation: z.B. 'Ich bin Freiberufler, habe Einnahmen aus Vermietung und benötige eine vollständige Steuererklärung inkl. Anlage V für 2024...'" style="min-height:95px"></textarea>
+      </div>
+      <div class="frow">
+        <div class="fg3"><label>Unternehmensform</label>
+          <select><option>Privatperson</option><option>Freiberufler</option><option>GmbH</option><option>UG</option><option>GbR / KG</option></select>
+        </div>
+        <div class="fg3"><label>E-Mail für Angebot</label><input type="email" placeholder="ihre@email.de"></div>
+      </div>
+      <button class="btn-mp" onclick="genAI()" style="margin-bottom:4px">✨ KI-Angebot generieren</button>
+      <div class="ai-box" id="aiBox">
+        <div style="font-size:.68rem;font-weight:700;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:1px;margin-bottom:11px">🤖 Ihr Angebot – generiert via Claude AI</div>
+        <div id="aiTxt"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN MODAL -->
+<div class="overlay" id="loginModal">
+  <div class="modal" style="max-width:460px">
+    <div class="mhead">
+      <div><h2 style="font-family:var(--serif)">Willkommen bei Klard</h2><p>Kostenlos · Keine Legitimierung · Sofort loslegen</p></div>
+      <button class="mclose" onclick="closeM('loginModal')">✕</button>
+    </div>
+    <div class="mbody">
+      <div class="atabs">
+        <div class="atab active" id="at-login" onclick="swAuth('login')">Einloggen</div>
+        <div class="atab" id="at-reg" onclick="swAuth('reg')">Registrieren</div>
+        <div class="atab" id="at-prov" onclick="swAuth('prov')">Als Anbieter</div>
+      </div>
+      <div class="apanel active" id="ap-login">
+        <div class="fg3"><label>E-Mail</label><input type="email" placeholder="ihre@email.de"></div>
+        <div class="fg3"><label>Passwort</label><input type="password" placeholder="••••••••"></div>
+        <button class="btn-mp">Einloggen</button>
+      </div>
+      <div class="apanel" id="ap-reg">
+        <div class="reg-notice">⚡ In 30 Sekunden fertig – kein Ausweis, keine Wartezeit. Einfach loslegen.</div>
+        <div class="frow">
+          <div class="fg3"><label>Vorname</label><input type="text" placeholder="Max"></div>
+          <div class="fg3"><label>Nachname</label><input type="text" placeholder="Mustermann"></div>
+        </div>
+        <div class="fg3"><label>E-Mail</label><input type="email" placeholder="max@email.de"></div>
+        <div class="fg3"><label>Passwort</label><input type="password" placeholder="Mindestens 8 Zeichen"></div>
+        <div style="font-size:.73rem;color:var(--muted);margin-bottom:13px;line-height:1.5">Mit der Registrierung stimmen Sie unseren <a style="color:var(--teal)" href="#">AGB</a> und der <a style="color:var(--teal)" href="#">Datenschutzrichtlinie</a> zu.</div>
+        <button class="btn-mp">Konto erstellen →</button>
+      </div>
+      <div class="apanel" id="ap-prov">
+        <div class="reg-notice" style="background:linear-gradient(135deg,#FEF3C7,#FDE68A);border-color:#FDE68A;color:#92400E">
+          🏢 <strong>Kostenloses Profil mit vorgefüllten Leistungen.</strong><br>Erste 100 Anbieter: 12 Monate ohne Transaktionsgebühr.
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+          <div style="display:flex;gap:8px;align-items:flex-start;padding:9px 12px;background:var(--bg);border-radius:8px">
+            <span style="font-size:1.1rem;flex-shrink:0">✨</span>
+            <div style="font-size:.78rem;color:var(--mid);line-height:1.5">Wählen Sie Branche → Klard zeigt vorausgefüllte Leistungen mit Preisrahmen → Sie passen nur Ihre tatsächlichen Preise an. <strong>Onboarding in 5 Minuten.</strong></div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;padding:9px 12px;background:var(--bg);border-radius:8px">
+            <span style="font-size:1.1rem;flex-shrink:0">📅</span>
+            <div style="font-size:.78rem;color:var(--mid);line-height:1.5">Live-Kalender mit Verfügbarkeiten. Kunden buchen direkt – wie bei Doctolib.</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;padding:9px 12px;background:var(--bg);border-radius:8px">
+            <span style="font-size:1.1rem;flex-shrink:0">💳</span>
+            <div style="font-size:.78rem;color:var(--mid);line-height:1.5">Stripe-Auszahlung, automatische Rechnung. Sie müssen sich um nichts kümmern.</div>
+          </div>
+        </div>
+        <button class="btn-mp" style="background:var(--gold)" onclick="closeM('loginModal');openOnboarding()">Anbieter-Onboarding starten →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ANBIETER ONBOARDING MODAL ─────────────────────────────────────────────── -->
+<div class="overlay" id="onboardingModal">
+  <div class="modal onb-modal">
+    <div class="mhead">
+      <div>
+        <h2 id="onb-title">Anbieter-Onboarding</h2>
+        <p id="onb-sub">In 5 Minuten zum Klard-Profil</p>
+      </div>
+      <button class="mclose" onclick="closeM('onboardingModal')">✕</button>
+    </div>
+    <div class="mbody">
+      <!-- Progress Bar -->
+      <div class="onb-progress">
+        <div class="onb-step active" id="ostep-1"><div class="onb-step-label">Unternehmen</div></div>
+        <div class="onb-step" id="ostep-2"><div class="onb-step-label">Branche</div></div>
+        <div class="onb-step" id="ostep-3"><div class="onb-step-label">Leistungen</div></div>
+        <div class="onb-step" id="ostep-4"><div class="onb-step-label">Profil</div></div>
+        <div class="onb-step" id="ostep-5"><div class="onb-step-label">Fertig</div></div>
+      </div>
+
+      <!-- STEP 1: Company Basics -->
+      <div class="onb-panel active" id="opanel-1">
+        <h3 class="onb-title">Erzählen Sie uns von Ihrem Unternehmen</h3>
+        <p class="onb-sub">Diese Angaben erscheinen später auf Ihrem öffentlichen Profil. Sie können alles jederzeit ändern.</p>
+        <div class="fg3"><label>Unternehmensname</label>
+          <input type="text" id="onb-company" placeholder="z.B. Dr. Müller Steuerberatung">
+        </div>
+        <div class="frow">
+          <div class="fg3"><label>E-Mail (für Buchungen)</label>
+            <input type="email" id="onb-email" placeholder="info@kanzlei.de">
+          </div>
+          <div class="fg3"><label>Telefon</label>
+            <input type="tel" id="onb-phone" placeholder="+49 30 1234567">
+          </div>
+        </div>
+        <div class="frow">
+          <div class="fg3"><label>PLZ</label>
+            <input type="text" id="onb-plz" placeholder="10117" maxlength="5">
+          </div>
+          <div class="fg3"><label>Stadt</label>
+            <input type="text" id="onb-city" placeholder="Berlin">
+          </div>
+        </div>
+        <div class="fg3"><label>Berufserfahrung (Jahre)</label>
+          <select id="onb-exp">
+            <option value="">Bitte wählen...</option>
+            <option>1–3 Jahre</option><option>3–5 Jahre</option><option>5–10 Jahre</option>
+            <option>10–20 Jahre</option><option>20+ Jahre</option>
+          </select>
+        </div>
+        <div class="onb-actions">
+          <button class="btn-back" onclick="closeM('onboardingModal')">Abbrechen</button>
+          <button class="btn-next" onclick="onbNext(2)">Weiter zur Branche →</button>
+        </div>
+      </div>
+
+      <!-- STEP 2: Branch Selection -->
+      <div class="onb-panel" id="opanel-2">
+        <h3 class="onb-title">In welcher Branche sind Sie tätig?</h3>
+        <p class="onb-sub">Klard zeigt Ihnen anschließend vorausgefüllte Leistungen mit branchenüblichen Preisrahmen — Sie passen nur Ihre tatsächlichen Preise an.</p>
+        <div class="branch-grid" id="onb-branch-grid"></div>
+        <div class="onb-actions">
+          <button class="btn-back" onclick="onbNext(1)">← Zurück</button>
+          <button class="btn-next" id="onb-btn-2" onclick="onbNext(3)" disabled>Weiter zu Leistungen →</button>
+        </div>
+      </div>
+
+      <!-- STEP 3: Services + Prices -->
+      <div class="onb-panel" id="opanel-3">
+        <h3 class="onb-title" id="onb-svc-title">Wählen Sie Ihre Leistungen</h3>
+        <p class="onb-sub">Häkchen setzen, Preis eintragen, Preistyp wählen. Sie können später jederzeit weitere Leistungen hinzufügen oder Preise ändern.</p>
+        <div class="svc-summary">
+          <span>✓ <span id="onb-svc-count">0</span> Leistungen ausgewählt</span>
+          <span><strong id="onb-svc-min">3</strong> Minimum für aktives Profil</span>
+        </div>
+        <div class="onb-search">
+          <input type="text" id="onb-svc-search" placeholder="🔍 Leistung suchen oder filtern..." oninput="onbFilterSvc()">
+        </div>
+        <div id="onb-svc-list"></div>
+        <button class="add-custom-svc" onclick="onbAddCustom()">+ Eigene Leistung hinzufügen</button>
+        <div class="onb-actions">
+          <button class="btn-back" onclick="onbNext(2)">← Zurück</button>
+          <button class="btn-next" id="onb-btn-3" onclick="onbNext(4)" disabled>Weiter zum Profil →</button>
+        </div>
+      </div>
+
+      <!-- STEP 4: Profile / Bio -->
+      <div class="onb-panel" id="opanel-4">
+        <h3 class="onb-title">Vervollständigen Sie Ihr Profil</h3>
+        <p class="onb-sub">Ein gutes Profil führt zu deutlich mehr Buchungen. Diese Angaben sind optional, aber dringend empfohlen.</p>
+        <div class="fg3"><label>Kurzbeschreibung Ihres Unternehmens (öffentlich)</label>
+          <textarea id="onb-desc" placeholder="z.B. Spezialisiert auf Steuerberatung für Freiberufler und kleine GmbHs. Persönlicher Ansprechpartner, digitale Belegerfassung, Antwort innerhalb 24h." style="min-height:80px"></textarea>
+        </div>
+        <div class="fg3"><label>Zertifikate / Mitgliedschaften (optional, kommagetrennt)</label>
+          <input type="text" id="onb-certs" placeholder="z.B. StB-Kammer, DATEV, ISO 27001">
+        </div>
+        <div class="frow">
+          <div class="fg3"><label>Online-Beratung möglich?</label>
+            <select id="onb-online"><option>Ja, Online + Vor-Ort</option><option>Nur Online</option><option>Nur Vor-Ort</option></select>
+          </div>
+          <div class="fg3"><label>Reaktionszeit</label>
+            <select id="onb-resp"><option>Innerhalb 2h</option><option>Innerhalb 6h</option><option>Am gleichen Tag</option><option>Innerhalb 24h</option><option>Innerhalb 48h</option></select>
+          </div>
+        </div>
+        <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:.8rem;color:var(--mid);margin-top:8px">
+          <input type="checkbox" id="onb-agb" style="margin-top:2px;accent-color:var(--teal)">
+          <span>Ich akzeptiere die <a style="color:var(--teal)" href="#">AGB für Anbieter</a> und die <a style="color:var(--teal)" href="#">Datenschutzrichtlinie</a>. Ich bestätige, dass die angegebenen Preise verbindlich sind.</span>
+        </label>
+        <div class="onb-actions">
+          <button class="btn-back" onclick="onbNext(3)">← Zurück</button>
+          <button class="btn-next" onclick="onbFinish()">Profil veröffentlichen →</button>
+        </div>
+      </div>
+
+      <!-- STEP 5: Success -->
+      <div class="onb-panel" id="opanel-5">
+        <div class="onb-success">
+          <div class="icon">🎉</div>
+          <h3>Willkommen bei Klard!</h3>
+          <p>Ihr Profil ist erstellt und wird innerhalb von 24 Stunden freigeschaltet. Sie erhalten gleich eine Bestätigungs-E-Mail mit den nächsten Schritten.</p>
+          <div class="onb-summary-card" style="text-align:left;max-width:480px;margin:0 auto 18px">
+            <h4>Ihr Klard-Profil</h4>
+            <div class="onb-sum-row"><span class="k">Unternehmen</span><span class="v" id="sum-company">–</span></div>
+            <div class="onb-sum-row"><span class="k">Branche</span><span class="v" id="sum-branch">–</span></div>
+            <div class="onb-sum-row"><span class="k">Standort</span><span class="v" id="sum-loc">–</span></div>
+            <div class="onb-sum-row"><span class="k">Aktivierte Leistungen</span><span class="v" id="sum-count">–</span></div>
+            <div class="onb-svc-preview" id="sum-svc-preview"></div>
+          </div>
+          <div class="benefit-list" style="max-width:480px;margin:0 auto 18px">
+            <div class="benefit-item"><span class="b-ic">📧</span><span class="b-tx"><strong>Bestätigungsmail verschickt</strong> an Ihre angegebene E-Mail-Adresse</span></div>
+            <div class="benefit-item"><span class="b-ic">🎁</span><span class="b-tx"><strong>Gründer-Bonus aktiviert:</strong> 12 Monate ohne Transaktionsgebühr</span></div>
+            <div class="benefit-item"><span class="b-ic">📅</span><span class="b-tx"><strong>Nächster Schritt:</strong> Kalender mit verfügbaren Terminen einrichten</span></div>
+          </div>
+          <button class="btn-mp" style="width:auto;padding:11px 32px;background:var(--teal)" onclick="closeM('onboardingModal');onbReset()">Zum Anbieter-Dashboard →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const CATS=[
+  {i:"🏢",n:"Alle"},{i:"📊",n:"Steuerberatung"},{i:"⚡",n:"Energieberatung"},
+  {i:"⚖️",n:"Rechtsberatung"},{i:"💼",n:"Unternehmensberatung"},{i:"🏦",n:"Finanzberatung"},
+  {i:"🏠",n:"Immobilienberatung"},{i:"💻",n:"IT & Digitalisierung"},{i:"📢",n:"Marketingberatung"},
+  {i:"🛡️",n:"Versicherungsberatung"},{i:"👥",n:"Personalberatung"},{i:"🎓",n:"Coaching"},
+];
+const PROVIDERS=[
+  {id:1,name:"Dr. Müller Steuerberatung",cat:"Steuerberatung",emoji:"📊",
+   avatarBg:"linear-gradient(135deg,#E0F7FA,#B2EBF2)",loc:"Berlin Mitte",plz:"10117",dist:"1,2 km",
+   rating:4.9,reviews:248,exp:18,badges:["v","t"],resp:"Antwortet in ø 2h",online:true,inperson:true,
+   certs:["StB-Kammer","DATEV","ISO 27001"],
+   slots:["Heute 14:00","Heute 16:30","Mo 09:00","Mo 11:00","Di 10:00"],
+   services:[
+     {n:"Einkommensteuererklärung (Arbeitnehmer)",dur:"ca. 2h",price:"189 €"},
+     {n:"Einkommensteuererklärung (Freiberufler)",dur:"ca. 3–4h",price:"349 €"},
+     {n:"Jahresabschluss GmbH",dur:"individuell",price:"1.290 €"},
+     {n:"Lohnbuchhaltung (monatlich)",dur:"monatlich",price:"79 €/Mo"},
+   ]},
+  {id:2,name:"EnergoConsult GmbH",cat:"Energieberatung",emoji:"⚡",
+   avatarBg:"linear-gradient(135deg,#FEF3C7,#FDE68A)",loc:"München Maxvorstadt",plz:"80331",dist:"3,4 km",
+   rating:4.8,reviews:131,exp:12,badges:["v","f"],resp:"Antwortet in ø 4h",online:true,inperson:true,
+   certs:["BAFA","dena","KfW-gelistet"],
+   slots:["Morgen 09:00","Morgen 11:30","Mi 14:00","Do 10:00"],
+   services:[
+     {n:"Energieausweis Wohngebäude",dur:"ca. 1h",price:"149 €"},
+     {n:"iSFP Sanierungsfahrplan",dur:"ca. 3–4h",price:"1.450 €"},
+     {n:"BAFA-Antrag Heizung",dur:"individuell",price:"390 €"},
+     {n:"Energieberatung Gewerbe",dur:"ca. 2–3h",price:"590 €"},
+   ]},
+  {id:3,name:"Kanzlei Richter & Partner",cat:"Rechtsberatung",emoji:"⚖️",
+   avatarBg:"linear-gradient(135deg,#EDE9FE,#DDD6FE)",loc:"Hamburg Innenstadt",plz:"20354",dist:"0,8 km",
+   rating:4.7,reviews:392,exp:22,badges:["v"],resp:"Antwortet in ø 6h",online:true,inperson:true,
+   certs:["Fachanwalt Arbeitsrecht","DAV","Hanseat. RA-Kammer"],
+   slots:["Mo 13:00","Di 09:30","Di 15:00","Mi 11:00","Do 14:30"],
+   services:[
+     {n:"Erstberatung (1 Stunde)",dur:"60 Min.",price:"190 €"},
+     {n:"Vertragsprüfung einfach",dur:"ca. 2–3h",price:"280 €"},
+     {n:"Arbeitsrechtliche Abmahnung",dur:"individuell",price:"450 €"},
+     {n:"GmbH-Gründung komplett",dur:"individuell",price:"1.750 €"},
+   ]},
+  {id:4,name:"Schmidt IT Solutions",cat:"IT & Digitalisierung",emoji:"💻",
+   avatarBg:"linear-gradient(135deg,#D1FAE5,#A7F3D0)",loc:"Frankfurt Westend",plz:"60311",dist:"5,1 km",
+   rating:4.6,reviews:89,exp:9,badges:["f"],resp:"Antwortet in ø 1h",online:true,inperson:false,
+   certs:["AWS Certified","CISSP","DSGVO-Beauftragter"],
+   slots:["Heute 15:00","Heute 17:00","Mo 10:00","Mo 14:00","Di 09:00"],
+   services:[
+     {n:"IT-Sicherheitsaudit",dur:"ca. 4–6h",price:"890 €"},
+     {n:"Website Relaunch komplett",dur:"2–4 Wochen",price:"3.200 €"},
+     {n:"Cloud-Migration (KMU)",dur:"individuell",price:"2.490 €"},
+     {n:"DSGVO-Beratung",dur:"ca. 1 Tag",price:"790 €"},
+   ]},
+  {id:5,name:"Finanzplan Köln",cat:"Finanzberatung",emoji:"🏦",
+   avatarBg:"linear-gradient(135deg,#E0F7FA,#B2EBF2)",loc:"Köln Innenstadt",plz:"50667",dist:"2,3 km",
+   rating:4.9,reviews:176,exp:15,badges:["v","t"],resp:"Antwortet in ø 3h",online:true,inperson:true,
+   certs:["CFP®","BaFin-registriert","DVA-Mitglied"],
+   slots:["Heute 16:00","Mo 09:30","Mo 11:00","Di 14:00"],
+   services:[
+     {n:"Rentenanalyse & Altersvorsorge",dur:"ca. 2h",price:"295 €"},
+     {n:"Baufinanzierungsberatung",dur:"ca. 1h",price:"kostenlos"},
+     {n:"Depot-Check & Anlageberatung",dur:"ca. 1,5h",price:"199 €"},
+     {n:"Finanzplan komplett",dur:"ca. 3–4h",price:"890 €"},
+   ]},
+  {id:6,name:"Marketing Lab Stuttgart",cat:"Marketingberatung",emoji:"📢",
+   avatarBg:"linear-gradient(135deg,#FEE2E2,#FECACA)",loc:"Stuttgart Mitte",plz:"70173",dist:"7,8 km",
+   rating:4.5,reviews:63,exp:7,badges:["f"],resp:"Antwortet in ø 5h",online:true,inperson:true,
+   certs:["Google Ads","Meta Blueprint","HubSpot"],
+   slots:["Mi 10:00","Mi 14:00","Do 09:00","Do 15:00"],
+   services:[
+     {n:"SEO-Audit & Empfehlung",dur:"ca. 3h",price:"490 €"},
+     {n:"Google Ads Setup",dur:"ca. 1 Tag",price:"690 €"},
+     {n:"Social Media Strategie",dur:"ca. 2h",price:"850 €"},
+     {n:"Vollständiges Marketing-Paket",dur:"4 Wochen",price:"2.490 €"},
+   ]},
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let activeCat="Steuerberatung",activeProv=null,selSlot=null,selSvc=null;
+let calY=2025,calMo=4;
+
+// ── CATS ──────────────────────────────────────────────────────────────────────
+function renderCats(){
+  document.getElementById('catRow').innerHTML=CATS.map(c=>
+    `<button class="cpill ${activeCat===c.n?'active':''}" onclick="setCat('${c.n}',this)">
+      <span>${c.i}</span>${c.n}
+    </button>`).join('');
+}
+function setCat(name,el){
+  activeCat=name;
+  document.querySelectorAll('.cpill').forEach(p=>p.classList.remove('active'));
+  if(el) el.classList.add('active');
+  renderProviders();
+  const f=name==='Alle'?PROVIDERS:PROVIDERS.filter(p=>p.cat===name);
+  document.getElementById('resTitle').innerHTML=`${name==='Alle'?'Alle Branchen':name} <span>– ${f.length} Anbieter</span>`;
+}
+
+// ── PROVIDERS ─────────────────────────────────────────────────────────────────
+function renderProviders(){
+  const data=activeCat==='Alle'?PROVIDERS:PROVIDERS.filter(p=>p.cat===activeCat);
+  document.getElementById('resCnt').textContent=`– ${data.length} Anbieter gefunden`;
+  document.getElementById('plist').innerHTML=data.map(p=>`
+    <div class="pcard" id="pc${p.id}">
+      <div class="pc-main">
+        <div class="pc-top">
+          <div class="pc-avatar" style="background:${p.avatarBg}">${p.emoji}</div>
+          <div class="pc-info">
+            <div class="pc-name-row">
+              <span class="pc-name">${p.name}</span>
+              ${p.badges.includes('v')?'<span class="badge badge-v">✓ Verifiziert</span>':''}
+              ${p.badges.includes('t')?'<span class="badge badge-t">🏆 Top</span>':''}
+              ${p.badges.includes('f')?'<span class="badge badge-f">⚡ Schnell</span>':''}
+            </div>
+            <div class="pc-cat">${p.cat}</div>
+            <div style="display:flex;align-items:center;gap:5px">
+              <span class="stars">${'★'.repeat(Math.round(p.rating))}${'☆'.repeat(5-Math.round(p.rating))}</span>
+              <span class="rat-val">${p.rating}</span>
+              <span class="rat-cnt">(${p.reviews} Bewertungen)</span>
+            </div>
+          </div>
+        </div>
+        <div class="pc-meta">
+          <span>📍 ${p.loc}</span><span>📏 ${p.dist}</span>
+          ${p.online?'<span>🌐 Online</span>':''}${p.inperson?'<span>🏢 Vor-Ort</span>':''}
+          <span>🎓 ${p.exp} J. Erfahrung</span>
+        </div>
+        <div class="avail-lbl">Nächste verfügbare Termine</div>
+        <div class="avail-row">
+          ${p.slots.map(s=>`<div class="aslot" onclick="pickSlot(${p.id},'${s}',this)">${s}</div>`).join('')}
+          <div class="aslot" style="border-color:var(--border);color:var(--muted)" onclick="openBook(${p.id})">Alle →</div>
+        </div>
+        <div class="svc-lbl">Leistungen & Preise</div>
+        <div class="svcs">
+          ${p.services.map((s,i)=>`
+            <div class="srow" onclick="pickSvc(${p.id},${i},this)">
+              <div><div class="svc-name">${s.n}</div><div class="svc-dur">${s.dur}</div></div>
+              <div class="svc-price">${s.price}</div>
+            </div>`).join('')}
+        </div>
+      </div>
+      <div class="pc-side">
+        <div class="loc-bl"><strong>📍 Standort</strong>${p.loc}<br>${p.plz}</div>
+        <div class="exp-box"><div class="exp-n">${p.exp}</div><div class="exp-l">Jahre Erfahrung</div></div>
+        <div>
+          <div style="font-size:.66rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Zertifikate</div>
+          <div class="certs">${p.certs.map(c=>`<span class="cert">${c}</span>`).join('')}</div>
+        </div>
+        <div class="rt">⚡ ${p.resp}</div>
+        <button class="btn-book" onclick="openBook(${p.id})">📅 Termin buchen</button>
+        <button class="btn-ai" onclick="openAI(${p.id})">✨ KI-Angebot</button>
+      </div>
+    </div>`).join('');
+}
+
+function pickSlot(pid,slot,el){
+  document.querySelectorAll(`#pc${pid} .aslot`).forEach(s=>s.classList.remove('picked'));
+  el.classList.add('picked'); selSlot=slot; openBook(pid,slot);
+}
+function pickSvc(pid,idx,el){
+  document.querySelectorAll(`#pc${pid} .srow`).forEach(s=>s.classList.remove('sel'));
+  el.classList.add('sel'); selSvc=PROVIDERS.find(p=>p.id===pid)?.services[idx];
+}
+
+// ── BOOKING ───────────────────────────────────────────────────────────────────
+function openBook(pid,preSlot){
+  activeProv=PROVIDERS.find(p=>p.id===pid); if(!activeProv)return;
+  document.getElementById('bm-title').textContent=activeProv.name;
+  document.getElementById('bm-sub').textContent=activeProv.cat+' · '+activeProv.loc;
+  selSlot=preSlot||null; goStep(1); renderCal(); renderTSlots();
+  document.getElementById('bm-ok').classList.remove('show');
+  document.getElementById('bm1').style.display='block';
+  document.getElementById('bm2').style.display='none';
+  document.getElementById('bookModal').classList.add('open');
+}
+function goStep(n){
+  ['sd1','sd2','sd3'].forEach((id,i)=>{
+    const el=document.getElementById(id);
+    el.classList.remove('active','done');
+    if(i+1<n)el.classList.add('done');
+    if(i+1===n)el.classList.add('active');
+  });
+  document.getElementById('bm1').style.display=n===1?'block':'none';
+  document.getElementById('bm2').style.display=n===2?'block':'none';
+  if(n===2)buildSum();
+}
+function buildSum(){
+  const svc=selSvc||(activeProv?.services[0]);
+  document.getElementById('bm-sum').innerHTML=`
+    <div class="srow2"><span class="k">Anbieter</span><span class="v">${activeProv?.name}</span></div>
+    <div class="srow2"><span class="k">Leistung</span><span class="v">${svc?.n||'–'}</span></div>
+    <div class="srow2"><span class="k">Termin</span><span class="v">${selSlot||'Noch nicht gewählt'}</span></div>
+    <div class="sdiv"></div>
+    <div class="srow2 tot"><span class="k">Preis</span><span class="v">${svc?.price||'–'}</span></div>`;
+}
+function confirmBook(){
+  const fn=document.getElementById('bm-fn')?.value.trim();
+  const em=document.getElementById('bm-em')?.value.trim();
+  const agb=document.getElementById('bm-agb')?.checked;
+  if(!fn||!em||!agb){alert('Bitte alle Pflichtfelder ausfüllen und AGB akzeptieren.');return;}
+  document.getElementById('bm2').style.display='none';
+  const ref='KLD-'+Math.random().toString(36).substr(2,6).toUpperCase();
+  document.getElementById('bm-ref').textContent=ref;
+  document.getElementById('bm-ok').classList.add('show');
+  ['sd1','sd2','sd3'].forEach(id=>{document.getElementById(id).classList.remove('active');document.getElementById(id).classList.add('done');});
+}
+
+// ── CALENDAR ──────────────────────────────────────────────────────────────────
+const MNAMES=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+const DNAMES=['Mo','Di','Mi','Do','Fr','Sa','So'];
+function chgMonth(d){calMo+=d;if(calMo>11){calMo=0;calY++;}if(calMo<0){calMo=11;calY--;}renderCal();renderTSlots();}
+function renderCal(){
+  document.getElementById('calM').textContent=`${MNAMES[calMo]} ${calY}`;
+  const grid=document.getElementById('calG');
+  const first=(new Date(calY,calMo,1).getDay()+6)%7;
+  const days=new Date(calY,calMo+1,0).getDate();
+  const today=new Date();
+  let h=DNAMES.map(d=>`<div class="cdl">${d}</div>`).join('');
+  for(let i=0;i<first;i++)h+=`<div class="cday empty"></div>`;
+  for(let d=1;d<=days;d++){
+    const dt=new Date(calY,calMo,d);
+    const past=dt<new Date(today.getFullYear(),today.getMonth(),today.getDate());
+    const isToday=dt.toDateString()===today.toDateString();
+    const has=!past&&(d%3!==0);
+    h+=`<div class="cday ${past?'past':''} ${isToday?'today':''} ${has?'has-slots':''}"
+      onclick="${has?`pickDay(${d},this)`:''}">${d}</div>`;
+  }
+  grid.innerHTML=h;
+}
+function pickDay(d,el){
+  document.querySelectorAll('.cday').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected'); renderTSlots(d);
+}
+function renderTSlots(day){
+  const times=day?['09:00','09:30','10:00','11:00','11:30','13:00','14:00','14:30','15:00','15:30','16:00','17:00']:[];
+  const s=document.getElementById('tslots');
+  if(!times.length){s.innerHTML='<div style="color:var(--muted);font-size:.8rem;padding:10px 0">← Datum wählen</div>';return;}
+  const busy=[2,5,8];
+  s.innerHTML=times.map((t,i)=>`<div class="tslot ${busy.includes(i)?'busy':''}" onclick="${!busy.includes(i)?`pickTime('${t}',this)`:''}'">${t}</div>`).join('');
+}
+function pickTime(t,el){
+  document.querySelectorAll('.tslot').forEach(s=>s.classList.remove('picked'));
+  el.classList.add('picked'); selSlot=t;
+}
+
+// ── AI ────────────────────────────────────────────────────────────────────────
+function openAI(pid){
+  activeProv=PROVIDERS.find(p=>p.id===pid);
+  document.getElementById('ai-sub').textContent=(activeProv?.name||'')+' · '+(activeProv?.cat||'');
+  document.getElementById('aiBox').classList.remove('show');
+  document.getElementById('aiTxt').innerHTML='';
+  document.getElementById('aiModal').classList.add('open');
+}
+async function genAI(){
+  const prompt=document.getElementById('aiP').value||'Standard-Beratung';
+  const box=document.getElementById('aiBox'),txt=document.getElementById('aiTxt');
+  box.classList.add('show');
+  txt.innerHTML='<div class="ai-loader"><div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div></div>';
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:
+        `Du bist ein professioneller Berater-Assistent. Erstelle ein strukturiertes Angebot auf Deutsch.
+Anbieter: ${activeProv?.name} (${activeProv?.cat})
+Kundenbedarf: ${prompt}
+Format: Kurze Bedarfsanalyse, empfohlene Leistungen mit Preisen, Zeitaufwand, Gesamtpreis inkl. MwSt., nächste Schritte.`}]})
+    });
+    const d=await r.json();
+    txt.innerHTML=(d.content?.[0]?.text||'Fehler').replace(/\n/g,'<br>');
+  }catch(e){txt.innerHTML='⚠️ KI-Schnittstelle temporär nicht verfügbar.';}
+}
+
+// ── AUTH ──────────────────────────────────────────────────────────────────────
+function openLogin(tab){swAuth(tab||'login');document.getElementById('loginModal').classList.add('open');}
+function swAuth(tab){
+  ['login','reg','prov'].forEach(t=>{
+    document.getElementById('at-'+t)?.classList.toggle('active',t===tab);
+    document.getElementById('ap-'+t)?.classList.toggle('active',t===tab);
+  });
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function closeM(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+renderCats();
+setCat('Steuerberatung',null);
+renderCal();renderTSlots();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ANBIETER ONBOARDING — Vollständiger Leistungskatalog
+// ═══════════════════════════════════════════════════════════════════════════
+
+const SERVICE_CATALOG = {
+  "stb": { name: "Steuerberatung", icon: "📊", color: "#0F6E56", services: [
+    { n: "Einkommensteuererklärung (Arbeitnehmer)",       t: "fix", dur: "ca. 1,5–2h",  ref: "ab 189 €" },
+    { n: "Einkommensteuererklärung (Freiberufler/Gewerbe)", t: "fix", dur: "ca. 2,5–4h", ref: "ab 349 €" },
+    { n: "Einkommensteuererklärung mit Vermietung",       t: "fix", dur: "ca. 2–3h",    ref: "ab 279 €" },
+    { n: "Jahresabschluss / Bilanz (GmbH)",               t: "fix", dur: "individuell", ref: "ab 1.290 €" },
+    { n: "Jahresabschluss / EÜR (Einzelunternehmen)",     t: "fix", dur: "individuell", ref: "ab 490 €" },
+    { n: "Lohnbuchhaltung (monatlich)",                   t: "mo",  dur: "monatlich",   ref: "ab 79 €/Mo." },
+    { n: "Finanzbuchhaltung (FIBU)",                      t: "mo",  dur: "monatlich",   ref: "ab 149 €/Mo." },
+    { n: "Umsatzsteuervoranmeldung",                      t: "mo",  dur: "monatlich",   ref: "ab 49 €/Mo." },
+    { n: "Körperschaftsteuererklärung",                   t: "fix", dur: "individuell", ref: "ab 890 €" },
+    { n: "Gewerbesteuererklärung",                        t: "fix", dur: "individuell", ref: "ab 490 €" },
+    { n: "GmbH-Gründungsberatung steuerlich",             t: "fix", dur: "ca. 2h",      ref: "ab 350 €" },
+    { n: "Steuerliche Erstberatung",                      t: "hr",  dur: "pro Stunde",  ref: "ab 150 €/h" },
+    { n: "Beratung Selbstständigkeit / Existenzgründung", t: "fix", dur: "ca. 2h",      ref: "ab 290 €" },
+    { n: "Erbschaftsteuererklärung",                      t: "fix", dur: "individuell", ref: "ab 590 €" },
+    { n: "Nachtragsveranlagung Vorjahre",                 t: "fix", dur: "pro Jahr",    ref: "ab 89 €/Jahr" },
+  ]},
+  "enb": { name: "Energieberatung", icon: "⚡", color: "#854F0B", services: [
+    { n: "Energieausweis Wohngebäude (Verbrauch)",      t: "fix", dur: "ca. 30 Min.",   ref: "ab 99 €" },
+    { n: "Energieausweis Wohngebäude (Bedarf)",         t: "fix", dur: "ca. 2h",        ref: "ab 299 €" },
+    { n: "Energieausweis Nichtwohngebäude",              t: "fix", dur: "individuell",   ref: "ab 490 €" },
+    { n: "Individueller Sanierungsfahrplan (iSFP)",     t: "fix", dur: "ca. 1 Tag",     ref: "ab 1.450 €" },
+    { n: "BAFA-Antrag Heizungsanlage",                   t: "fix", dur: "ca. 3h",        ref: "ab 390 €" },
+    { n: "KfW-Antrag Effizienzhaus-Sanierung",           t: "fix", dur: "ca. 4h",        ref: "ab 590 €" },
+    { n: "Thermografieanalyse Gebäude",                  t: "fix", dur: "Halbtag",       ref: "ab 490 €" },
+    { n: "Energieberatung Gewerbe / Industrie",          t: "hr",  dur: "individuell",   ref: "ab 150 €/h" },
+    { n: "Heizungscheck / Heizungsoptimierung",          t: "fix", dur: "ca. 2h",        ref: "ab 190 €" },
+    { n: "Photovoltaik-Wirtschaftlichkeitsberechnung",   t: "fix", dur: "ca. 2h",        ref: "ab 290 €" },
+    { n: "Fördermittelberatung komplett",                t: "fix", dur: "ca. 3h",        ref: "ab 490 €" },
+    { n: "CO₂-Bilanz Unternehmen",                      t: "pa",  dur: "individuell",   ref: "ab 890 €" },
+  ]},
+  "rab": { name: "Rechtsberatung", icon: "⚖️", color: "#5B21B6", services: [
+    { n: "Erstberatung (1 Stunde)",                       t: "fix", dur: "60 Min.",       ref: "ab 190 €" },
+    { n: "Vertragsprüfung einfach",                       t: "fix", dur: "ca. 2h",        ref: "ab 280 €" },
+    { n: "Vertragsprüfung komplex",                       t: "fix", dur: "ca. 4–6h",     ref: "ab 590 €" },
+    { n: "Vertragsentwurf",                               t: "hr",  dur: "individuell",   ref: "ab 250 €/h" },
+    { n: "Arbeitsvertrag prüfen & kommentieren",          t: "fix", dur: "ca. 1,5h",      ref: "ab 220 €" },
+    { n: "Abmahnung Arbeitnehmer",                        t: "fix", dur: "individuell",   ref: "ab 450 €" },
+    { n: "Abmahnung Urheberrecht / Markenrecht",          t: "fix", dur: "individuell",   ref: "ab 390 €" },
+    { n: "Mietrecht – Kündigung prüfen",                  t: "fix", dur: "ca. 1h",        ref: "ab 190 €" },
+    { n: "Gesellschaftsvertrag GmbH",                     t: "fix", dur: "individuell",   ref: "ab 890 €" },
+    { n: "Datenschutz / DSGVO-Beratung",                  t: "hr",  dur: "individuell",   ref: "ab 190 €/h" },
+    { n: "Erbrecht – Testament prüfen",                   t: "fix", dur: "ca. 2h",        ref: "ab 350 €" },
+    { n: "Markenanmeldung Schutzrecht",                   t: "fix", dur: "individuell",   ref: "ab 590 €" },
+    { n: "Strafrecht – Erstberatung",                     t: "fix", dur: "60 Min.",       ref: "ab 250 €" },
+  ]},
+  "unb": { name: "Unternehmensberatung", icon: "💼", color: "#185FA5", services: [
+    { n: "Geschäftsmodell-Check",                         t: "fix", dur: "ca. 3h",        ref: "ab 590 €" },
+    { n: "Business-Plan-Erstellung",                      t: "pa",  dur: "1–2 Wochen",    ref: "ab 1.490 €" },
+    { n: "Marktanalyse & Wettbewerbsanalyse",             t: "pa",  dur: "individuell",   ref: "ab 1.890 €" },
+    { n: "Prozessoptimierung",                            t: "hr",  dur: "individuell",   ref: "ab 180 €/h" },
+    { n: "Organisationsentwicklung",                      t: "hr",  dur: "individuell",   ref: "ab 190 €/h" },
+    { n: "Strategieberatung Workshop (1 Tag)",            t: "pa",  dur: "Ganztag",       ref: "ab 2.490 €" },
+    { n: "Digitalisierungsberatung KMU",                  t: "hr",  dur: "individuell",   ref: "ab 150 €/h" },
+    { n: "Change-Management-Begleitung",                  t: "mo",  dur: "monatlich",     ref: "ab 1.490 €/Mo." },
+    { n: "Insolvenzberatung / Sanierung",                 t: "hr",  dur: "individuell",   ref: "ab 200 €/h" },
+    { n: "Internationalisierungsberatung",                t: "hr",  dur: "individuell",   ref: "ab 190 €/h" },
+    { n: "Nachfolgeplanung Unternehmen",                  t: "pa",  dur: "individuell",   ref: "ab 2.890 €" },
+    { n: "M&A-Beratung / Unternehmensbewertung",          t: "on",  dur: "individuell",   ref: "auf Anfrage" },
+  ]},
+  "fib": { name: "Finanzberatung", icon: "🏦", color: "#3B6D11", services: [
+    { n: "Rentenanalyse & Altersvorsorge-Check",          t: "fix", dur: "ca. 2h",        ref: "ab 295 €" },
+    { n: "Baufinanzierungsberatung",                      t: "fix", dur: "ca. 1,5h",      ref: "kostenlos*" },
+    { n: "Depot-Check & Anlageberatung",                  t: "fix", dur: "ca. 1,5h",      ref: "ab 199 €" },
+    { n: "Finanzplan komplett (Privathaushalt)",          t: "fix", dur: "ca. 3–4h",      ref: "ab 890 €" },
+    { n: "Riester / Rürup-Analyse",                       t: "fix", dur: "ca. 1h",        ref: "ab 150 €" },
+    { n: "ETF-Depotaufbau & Strategie",                   t: "fix", dur: "ca. 2h",        ref: "ab 290 €" },
+    { n: "Liquiditätsplanung Unternehmen",                t: "hr",  dur: "individuell",   ref: "ab 150 €/h" },
+    { n: "Kreditumschuldungsberatung",                    t: "fix", dur: "ca. 1h",        ref: "ab 120 €" },
+    { n: "Vermögensnachfolge & Erbschaftsplanung",        t: "hr",  dur: "individuell",   ref: "ab 180 €/h" },
+    { n: "Unabhängige Honorarberatung",                   t: "hr",  dur: "pro Stunde",    ref: "ab 150 €/h" },
+  ]},
+  "itb": { name: "IT & Digitalisierung", icon: "💻", color: "#993C1D", services: [
+    { n: "IT-Sicherheitsaudit",                           t: "pa",  dur: "ca. 4–6h",      ref: "ab 890 €" },
+    { n: "Website-Relaunch komplett",                     t: "pa",  dur: "2–4 Wochen",    ref: "ab 3.200 €" },
+    { n: "Cloud-Migration (KMU)",                         t: "pa",  dur: "individuell",   ref: "ab 2.490 €" },
+    { n: "DSGVO-Beratung & Dokumentation",                t: "pa",  dur: "ca. 1 Tag",     ref: "ab 790 €" },
+    { n: "Datenschutzbeauftragter (extern)",              t: "mo",  dur: "monatlich",     ref: "ab 149 €/Mo." },
+    { n: "SEO-Audit & Optimierung",                       t: "fix", dur: "ca. 3h",        ref: "ab 490 €" },
+    { n: "Google Ads Setup",                              t: "fix", dur: "ca. 1 Tag",     ref: "ab 690 €" },
+    { n: "Softwareentwicklung (individuell)",             t: "hr",  dur: "individuell",   ref: "ab 95 €/h" },
+    { n: "Systemintegration & API-Anbindung",             t: "hr",  dur: "individuell",   ref: "ab 110 €/h" },
+    { n: "IT-Support & Helpdesk (Retainer)",              t: "mo",  dur: "monatlich",     ref: "ab 290 €/Mo." },
+    { n: "Softwarelizenz-Beratung",                       t: "fix", dur: "ca. 2h",        ref: "ab 350 €" },
+    { n: "KI-Implementierungsberatung",                   t: "hr",  dur: "individuell",   ref: "ab 150 €/h" },
+  ]},
+  "imb": { name: "Immobilienberatung", icon: "🏠", color: "#5F5E5A", services: [
+    { n: "Immobilienbewertung (Gutachten)",               t: "fix", dur: "individuell",   ref: "ab 590 €" },
+    { n: "Kaufberatung (Besichtigung)",                   t: "fix", dur: "pro Termin",    ref: "ab 250 €" },
+    { n: "Mietpreisanalyse",                              t: "fix", dur: "ca. 2h",        ref: "ab 290 €" },
+    { n: "Maklervertrag prüfen",                          t: "fix", dur: "ca. 1h",        ref: "ab 190 €" },
+    { n: "Vermietungsberatung komplett",                  t: "fix", dur: "individuell",   ref: "ab 490 €" },
+    { n: "Immobilien-Investment-Check",                   t: "fix", dur: "ca. 3h",        ref: "ab 590 €" },
+    { n: "Hausverwaltungsberatung",                       t: "hr",  dur: "individuell",   ref: "ab 130 €/h" },
+    { n: "WEG-Abrechnung prüfen",                         t: "fix", dur: "ca. 2h",        ref: "ab 190 €" },
+    { n: "Sanierungskostenkalkulation",                   t: "fix", dur: "individuell",   ref: "ab 390 €" },
+  ]},
+  "mab": { name: "Marketingberatung", icon: "📢", color: "#993556", services: [
+    { n: "Markenentwicklung & Corporate Identity",        t: "pa",  dur: "2–4 Wochen",    ref: "ab 2.490 €" },
+    { n: "Marketingstrategie Workshop",                   t: "fix", dur: "Ganztag",       ref: "ab 1.490 €" },
+    { n: "Social-Media-Strategie",                        t: "fix", dur: "ca. 2h",        ref: "ab 850 €" },
+    { n: "Content-Marketing-Konzept",                     t: "fix", dur: "ca. 3h",        ref: "ab 690 €" },
+    { n: "E-Mail-Marketing-Setup",                        t: "fix", dur: "ca. 1 Tag",     ref: "ab 590 €" },
+    { n: "Google Ads Kampagnenberatung",                  t: "fix", dur: "ca. 2h",        ref: "ab 490 €" },
+    { n: "Meta / Instagram Ads Beratung",                 t: "fix", dur: "ca. 2h",        ref: "ab 490 €" },
+    { n: "Wettbewerbsanalyse Marketing",                  t: "fix", dur: "ca. 3h",        ref: "ab 690 €" },
+    { n: "Monatliche Marketing-Betreuung",                t: "mo",  dur: "monatlich",     ref: "ab 990 €/Mo." },
+  ]},
+  "psb": { name: "Personalberatung / HR", icon: "👥", color: "#185FA5", services: [
+    { n: "Stellenausschreibung erstellen",                t: "fix", dur: "ca. 1,5h",      ref: "ab 250 €" },
+    { n: "Active Sourcing (Kandidatensuche)",             t: "mo",  dur: "monatlich",     ref: "ab 890 €/Mo." },
+    { n: "Personalauswahl-Begleitung (Assessment)",       t: "hr",  dur: "individuell",   ref: "ab 150 €/h" },
+    { n: "Onboarding-Konzept",                            t: "fix", dur: "ca. 2h",        ref: "ab 390 €" },
+    { n: "Gehaltsstruktur-Beratung",                      t: "fix", dur: "ca. 3h",        ref: "ab 590 €" },
+    { n: "Personalentwicklungskonzept",                   t: "pa",  dur: "individuell",   ref: "ab 1.290 €" },
+    { n: "Mitarbeiterbefragung & Auswertung",             t: "pa",  dur: "individuell",   ref: "ab 890 €" },
+    { n: "Kündigung / Trennungsbegleitung",               t: "fix", dur: "ca. 2h",        ref: "ab 390 €" },
+    { n: "HR-Interim-Management",                         t: "hr",  dur: "individuell",   ref: "ab 120 €/h" },
+  ]},
+  "cob": { name: "Coaching & Weiterbildung", icon: "🎓", color: "#3B6D11", services: [
+    { n: "Business Coaching (Einzelsitzung)",             t: "fix", dur: "60 Min.",       ref: "ab 150 €" },
+    { n: "Führungskräfte-Coaching (5er-Paket)",           t: "pa",  dur: "5 × 60 Min.",  ref: "ab 650 €" },
+    { n: "Life Coaching (Einzelsitzung)",                 t: "fix", dur: "60 Min.",       ref: "ab 120 €" },
+    { n: "Karriereberatung",                              t: "fix", dur: "ca. 1,5h",      ref: "ab 190 €" },
+    { n: "Bewerbungsunterlagen-Check",                    t: "fix", dur: "ca. 2h",        ref: "ab 230 €" },
+    { n: "Präsentationstraining",                         t: "fix", dur: "Halbtag",       ref: "ab 690 €" },
+    { n: "Zeitmanagement-Workshop",                       t: "fix", dur: "Halbtag",       ref: "ab 490 €" },
+    { n: "Persönlichkeitsentwicklung (MBTI/DISG)",        t: "fix", dur: "ca. 3h",        ref: "ab 350 €" },
+    { n: "Team-Coaching / Teambuilding",                  t: "pa",  dur: "Ganztag",       ref: "ab 1.890 €" },
+    { n: "Stressmanagement & Burnout-Prävention",         t: "fix", dur: "ca. 2h",        ref: "ab 290 €" },
+  ]},
+  "veb": { name: "Versicherungsberatung", icon: "🛡️", color: "#854F0B", services: [
+    { n: "Versicherungsanalyse privat",                   t: "fix", dur: "ca. 2h",        ref: "ab 150 €" },
+    { n: "Versicherungsanalyse gewerblich",               t: "fix", dur: "ca. 2,5h",      ref: "ab 290 €" },
+    { n: "Berufsunfähigkeitsversicherung Beratung",       t: "fix", dur: "ca. 1,5h",      ref: "ab 99 €" },
+    { n: "Krankenversicherungsvergleich",                 t: "fix", dur: "ca. 1,5h",      ref: "kostenlos*" },
+    { n: "Betriebliche Altersvorsorge (bAV)",             t: "fix", dur: "ca. 2h",        ref: "ab 150 €" },
+    { n: "Risikobewertung Unternehmen",                   t: "hr",  dur: "individuell",   ref: "ab 130 €/h" },
+    { n: "Honorarberatung Versicherungen",                t: "hr",  dur: "pro Stunde",    ref: "ab 120 €/h" },
+  ]},
+  "dsb": { name: "Datenschutz & DSGVO", icon: "🔐", color: "#5B21B6", services: [
+    { n: "DSGVO-Gap-Analyse",                             t: "fix", dur: "ca. 1 Tag",     ref: "ab 890 €" },
+    { n: "Verarbeitungsverzeichnis erstellen",            t: "fix", dur: "individuell",   ref: "ab 590 €" },
+    { n: "Datenschutzerklärung erstellen",                t: "fix", dur: "ca. 3h",        ref: "ab 390 €" },
+    { n: "Datenschutzbeauftragter (extern)",              t: "mo",  dur: "monatlich",     ref: "ab 149 €/Mo." },
+    { n: "DSGVO-Schulung Mitarbeiter",                    t: "fix", dur: "Halbtag",       ref: "ab 490 €" },
+    { n: "Datenschutz-Folgenabschätzung (DSFA)",          t: "fix", dur: "individuell",   ref: "ab 790 €" },
+  ]},
+};
+
+const PRICE_TYPE_LABELS = {
+  fix: "Festpreis", hr: "Stundensatz", mo: "Monatspauschale",
+  on: "Auf Anfrage", pa: "Pauschalpreis"
+};
+
+// ── State ─────────────────────────────────────────────────────────────────────
+const onbState = {
+  step: 1, branch: null, services: {}, // services: { svcIndex: {price, type} }
+};
+
+function openOnboarding() {
+  onbReset();
+  document.getElementById('onboardingModal').classList.add('open');
+  renderBranchGrid();
+}
+
+function onbReset() {
+  onbState.step = 1;
+  onbState.branch = null;
+  onbState.services = {};
+  document.querySelectorAll('.onb-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('opanel-1').classList.add('active');
+  document.querySelectorAll('.onb-step').forEach((s, i) => {
+    s.classList.remove('done', 'active');
+    if (i === 0) s.classList.add('active');
+  });
+}
+
+function onbNext(toStep) {
+  if (toStep > 5) return;
+  onbState.step = toStep;
+  document.querySelectorAll('.onb-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('opanel-' + toStep).classList.add('active');
+  document.querySelectorAll('.onb-step').forEach((s, i) => {
+    s.classList.remove('done', 'active');
+    if (i + 1 < toStep) s.classList.add('done');
+    if (i + 1 === toStep) s.classList.add('active');
+  });
+  if (toStep === 3) renderServiceList();
+}
+
+function renderBranchGrid() {
+  const grid = document.getElementById('onb-branch-grid');
+  grid.innerHTML = Object.entries(SERVICE_CATALOG).map(([id, b]) => `
+    <button class="branch-pick" data-branch="${id}" onclick="pickBranch('${id}')">
+      <div class="bp-icon">${b.icon}</div>
+      <div class="bp-name">${b.name}</div>
+      <div class="bp-count">${b.services.length} Leistungen verfügbar</div>
+    </button>
+  `).join('');
+}
+
+function pickBranch(id) {
+  onbState.branch = id;
+  onbState.services = {};
+  document.querySelectorAll('.branch-pick').forEach(b => b.classList.toggle('sel', b.dataset.branch === id));
+  document.getElementById('onb-btn-2').disabled = false;
+}
+
+function renderServiceList() {
+  const branch = SERVICE_CATALOG[onbState.branch];
+  if (!branch) return;
+  document.getElementById('onb-svc-title').textContent = 'Leistungen für ' + branch.name;
+
+  // Group by price type
+  const groups = { fix: [], hr: [], mo: [], pa: [], on: [] };
+  branch.services.forEach((s, i) => groups[s.t].push({ ...s, idx: i }));
+
+  let html = '';
+  const groupOrder = [['fix','Festpreise'],['hr','Stundensätze'],['mo','Monatliche Leistungen'],['pa','Pauschalpreise'],['on','Auf Anfrage']];
+  groupOrder.forEach(([key, label]) => {
+    if (!groups[key].length) return;
+    html += `<div class="svc-cat-section">
+      <div class="svc-cat-head"><span>${label}</span><span>${groups[key].length} Leistungen</span></div>`;
+    groups[key].forEach(s => {
+      const selected = onbState.services[s.idx];
+      const checked = selected ? 'checked' : '';
+      const priceVal = selected ? selected.price : '';
+      const typeVal = selected ? selected.type : s.t;
+      html += `
+        <div class="svc-pick ${checked}" data-idx="${s.idx}">
+          <div class="svc-check" onclick="toggleSvc(${s.idx}, event)">✓</div>
+          <div class="svc-info" onclick="toggleSvc(${s.idx}, event)">
+            <div class="sn">${s.n}</div>
+            <div class="sd"><span>${s.dur}</span> · <span class="sp">Branchenrahmen: ${s.ref}</span></div>
+          </div>
+          <div class="svc-price-input">
+            <input type="text" placeholder="z.B. 199" value="${priceVal}" onchange="updateSvcPrice(${s.idx}, this.value)" onclick="event.stopPropagation()">
+            <select onchange="updateSvcType(${s.idx}, this.value)" onclick="event.stopPropagation()">
+              <option value="fix" ${typeVal==='fix'?'selected':''}>€ Festpreis</option>
+              <option value="hr" ${typeVal==='hr'?'selected':''}>€/h</option>
+              <option value="mo" ${typeVal==='mo'?'selected':''}>€/Monat</option>
+              <option value="pa" ${typeVal==='pa'?'selected':''}>€ Pauschal</option>
+              <option value="on" ${typeVal==='on'?'selected':''}>Auf Anfrage</option>
+            </select>
+          </div>
+        </div>`;
+    });
+    html += `</div>`;
+  });
+
+  document.getElementById('onb-svc-list').innerHTML = html;
+  updateSvcCount();
+}
+
+function toggleSvc(idx, e) {
+  e.stopPropagation();
+  const branch = SERVICE_CATALOG[onbState.branch];
+  const svc = branch.services[idx];
+  if (onbState.services[idx]) {
+    delete onbState.services[idx];
+  } else {
+    onbState.services[idx] = { price: '', type: svc.t };
+  }
+  renderServiceList();
+}
+
+function updateSvcPrice(idx, val) {
+  if (!onbState.services[idx]) onbState.services[idx] = { price: val, type: SERVICE_CATALOG[onbState.branch].services[idx].t };
+  else onbState.services[idx].price = val;
+  // Auto-check when user enters a price
+  document.querySelector(`.svc-pick[data-idx="${idx}"]`)?.classList.add('checked');
+  updateSvcCount();
+}
+
+function updateSvcType(idx, val) {
+  if (!onbState.services[idx]) onbState.services[idx] = { price: '', type: val };
+  else onbState.services[idx].type = val;
+}
+
+function updateSvcCount() {
+  const n = Object.keys(onbState.services).length;
+  document.getElementById('onb-svc-count').textContent = n;
+  document.getElementById('onb-btn-3').disabled = n < 3;
+}
+
+function onbFilterSvc() {
+  const q = document.getElementById('onb-svc-search').value.toLowerCase().trim();
+  document.querySelectorAll('.svc-pick').forEach(el => {
+    const txt = el.querySelector('.sn')?.textContent.toLowerCase() || '';
+    el.style.display = (!q || txt.includes(q)) ? '' : 'none';
+  });
+  // Hide empty groups
+  document.querySelectorAll('.svc-cat-section').forEach(g => {
+    const anyVisible = Array.from(g.querySelectorAll('.svc-pick')).some(el => el.style.display !== 'none');
+    g.style.display = anyVisible ? '' : 'none';
+  });
+}
+
+function onbAddCustom() {
+  const name = prompt('Name der Leistung (z.B. "Spezielle Beratung XY"):');
+  if (!name) return;
+  const branch = SERVICE_CATALOG[onbState.branch];
+  const newIdx = branch.services.length;
+  branch.services.push({ n: name, t: 'fix', dur: 'individuell', ref: 'eigene Leistung' });
+  onbState.services[newIdx] = { price: '', type: 'fix' };
+  renderServiceList();
+}
+
+function onbFinish() {
+  const agb = document.getElementById('onb-agb').checked;
+  if (!agb) { alert('Bitte AGB und Datenschutzrichtlinie akzeptieren.'); return; }
+  const company = document.getElementById('onb-company').value.trim();
+  const email = document.getElementById('onb-email').value.trim();
+  if (!company || !email) { alert('Bitte Unternehmensname und E-Mail angeben.'); onbNext(1); return; }
+
+  // Build summary
+  const branch = SERVICE_CATALOG[onbState.branch];
+  const city = document.getElementById('onb-city').value || '–';
+  const plz = document.getElementById('onb-plz').value || '';
+  document.getElementById('sum-company').textContent = company;
+  document.getElementById('sum-branch').textContent = branch.name;
+  document.getElementById('sum-loc').textContent = (plz + ' ' + city).trim() || '–';
+  const svcCount = Object.keys(onbState.services).length;
+  document.getElementById('sum-count').textContent = svcCount + ' Leistungen aktiv';
+
+  // Preview top 3 services
+  const previewHtml = Object.entries(onbState.services).slice(0, 3).map(([idx, data]) => {
+    const svc = branch.services[idx];
+    const priceTag = data.price ? `${data.price} €` : svc.ref;
+    return `<div class="ssp"><span class="sname">${svc.n}</span><span class="sprice">${priceTag}</span></div>`;
+  }).join('');
+  document.getElementById('sum-svc-preview').innerHTML = previewHtml +
+    (svcCount > 3 ? `<div class="ssp"><span class="sname" style="color:var(--muted);font-style:italic">+ ${svcCount - 3} weitere Leistungen</span><span></span></div>` : '');
+
+  onbNext(5);
+}
+
+</script>
+</body>
+</html>

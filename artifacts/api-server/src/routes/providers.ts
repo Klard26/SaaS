@@ -155,6 +155,11 @@ router.post("/providers", async (req, res): Promise<void> => {
         website: d.website,
         logoUrl: d.logoUrl,
         yearsExperience: d.yearsExperience,
+        companyLegalName: d.companyLegalName,
+        taxId: d.taxId,
+        responseTime: d.responseTime,
+        consultationMode: d.consultationMode ?? "both",
+        certificates: d.certificates ?? [],
         icalToken: randomBytes(24).toString("hex"),
       })
       .returning();
@@ -203,6 +208,11 @@ router.patch("/providers/:id", async (req, res): Promise<void> => {
     if (d.avatarUrl !== undefined) updateData.avatarUrl = d.avatarUrl;
     if (d.logoUrl !== undefined) updateData.logoUrl = d.logoUrl;
     if (d.yearsExperience !== undefined) updateData.yearsExperience = d.yearsExperience;
+    if (d.companyLegalName !== undefined) updateData.companyLegalName = d.companyLegalName;
+    if (d.taxId !== undefined) updateData.taxId = d.taxId;
+    if (d.responseTime !== undefined) updateData.responseTime = d.responseTime;
+    if (d.consultationMode !== undefined) updateData.consultationMode = d.consultationMode;
+    if (d.certificates !== undefined) updateData.certificates = d.certificates;
 
     const [updated] = await db
       .update(providersTable)

@@ -20,7 +20,11 @@ router.post("/ai/offer", aiLimiter, async (req, res): Promise<void> => {
       res.status(400).json({ error: parsed.error.message });
       return;
     }
-    const { providerId, inquiry } = parsed.data;
+    const { providerId, inquiry: rawInquiry } = parsed.data;
+    const inquiry = rawInquiry
+      .replace(/[\u0000-\u001f\u007f]/g, " ")
+      .replace(/```/g, "''")
+      .slice(0, 2000);
 
     const [provider] = await db
       .select()
@@ -38,35 +42,93 @@ router.post("/ai/offer", aiLimiter, async (req, res): Promise<void> => {
       .from(servicesTable)
       .where(eq(servicesTable.providerId, providerId));
 
-    const serviceList = services
-      .map((s) => `- ${s.name}: ${s.price}€ (${s.durationMinutes} Min.)`)
-      .join("\n");
+    const fmt = (n: number) => n.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const serviceList = services.length
+      ? services
+          .map((s) => {
+            const net = s.netPrice ?? +(s.price / (1 + s.vatRate / 100)).toFixed(2);
+            const vat = +(s.price - net).toFixed(2);
+            return `- ${s.name} (${s.durationMinutes} Min.): netto ${fmt(net)} € + ${s.vatRate}% MwSt. ${fmt(vat)} € = brutto ${fmt(s.price)} €`;
+          })
+          .join("\n")
+      : "Keine Leistungen hinterlegt — bitte allgemeines Pauschalangebot vorschlagen.";
+
+    const certs = (provider.certificates ?? []).filter(Boolean);
+    const modeLabel: Record<string, string> = {
+      online: "ausschließlich Online-Beratung",
+      "in-person": "ausschließlich Vor-Ort-Beratung",
+      both: "Online- und Vor-Ort-Beratung",
+    };
+    const mode = modeLabel[provider.consultationMode ?? "both"] ?? "Online- und Vor-Ort-Beratung";
+    const companyName = provider.companyLegalName || provider.displayName;
 
     const message = await anthropic.messages.create({
       model: "claude-sonnet-4-5",
-      max_tokens: 500,
+      max_tokens: 1200,
       messages: [
         {
           role: "user",
-          content: `Du bist ein professioneller Berater namens "${provider.displayName}" in der Kategorie "${provider.category}" aus ${provider.city}.
+          content: `Du bist Angebots-Assistent für die deutsche Beratungs-Plattform Klard und erstellst ein verbindliches, kaufmännisch korrektes Angebot auf Deutsch (Sie-Form, sachlich, vertrauenswürdig).
 
-Deine Dienstleistungen:
-${serviceList || "Allgemeine Beratung"}
+== ANBIETER ==
+Firma: ${companyName}
+Berufsbezeichnung: ${provider.category}
+Standort: ${provider.zip} ${provider.city}${provider.address ? ", " + provider.address : ""}
+${provider.taxId ? `Steuernummer / USt-IdNr.: ${provider.taxId}` : ""}
+${provider.email ? `E-Mail: ${provider.email}` : ""}
+${provider.phone ? `Telefon: ${provider.phone}` : ""}
+${provider.yearsExperience ? `Berufserfahrung: ${provider.yearsExperience} Jahre` : ""}
+Beratungsform: ${mode}
+${provider.responseTime ? `Reaktionszeit: ${provider.responseTime}` : ""}
+${certs.length ? `Zertifikate / Mitgliedschaften: ${certs.join(", ")}` : ""}
+${provider.bio ? `Profil: ${provider.bio}` : ""}
 
-Ein potenzieller Kunde schreibt:
+== HINTERLEGTE LEISTUNGEN UND PREISE (verbindliche Festpreise) ==
+${serviceList}
+
+== KUNDENBEDARF ==
 "${inquiry}"
 
-Erstelle ein professionelles, personalisiertes Angebot auf Deutsch (max. 150 Wörter). Sei konkret und nenne einen ungefähren Preis.`,
+== AUFGABE ==
+Erstelle ein strukturiertes Angebot mit folgenden Abschnitten und exakt diesen Überschriften (verwende Markdown-Fettdruck **Überschrift**):
+
+**Bedarfsanalyse**
+2–3 Sätze: was hat der Kunde geschildert, welche Leistung passt.
+
+**Empfohlene Leistungen**
+Tabelle als Bulletpoints mit Leistungsname, Dauer, Nettopreis, MwSt.-Satz, Bruttopreis. Wähle ausschließlich Leistungen aus der obigen Liste — nichts erfinden. Wenn keine passt, schlage "individuelles Pauschalangebot nach Aufwand" vor und kennzeichne es als unverbindlich.
+
+**Gesamtpreis**
+Summe Netto, Summe MwSt., Summe Brutto.
+
+**Beratungsform & Ablauf**
+Kurz: Online/Vor-Ort, voraussichtliche Reaktionszeit, nächster Termin via Klard buchbar.
+
+**Hinweise**
+- Preise sind Festpreise inkl. der ausgewiesenen MwSt.
+- Angebot freibleibend, gültig 14 Tage ab Erstellung.
+${provider.category.match(/Steuer|Rechtsanwalt|Notar|Wirtschaftsprüfer/i) ? "- Hinweis nach RVG/StBVV: gesetzliche Mindestgebühren bleiben unberührt." : ""}
+
+Schließe mit einer Grußzeile mit dem Firmennamen ab. Halte das Angebot prägnant (max. 350 Wörter), keine Floskeln, keine Emojis.`,
         },
       ],
     });
 
     const offerText = message.content[0]?.type === "text" ? message.content[0].text : "";
+    const totalNet = services.reduce((sum, s) => sum + (s.netPrice ?? +(s.price / (1 + s.vatRate / 100)).toFixed(2)), 0);
+    const totalGross = services.reduce((sum, s) => sum + s.price, 0);
 
     res.json({
       offer: offerText,
       estimatedPrice: services[0]?.price ?? null,
       estimatedDuration: services[0] ? `${services[0].durationMinutes} Minuten` : null,
+      summary: services.length
+        ? {
+            servicesCount: services.length,
+            totalNet: +totalNet.toFixed(2),
+            totalGross: +totalGross.toFixed(2),
+          }
+        : null,
     });
   } catch (err) {
     req.log.error({ err }, "Failed to generate AI offer");

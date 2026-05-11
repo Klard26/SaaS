@@ -5,6 +5,7 @@
  * Klard – Booking platform for consultants
  * OpenAPI spec version: 0.1.0
  */
+import type { ProviderUpdateConsultationMode } from "./providerUpdateConsultationMode";
 
 export interface ProviderUpdate {
   displayName?: string;
@@ -18,4 +19,9 @@ export interface ProviderUpdate {
   avatarUrl?: string;
   logoUrl?: string;
   yearsExperience?: number;
+  companyLegalName?: string;
+  taxId?: string;
+  responseTime?: string;
+  consultationMode?: ProviderUpdateConsultationMode;
+  certificates?: string[];
 }

@@ -684,6 +684,11 @@ components:
         premiumSince:    { type: ["string", "null"] }
         icalToken:       { type: ["string", "null"] }
         calendarSyncUrl: { type: ["string", "null"] }
+        companyLegalName: { type: ["string", "null"] }
+        taxId:           { type: ["string", "null"] }
+        responseTime:    { type: ["string", "null"] }
+        consultationMode: { type: string, enum: [online, in-person, both] }
+        certificates:    { type: array, items: { type: string } }
         createdAt:    { type: string }
 
     ProviderInput:
@@ -700,6 +705,11 @@ components:
         website:      { type: string }
         logoUrl:      { type: string }
         yearsExperience: { type: integer }
+        companyLegalName: { type: string }
+        taxId:        { type: string }
+        responseTime: { type: string }
+        consultationMode: { type: string, enum: [online, in-person, both] }
+        certificates: { type: array, items: { type: string } }
 
     ProviderUpdate:
       type: object
@@ -715,6 +725,11 @@ components:
         avatarUrl:    { type: string }
         logoUrl:      { type: string }
         yearsExperience: { type: integer }
+        companyLegalName: { type: string }
+        taxId:        { type: string }
+        responseTime: { type: string }
+        consultationMode: { type: string, enum: [online, in-person, both] }
+        certificates: { type: array, items: { type: string } }
 
     Service:
       type: object

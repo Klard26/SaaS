@@ -109,6 +109,11 @@ export const CreateProviderBody = zod.object({
   website: zod.string().optional(),
   logoUrl: zod.string().optional(),
   yearsExperience: zod.number().optional(),
+  companyLegalName: zod.string().optional(),
+  taxId: zod.string().optional(),
+  responseTime: zod.string().optional(),
+  consultationMode: zod.enum(["online", "in-person", "both"]).optional(),
+  certificates: zod.array(zod.string()).optional(),
 });
 
 /**
@@ -142,6 +147,11 @@ export const GetProviderResponse = zod.object({
   premiumSince: zod.string().nullish(),
   icalToken: zod.string().nullish(),
   calendarSyncUrl: zod.string().nullish(),
+  companyLegalName: zod.string().nullish(),
+  taxId: zod.string().nullish(),
+  responseTime: zod.string().nullish(),
+  consultationMode: zod.enum(["online", "in-person", "both"]).optional(),
+  certificates: zod.array(zod.string()).optional(),
   createdAt: zod.string().optional(),
 });
 
@@ -164,6 +174,11 @@ export const UpdateProviderBody = zod.object({
   avatarUrl: zod.string().optional(),
   logoUrl: zod.string().optional(),
   yearsExperience: zod.number().optional(),
+  companyLegalName: zod.string().optional(),
+  taxId: zod.string().optional(),
+  responseTime: zod.string().optional(),
+  consultationMode: zod.enum(["online", "in-person", "both"]).optional(),
+  certificates: zod.array(zod.string()).optional(),
 });
 
 export const UpdateProviderResponse = zod.object({
@@ -190,6 +205,11 @@ export const UpdateProviderResponse = zod.object({
   premiumSince: zod.string().nullish(),
   icalToken: zod.string().nullish(),
   calendarSyncUrl: zod.string().nullish(),
+  companyLegalName: zod.string().nullish(),
+  taxId: zod.string().nullish(),
+  responseTime: zod.string().nullish(),
+  consultationMode: zod.enum(["online", "in-person", "both"]).optional(),
+  certificates: zod.array(zod.string()).optional(),
   createdAt: zod.string().optional(),
 });
 
@@ -220,6 +240,11 @@ export const GetMyProviderProfileResponse = zod.object({
   premiumSince: zod.string().nullish(),
   icalToken: zod.string().nullish(),
   calendarSyncUrl: zod.string().nullish(),
+  companyLegalName: zod.string().nullish(),
+  taxId: zod.string().nullish(),
+  responseTime: zod.string().nullish(),
+  consultationMode: zod.enum(["online", "in-person", "both"]).optional(),
+  certificates: zod.array(zod.string()).optional(),
   createdAt: zod.string().optional(),
 });
 

@@ -57,6 +57,15 @@ export const ProviderSubscriptionTier = {
   premium: "premium",
 } as const;
 
+export type ProviderConsultationMode =
+  (typeof ProviderConsultationMode)[keyof typeof ProviderConsultationMode];
+
+export const ProviderConsultationMode = {
+  online: "online",
+  "in-person": "in-person",
+  both: "both",
+} as const;
+
 export interface Provider {
   id: number;
   clerkUserId: string;
@@ -91,8 +100,25 @@ export interface Provider {
   icalToken?: string | null;
   /** @nullable */
   calendarSyncUrl?: string | null;
+  /** @nullable */
+  companyLegalName?: string | null;
+  /** @nullable */
+  taxId?: string | null;
+  /** @nullable */
+  responseTime?: string | null;
+  consultationMode?: ProviderConsultationMode;
+  certificates?: string[];
   createdAt?: string;
 }
+
+export type ProviderInputConsultationMode =
+  (typeof ProviderInputConsultationMode)[keyof typeof ProviderInputConsultationMode];
+
+export const ProviderInputConsultationMode = {
+  online: "online",
+  "in-person": "in-person",
+  both: "both",
+} as const;
 
 export interface ProviderInput {
   displayName: string;
@@ -105,7 +131,21 @@ export interface ProviderInput {
   website?: string;
   logoUrl?: string;
   yearsExperience?: number;
+  companyLegalName?: string;
+  taxId?: string;
+  responseTime?: string;
+  consultationMode?: ProviderInputConsultationMode;
+  certificates?: string[];
 }
+
+export type ProviderUpdateConsultationMode =
+  (typeof ProviderUpdateConsultationMode)[keyof typeof ProviderUpdateConsultationMode];
+
+export const ProviderUpdateConsultationMode = {
+  online: "online",
+  "in-person": "in-person",
+  both: "both",
+} as const;
 
 export interface ProviderUpdate {
   displayName?: string;
@@ -119,6 +159,11 @@ export interface ProviderUpdate {
   avatarUrl?: string;
   logoUrl?: string;
   yearsExperience?: number;
+  companyLegalName?: string;
+  taxId?: string;
+  responseTime?: string;
+  consultationMode?: ProviderUpdateConsultationMode;
+  certificates?: string[];
 }
 
 export interface Service {

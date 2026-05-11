@@ -171,6 +171,26 @@ export default function ProviderDetail() {
                   </p>
                 )}
 
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {provider.consultationMode && (
+                    <Badge variant="outline" className="text-xs font-normal">
+                      {provider.consultationMode === "online"
+                        ? "Nur Online-Beratung"
+                        : provider.consultationMode === "in-person"
+                          ? "Nur Vor-Ort-Beratung"
+                          : "Online & Vor-Ort"}
+                    </Badge>
+                  )}
+                  {provider.responseTime && (
+                    <Badge variant="outline" className="text-xs font-normal">
+                      Antwort {provider.responseTime.toLowerCase()}
+                    </Badge>
+                  )}
+                  {(provider.certificates ?? []).map((c) => (
+                    <Badge key={c} variant="secondary" className="text-xs font-normal">{c}</Badge>
+                  ))}
+                </div>
+
                 <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-4">
                   <span className="flex items-center gap-1.5">
                     <MapPin className="h-4 w-4" />
