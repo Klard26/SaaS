@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ChevronDown, Menu, X } from "lucide-react";
+import { ChevronDown, Menu, Search, X } from "lucide-react";
 import { useState } from "react";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -19,38 +19,53 @@ export function Navbar() {
   const { signOut } = useClerk();
   const [, setLocation] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [navQ, setNavQ] = useState("");
 
   const initials = user?.firstName
     ? `${user.firstName[0]}${user.lastName?.[0] ?? ""}`.toUpperCase()
     : "?";
 
+  function submitNavSearch(e: React.FormEvent) {
+    e.preventDefault();
+    const v = navQ.trim();
+    setLocation(v ? `/search?q=${encodeURIComponent(v)}` : "/search");
+  }
+
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 flex h-16 items-center justify-between gap-4">
-        <Link href="/" className="flex items-center gap-2 shrink-0" data-testid="link-logo">
-          <span className="text-xl font-bold tracking-tight text-primary">Klard</span>
+    <header className="sticky top-0 z-40 w-full border-b border-border bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-8 flex h-16 items-center gap-4">
+        <Link href="/" className="shrink-0" data-testid="link-logo">
+          <span className="klard-logo text-2xl">klar<span>d</span></span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
-          <Link href="/search" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-search">
+        {/* Inline search (Doctolib-style) */}
+        <form
+          onSubmit={submitNavSearch}
+          className="hidden md:flex flex-1 max-w-[460px] mx-4"
+        >
+          <div className="flex items-center w-full bg-secondary border-[1.5px] border-transparent focus-within:bg-white focus-within:border-primary focus-within:shadow-[0_0_0_3px_rgba(8,145,178,0.1)] rounded-full h-10 px-4 transition-all">
+            <Search className="h-4 w-4 text-muted-foreground shrink-0 mr-2" />
+            <input
+              type="text"
+              value={navQ}
+              onChange={e => setNavQ(e.target.value)}
+              placeholder="Branche, Anbieter oder Leistung suchen..."
+              className="flex-1 bg-transparent border-none outline-none text-sm text-foreground placeholder:text-muted-foreground"
+              data-testid="input-nav-search"
+            />
+          </div>
+        </form>
+
+        <nav className="hidden lg:flex items-center gap-5 text-sm font-medium ml-auto">
+          <Link href="/search" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-search">
             Berater finden
           </Link>
-          <Link href="/pricing" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-pricing">
+          <Link href="/pricing" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-pricing">
             Für Berater
           </Link>
-          {isSignedIn && (
-            <>
-              <Link href="/bookings" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-bookings">
-                Meine Buchungen
-              </Link>
-              <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors" data-testid="link-dashboard">
-                Dashboard
-              </Link>
-            </>
-          )}
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 ml-auto lg:ml-0">
           {isSignedIn ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -62,31 +77,19 @@ export function Navbar() {
                   <ChevronDown className="h-3.5 w-3.5 text-muted-foreground hidden sm:block" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuContent align="end" className="w-56">
                 <div className="px-3 py-2">
                   <p className="text-sm font-medium truncate">{user?.fullName}</p>
                   <p className="text-xs text-muted-foreground truncate">{user?.primaryEmailAddress?.emailAddress}</p>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setLocation("/dashboard")} data-testid="menu-item-dashboard">
-                  Dashboard
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setLocation("/bookings")} data-testid="menu-item-bookings">
-                  Meine Buchungen
-                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLocation("/dashboard")} data-testid="menu-item-dashboard">Dashboard</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLocation("/bookings")} data-testid="menu-item-bookings">Meine Buchungen</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setLocation("/provider/onboarding")} data-testid="menu-item-onboarding">
-                  Als Berater registrieren
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setLocation("/provider/profile")} data-testid="menu-item-profile">
-                  Berater-Profil
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setLocation("/provider/services")} data-testid="menu-item-services">
-                  Meine Leistungen
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setLocation("/provider/availability")} data-testid="menu-item-availability">
-                  Verfügbarkeit
-                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLocation("/provider/onboarding")} data-testid="menu-item-onboarding">Als Berater registrieren</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLocation("/provider/profile")} data-testid="menu-item-profile">Berater-Profil</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLocation("/provider/services")} data-testid="menu-item-services">Meine Leistungen</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLocation("/provider/availability")} data-testid="menu-item-availability">Verfügbarkeit</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
@@ -99,11 +102,22 @@ export function Navbar() {
             </DropdownMenu>
           ) : (
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setLocation("/sign-in")} data-testid="button-signin">
-                Anmelden
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setLocation("/sign-in")}
+                className="rounded-full border-[1.5px] border-border text-slate-700 hover:border-primary hover:text-primary px-4 h-9 text-xs font-semibold"
+                data-testid="button-signin"
+              >
+                Einloggen
               </Button>
-              <Button size="sm" onClick={() => setLocation("/sign-up")} data-testid="button-signup">
-                Registrieren
+              <Button
+                size="sm"
+                onClick={() => setLocation("/sign-up")}
+                className="rounded-full bg-primary hover:bg-[var(--klard-teal-d)] text-white px-4 h-9 text-xs font-semibold"
+                data-testid="button-signup"
+              >
+                Kostenlos registrieren
               </Button>
             </div>
           )}
@@ -119,22 +133,14 @@ export function Navbar() {
       </div>
 
       {mobileOpen && (
-        <div className="md:hidden border-t border-border bg-background">
+        <div className="md:hidden border-t border-border bg-white">
           <nav className="flex flex-col px-4 py-3 gap-1">
-            <Link href="/search" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>
-              Berater finden
-            </Link>
-            <Link href="/pricing" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>
-              Für Berater
-            </Link>
+            <Link href="/search" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Berater finden</Link>
+            <Link href="/pricing" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Für Berater</Link>
             {isSignedIn && (
               <>
-                <Link href="/bookings" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>
-                  Meine Buchungen
-                </Link>
-                <Link href="/dashboard" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>
-                  Dashboard
-                </Link>
+                <Link href="/bookings" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Meine Buchungen</Link>
+                <Link href="/dashboard" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Dashboard</Link>
               </>
             )}
           </nav>
