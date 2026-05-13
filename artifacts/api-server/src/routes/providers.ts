@@ -29,21 +29,179 @@ async function getDirectBillingMap(): Promise<Record<string, boolean>> {
  * matching category exists, so the caller can respond with a 400 instead of
  * silently writing an orphan slug into the providers table.
  */
-async function resolveCategory(input: string): Promise<{ name: string; slug: string } | null> {
-  const candidate = slugify(input);
-  const [bySlug] = await db
-    .select({ name: categoriesTable.name, slug: categoriesTable.slug })
-    .from(categoriesTable)
-    .where(eq(categoriesTable.slug, candidate))
-    .limit(1);
-  if (bySlug) return bySlug;
+type ResolvedCategory = {
+  name: string;
+  slug: string;
+  qualifications: QualificationsConfig | null;
+};
 
-  const [byName] = await db
-    .select({ name: categoriesTable.name, slug: categoriesTable.slug })
-    .from(categoriesTable)
-    .where(eq(categoriesTable.name, input))
-    .limit(1);
-  return byName ?? null;
+async function resolveCategory(input: string): Promise<ResolvedCategory | null> {
+  const candidate = slugify(input);
+  const cols = {
+    name: categoriesTable.name,
+    slug: categoriesTable.slug,
+    qualifications: categoriesTable.qualifications,
+  };
+  const [bySlug] = await db.select(cols).from(categoriesTable).where(eq(categoriesTable.slug, candidate)).limit(1);
+  if (bySlug) return bySlug as ResolvedCategory;
+
+  const [byName] = await db.select(cols).from(categoriesTable).where(eq(categoriesTable.name, input)).limit(1);
+  return (byName as ResolvedCategory | undefined) ?? null;
+}
+
+interface QualificationsConfig {
+  notes?: string;
+  dena_required?: boolean;
+  dena_categories?: string[];
+  dena_programs?: string[];
+  kammer_required?: boolean;
+  kammer_type?: string;
+  bauvorlage_required?: boolean;
+  oebvi_optional?: boolean;
+  zertifizierung_required?: boolean;
+  options?: string[];
+  specialties?: string[];
+  fachbereiche?: string[];
+}
+
+const isNonEmptyString = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0;
+const isStringArr = (v: unknown): v is string[] => Array.isArray(v) && v.every((x) => typeof x === "string");
+const isYearString = (v: unknown): boolean => {
+  if (typeof v !== "string" && typeof v !== "number") return false;
+  const n = Number(v);
+  return Number.isInteger(n) && n >= 1950 && n <= new Date().getFullYear();
+};
+
+/**
+ * Compute the set of qualification keys that the given category config legitimately
+ * accepts. Anything outside this set is treated as cross-category contamination and
+ * rejected to prevent stale fields from previous categories slipping into the JSON.
+ */
+function allowedKeysForConfig(config: QualificationsConfig): Set<string> {
+  const keys = new Set<string>();
+  if (config.dena_required) {
+    keys.add("dena_id");
+    keys.add("dena_since");
+    if (config.dena_categories) keys.add("dena_categories");
+    if (config.dena_programs) keys.add("dena_programs");
+  }
+  if (config.kammer_required) {
+    keys.add("kammer_state");
+    keys.add("kammer_id");
+  }
+  if (config.bauvorlage_required) keys.add("bauvorlage");
+  if (config.oebvi_optional) {
+    keys.add("is_oebvi");
+    keys.add("oebvi_state");
+    keys.add("oebvi_id");
+  }
+  if (config.zertifizierung_required) keys.add("zertifizierung");
+  if (config.specialties) keys.add("specialties");
+  if (config.fachbereiche) keys.add("fachbereiche");
+  return keys;
+}
+
+/**
+ * Validate and normalize qualifications JSON against the category's qualification config.
+ * - filters keys to only those legitimate for the given category (no contamination).
+ * - validates types of every accepted field (not just the required ones).
+ * - returns { ok: false, error } when required fields are missing or any field is malformed.
+ */
+function validateQualifications(
+  config: QualificationsConfig | null,
+  raw: unknown,
+): { ok: true; data: Record<string, unknown> | null } | { ok: false; error: string } {
+  if (raw == null) {
+    if (!config) return { ok: true, data: null };
+    if (config.dena_required) return { ok: false, error: "Qualifikationen erforderlich (dena-Eintragung)" };
+    if (config.kammer_required) return { ok: false, error: "Qualifikationen erforderlich (Kammer-Mitgliedschaft)" };
+    if (config.zertifizierung_required) return { ok: false, error: "Qualifikationen erforderlich (Zertifizierung)" };
+    return { ok: true, data: null };
+  }
+  if (typeof raw !== "object" || Array.isArray(raw)) {
+    return { ok: false, error: "qualifications muss ein Objekt sein" };
+  }
+  if (!config) {
+    // No qualification config for this category → reject any payload to avoid orphan data.
+    return { ok: false, error: "Diese Branche akzeptiert keine Qualifikationen" };
+  }
+
+  const input = raw as Record<string, unknown>;
+  const allowed = allowedKeysForConfig(config);
+  const out: Record<string, unknown> = {};
+
+  // Drop unknown/empty keys silently; reject if any non-empty unknown key is supplied.
+  for (const [k, v] of Object.entries(input)) {
+    if (v === undefined || v === null || v === "") continue;
+    if (!allowed.has(k)) {
+      return { ok: false, error: `Feld '${k}' ist für diese Branche nicht zulässig` };
+    }
+    out[k] = v;
+  }
+
+  // Per-key type validation
+  if (out.dena_id !== undefined && !isNonEmptyString(out.dena_id)) {
+    return { ok: false, error: "dena_id muss ein Text sein" };
+  }
+  if (out.dena_since !== undefined && !isYearString(out.dena_since)) {
+    return { ok: false, error: "dena_since muss ein gültiges Jahr sein" };
+  }
+  if (out.kammer_state !== undefined && !isNonEmptyString(out.kammer_state)) {
+    return { ok: false, error: "kammer_state muss ein Text sein" };
+  }
+  if (out.kammer_id !== undefined && !isNonEmptyString(out.kammer_id)) {
+    return { ok: false, error: "kammer_id muss ein Text sein" };
+  }
+  if (out.bauvorlage !== undefined && typeof out.bauvorlage !== "boolean") {
+    return { ok: false, error: "bauvorlage muss true oder false sein" };
+  }
+  if (out.is_oebvi !== undefined && typeof out.is_oebvi !== "boolean") {
+    return { ok: false, error: "is_oebvi muss true oder false sein" };
+  }
+  if (out.oebvi_state !== undefined && !isNonEmptyString(out.oebvi_state)) {
+    return { ok: false, error: "oebvi_state muss ein Text sein" };
+  }
+  if (out.oebvi_id !== undefined && !isNonEmptyString(out.oebvi_id)) {
+    return { ok: false, error: "oebvi_id muss ein Text sein" };
+  }
+
+  // Required-field enforcement
+  if (config.dena_required && !isNonEmptyString(out.dena_id)) {
+    return { ok: false, error: "dena-Kundennummer ist erforderlich" };
+  }
+  if (config.kammer_required) {
+    if (!isNonEmptyString(out.kammer_state)) return { ok: false, error: "Kammer-Bundesland ist erforderlich" };
+    if (!isNonEmptyString(out.kammer_id)) return { ok: false, error: "Kammer-Mitgliedsnummer ist erforderlich" };
+  }
+  if (config.bauvorlage_required && out.bauvorlage !== true) {
+    return { ok: false, error: "Bauvorlageberechtigung muss bestätigt werden" };
+  }
+  if (config.zertifizierung_required) {
+    if (!isStringArr(out.zertifizierung) || out.zertifizierung.length === 0) {
+      return { ok: false, error: "Mindestens eine Anerkennung muss ausgewählt werden" };
+    }
+    if (!config.options || !out.zertifizierung.every((z) => config.options!.includes(z))) {
+      return { ok: false, error: "Ungültige Anerkennung" };
+    }
+  }
+
+  // Enum array fields must always be string[] AND all values must come from the allowed list.
+  const enumChecks: Array<[string, string[] | undefined]> = [
+    ["dena_categories", config.dena_categories],
+    ["dena_programs", config.dena_programs],
+    ["specialties", config.specialties],
+    ["fachbereiche", config.fachbereiche],
+  ];
+  for (const [key, allowedValues] of enumChecks) {
+    const v = out[key];
+    if (v === undefined) continue;
+    if (!isStringArr(v)) return { ok: false, error: `Feld ${key} muss eine Liste sein` };
+    if (!allowedValues || !v.every((x) => allowedValues.includes(x))) {
+      return { ok: false, error: `Ungültiger Wert in ${key}` };
+    }
+  }
+
+  return { ok: true, data: Object.keys(out).length > 0 ? out : null };
 }
 
 function withDirectBilling<T extends { categorySlug?: string | null }>(p: T, map: Record<string, boolean>): T & { requiresDirectBilling: boolean } {
@@ -160,6 +318,12 @@ router.post("/providers", async (req, res): Promise<void> => {
       res.status(400).json({ error: `Unbekannte Branche: ${d.category}` });
       return;
     }
+    const qualCheck = validateQualifications(category.qualifications, d.qualifications ?? null);
+    if (!qualCheck.ok) {
+      res.status(400).json({ error: qualCheck.error });
+      return;
+    }
+    const cleanQualifications = qualCheck.data;
     let email = "";
     try {
       const u = await clerkClient.users.getUser(userId);
@@ -188,7 +352,7 @@ router.post("/providers", async (req, res): Promise<void> => {
         responseTime: d.responseTime,
         consultationMode: d.consultationMode ?? "both",
         certificates: d.certificates ?? [],
-        qualifications: d.qualifications ?? null,
+        qualifications: cleanQualifications,
         icalToken: randomBytes(24).toString("hex"),
       })
       .returning();
@@ -217,7 +381,12 @@ router.patch("/providers/:id", async (req, res): Promise<void> => {
       return;
     }
     const [existing] = await db
-      .select({ id: providersTable.id, clerkUserId: providersTable.clerkUserId })
+      .select({
+        id: providersTable.id,
+        clerkUserId: providersTable.clerkUserId,
+        categorySlug: providersTable.categorySlug,
+        qualifications: providersTable.qualifications,
+      })
       .from(providersTable)
       .where(eq(providersTable.id, paramsParsed.data.id))
       .limit(1);
@@ -238,14 +407,42 @@ router.patch("/providers/:id", async (req, res): Promise<void> => {
     const updateData: Record<string, unknown> = {};
     if (d.displayName !== undefined) updateData.displayName = d.displayName;
     if (d.bio !== undefined) updateData.bio = d.bio;
+
+    // Determine effective category config for qualifications validation:
+    // - If category is changing, use the new category's config.
+    // - If only qualifications are changing, use the existing category's config.
+    let effectiveQualConfig: QualificationsConfig | null = null;
+    let resolvedNewCategory: ResolvedCategory | null = null;
     if (d.category !== undefined) {
-      const category = await resolveCategory(d.category);
-      if (!category) {
+      resolvedNewCategory = await resolveCategory(d.category);
+      if (!resolvedNewCategory) {
         res.status(400).json({ error: `Unbekannte Branche: ${d.category}` });
         return;
       }
-      updateData.category = category.name;
-      updateData.categorySlug = category.slug;
+      updateData.category = resolvedNewCategory.name;
+      updateData.categorySlug = resolvedNewCategory.slug;
+      effectiveQualConfig = resolvedNewCategory.qualifications;
+    } else if (d.qualifications !== undefined && existing.categorySlug) {
+      const cur = await resolveCategory(existing.categorySlug);
+      if (!cur) {
+        res.status(409).json({ error: "Aktuelle Branche des Profils konnte nicht aufgelöst werden" });
+        return;
+      }
+      effectiveQualConfig = cur.qualifications;
+    }
+
+    if (d.qualifications !== undefined || d.category !== undefined) {
+      // When category changes, drop any prior qualifications client did not re-supply
+      // (prevents cross-category contamination); when only quals change, validate the new payload.
+      const incoming = d.qualifications !== undefined
+        ? d.qualifications
+        : (d.category !== undefined ? null : existing.qualifications);
+      const qualCheck = validateQualifications(effectiveQualConfig, incoming);
+      if (!qualCheck.ok) {
+        res.status(400).json({ error: qualCheck.error });
+        return;
+      }
+      updateData.qualifications = qualCheck.data;
     }
     if (d.city !== undefined) updateData.city = d.city;
     if (d.zip !== undefined) updateData.zip = d.zip;
@@ -260,7 +457,6 @@ router.patch("/providers/:id", async (req, res): Promise<void> => {
     if (d.responseTime !== undefined) updateData.responseTime = d.responseTime;
     if (d.consultationMode !== undefined) updateData.consultationMode = d.consultationMode;
     if (d.certificates !== undefined) updateData.certificates = d.certificates;
-    if (d.qualifications !== undefined) updateData.qualifications = d.qualifications;
 
     const [updated] = await db
       .update(providersTable)
