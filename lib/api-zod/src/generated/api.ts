@@ -641,6 +641,61 @@ export const GetBookingCalendarFileParams = zod.object({
 });
 
 /**
+ * @summary List the current user's saved building assessments
+ */
+export const ListAssessmentsResponseItem = zod.object({
+  id: zod.number(),
+  userId: zod.string(),
+  providerId: zod.number().nullish(),
+  label: zod.string(),
+  addressJson: zod.record(zod.string(), zod.unknown()).nullish(),
+  inputJson: zod.record(zod.string(), zod.unknown()),
+  resultJson: zod.record(zod.string(), zod.unknown()),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+export const ListAssessmentsResponse = zod.array(ListAssessmentsResponseItem);
+
+/**
+ * @summary Save a new building assessment for the current user
+ */
+export const createAssessmentBodyLabelMax = 200;
+
+export const CreateAssessmentBody = zod.object({
+  label: zod.string().min(1).max(createAssessmentBodyLabelMax),
+  addressJson: zod.record(zod.string(), zod.unknown()).nullish(),
+  inputJson: zod.record(zod.string(), zod.unknown()),
+  resultJson: zod.record(zod.string(), zod.unknown()),
+  providerId: zod.number().nullish(),
+});
+
+/**
+ * @summary Get a single saved assessment (owner only)
+ */
+export const GetAssessmentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetAssessmentResponse = zod.object({
+  id: zod.number(),
+  userId: zod.string(),
+  providerId: zod.number().nullish(),
+  label: zod.string(),
+  addressJson: zod.record(zod.string(), zod.unknown()).nullish(),
+  inputJson: zod.record(zod.string(), zod.unknown()),
+  resultJson: zod.record(zod.string(), zod.unknown()),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Delete a saved assessment (owner only)
+ */
+export const DeleteAssessmentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
  * @summary Platform-level stats (total providers, categories, bookings)
  */
 export const GetPlatformStatsResponse = zod.object({

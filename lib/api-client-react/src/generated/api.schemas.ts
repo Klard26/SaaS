@@ -419,6 +419,52 @@ export interface PlatformStats {
   totalReviews: number;
 }
 
+/**
+ * @nullable
+ */
+export type AssessmentInputAddressJson = { [key: string]: unknown } | null;
+
+export type AssessmentInputInputJson = { [key: string]: unknown };
+
+export type AssessmentInputResultJson = { [key: string]: unknown };
+
+export interface AssessmentInput {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  label: string;
+  /** @nullable */
+  addressJson?: AssessmentInputAddressJson;
+  inputJson: AssessmentInputInputJson;
+  resultJson: AssessmentInputResultJson;
+  /** @nullable */
+  providerId?: number | null;
+}
+
+/**
+ * @nullable
+ */
+export type AssessmentAddressJson = { [key: string]: unknown } | null;
+
+export type AssessmentInputJson = { [key: string]: unknown };
+
+export type AssessmentResultJson = { [key: string]: unknown };
+
+export interface Assessment {
+  id: number;
+  userId: string;
+  /** @nullable */
+  providerId?: number | null;
+  label: string;
+  /** @nullable */
+  addressJson?: AssessmentAddressJson;
+  inputJson: AssessmentInputJson;
+  resultJson: AssessmentResultJson;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type ListServiceTemplatesParams = {
   category: string;
 };

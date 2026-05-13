@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { EnergieSchnellcheck } from "@/components/EnergieSchnellcheck";
 import { useListCategories, useListProviders, useGetPlatformStats } from "@workspace/api-client-react";
 import {
   Search, MapPin, Briefcase, Star, CheckCircle, Crown,
@@ -121,6 +122,25 @@ export default function Home() {
             <Stat n="∅ 23%" l="Kundensparnis" />
             <Stat n="30 Sek." l="KI-Angebot" />
           </div>
+        </div>
+      </section>
+
+      {/* ENERGIE-SCHNELLCHECK */}
+      <section className="bg-[var(--klard-bg)] py-12 px-4 sm:px-8 border-b border-border">
+        <div className="max-w-[1100px] mx-auto">
+          <div className="text-center mb-6">
+            <span className="inline-block bg-[var(--klard-teal-l)] text-[var(--klard-teal-d)] text-[0.7rem] font-bold tracking-wider uppercase px-3 py-1 rounded-full mb-3">
+              Kostenlos · ohne Anmeldung
+            </span>
+            <h2 className="font-serif text-3xl font-semibold text-foreground">
+              Wie effizient ist Ihr Gebäude?
+            </h2>
+            <p className="text-muted-foreground text-sm mt-2 max-w-md mx-auto leading-relaxed">
+              Schnelleinschätzung der Energieklasse nach DIN V 18599 — danach den
+              passenden Energieberater in Ihrer Nähe direkt buchen.
+            </p>
+          </div>
+          <EnergieSchnellcheck />
         </div>
       </section>
 

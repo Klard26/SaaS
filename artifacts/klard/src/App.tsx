@@ -20,6 +20,7 @@ import ProviderProfile from "./pages/ProviderProfile";
 import ProviderServices from "./pages/ProviderServices";
 import ProviderAvailability from "./pages/ProviderAvailability";
 import Pricing from "./pages/Pricing";
+import Gebaeudecheck from "./pages/Gebaeudecheck";
 import Impressum from "./pages/legal/Impressum";
 import AGB from "./pages/legal/AGB";
 import Datenschutz from "./pages/legal/Datenschutz";
@@ -188,6 +189,7 @@ function ClerkProviderWithRoutes() {
           <Route path="/sign-up/*?" component={SignUpPage} />
           <Route path="/search" component={Search} />
           <Route path="/pricing" component={Pricing} />
+          <Route path="/gebaeudecheck" component={Gebaeudecheck} />
           <Route path="/impressum" component={Impressum} />
           <Route path="/agb" component={AGB} />
           <Route path="/datenschutz" component={Datenschutz} />

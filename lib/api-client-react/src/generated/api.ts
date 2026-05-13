@@ -19,6 +19,8 @@ import type {
 import type {
   AiOfferRequest,
   AiOfferResponse,
+  Assessment,
+  AssessmentInput,
   Booking,
   BookingInput,
   BookingStatusUpdate,
@@ -2703,6 +2705,338 @@ export function useGetBookingCalendarFile<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary List the current user's saved building assessments
+ */
+export const getListAssessmentsUrl = () => {
+  return `/api/assessments`;
+};
+
+export const listAssessments = async (
+  options?: RequestInit,
+): Promise<Assessment[]> => {
+  return customFetch<Assessment[]>(getListAssessmentsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListAssessmentsQueryKey = () => {
+  return [`/api/assessments`] as const;
+};
+
+export const getListAssessmentsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listAssessments>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listAssessments>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListAssessmentsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listAssessments>>> = ({
+    signal,
+  }) => listAssessments({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listAssessments>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListAssessmentsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listAssessments>>
+>;
+export type ListAssessmentsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List the current user's saved building assessments
+ */
+
+export function useListAssessments<
+  TData = Awaited<ReturnType<typeof listAssessments>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listAssessments>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListAssessmentsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Save a new building assessment for the current user
+ */
+export const getCreateAssessmentUrl = () => {
+  return `/api/assessments`;
+};
+
+export const createAssessment = async (
+  assessmentInput: AssessmentInput,
+  options?: RequestInit,
+): Promise<Assessment> => {
+  return customFetch<Assessment>(getCreateAssessmentUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(assessmentInput),
+  });
+};
+
+export const getCreateAssessmentMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createAssessment>>,
+    TError,
+    { data: BodyType<AssessmentInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createAssessment>>,
+  TError,
+  { data: BodyType<AssessmentInput> },
+  TContext
+> => {
+  const mutationKey = ["createAssessment"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createAssessment>>,
+    { data: BodyType<AssessmentInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createAssessment(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateAssessmentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createAssessment>>
+>;
+export type CreateAssessmentMutationBody = BodyType<AssessmentInput>;
+export type CreateAssessmentMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Save a new building assessment for the current user
+ */
+export const useCreateAssessment = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createAssessment>>,
+    TError,
+    { data: BodyType<AssessmentInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createAssessment>>,
+  TError,
+  { data: BodyType<AssessmentInput> },
+  TContext
+> => {
+  return useMutation(getCreateAssessmentMutationOptions(options));
+};
+
+/**
+ * @summary Get a single saved assessment (owner only)
+ */
+export const getGetAssessmentUrl = (id: number) => {
+  return `/api/assessments/${id}`;
+};
+
+export const getAssessment = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Assessment> => {
+  return customFetch<Assessment>(getGetAssessmentUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetAssessmentQueryKey = (id: number) => {
+  return [`/api/assessments/${id}`] as const;
+};
+
+export const getGetAssessmentQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAssessment>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getAssessment>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetAssessmentQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getAssessment>>> = ({
+    signal,
+  }) => getAssessment(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAssessment>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetAssessmentQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getAssessment>>
+>;
+export type GetAssessmentQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get a single saved assessment (owner only)
+ */
+
+export function useGetAssessment<
+  TData = Awaited<ReturnType<typeof getAssessment>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getAssessment>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAssessmentQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Delete a saved assessment (owner only)
+ */
+export const getDeleteAssessmentUrl = (id: number) => {
+  return `/api/assessments/${id}`;
+};
+
+export const deleteAssessment = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteAssessmentUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteAssessmentMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteAssessment>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteAssessment>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteAssessment"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteAssessment>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteAssessment(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteAssessmentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteAssessment>>
+>;
+
+export type DeleteAssessmentMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a saved assessment (owner only)
+ */
+export const useDeleteAssessment = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteAssessment>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteAssessment>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteAssessmentMutationOptions(options));
+};
 
 /**
  * @summary Platform-level stats (total providers, categories, bookings)

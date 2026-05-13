@@ -14,9 +14,23 @@ import {
   useGetMySubscription, getGetMySubscriptionQueryKey,
   getGetProviderCalendarFeedUrl,
 } from "@workspace/api-client-react";
-import { Star, TrendingUp, Calendar, DollarSign, Users, PlusCircle, Settings, Clock, Crown, Copy, Sparkles } from "lucide-react";
+import { Star, TrendingUp, Calendar, DollarSign, Users, PlusCircle, Settings, Clock, Crown, Copy, Sparkles, Building2, Lock } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { EnergieVollanalyse } from "@/components/EnergieVollanalyse";
+import {
+  useCreateAssessment,
+  useListAssessments,
+  useDeleteAssessment,
+  getListAssessmentsQueryKey,
+} from "@workspace/api-client-react";
+import {
+  calcEnergie, calcWert, calcValue, calcRestnutzung, calcRisk, calcESG, calcSolar,
+  type BuildingInput,
+} from "@workspace/energie-calc";
+import { useState } from "react";
+import { Trash2 } from "lucide-react";
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "Ausstehend",
@@ -242,6 +256,48 @@ export default function Dashboard() {
           ))}
         </div>
 
+        {/* Tabs: Buchungen / Gebäudeanalyse */}
+        <Tabs defaultValue="bookings" className="mb-2">
+          <TabsList>
+            <TabsTrigger value="bookings" data-testid="tab-bookings-section">
+              <Calendar className="h-4 w-4 mr-1.5" /> Buchungen
+            </TabsTrigger>
+            <TabsTrigger value="gebaeude" data-testid="tab-gebaeude-section">
+              <Building2 className="h-4 w-4 mr-1.5" /> Gebäudeanalyse
+              {!isPremium && <Lock className="h-3 w-3 ml-1.5 text-muted-foreground" />}
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="gebaeude" className="mt-4">
+            {isPremium && profile ? (
+              <ProviderGebaeudeanalyse providerId={profile.id} />
+            ) : (
+              <Card className="rounded-[20px] border-[1.5px] border-dashed">
+                <CardContent className="py-10 text-center">
+                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-[var(--klard-gold-l)] mb-4">
+                    <Building2 className="h-7 w-7 text-[var(--klard-gold)]" />
+                  </div>
+                  <h3 className="font-serif text-xl font-semibold mb-2">
+                    Gebäudeanalyse — Premium-Funktion
+                  </h3>
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto mb-5 leading-relaxed">
+                    Erstellen Sie für jeden Mandanten eine vollständige Energie-, Wert- und
+                    Risikoanalyse — speichern Sie Vorgänge in Ihrem Profil und nutzen Sie sie
+                    als Grundlage für Beratungstermine und Sanierungsfahrpläne.
+                  </p>
+                  <Button
+                    className="rounded-full bg-[var(--klard-gold)] hover:bg-[#92400E] text-white"
+                    onClick={() => setLocation("/pricing")}
+                    data-testid="button-premium-gebaeude"
+                  >
+                    <Crown className="h-4 w-4 mr-1.5" /> Auf Premium upgraden
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="bookings" className="mt-4">
         {/* Recent Bookings */}
         <Card className="rounded-[20px] border-[1.5px] shadow-sm">
           <CardHeader className="pb-3">
@@ -310,7 +366,101 @@ export default function Dashboard() {
             )}
           </CardContent>
         </Card>
+          </TabsContent>
+        </Tabs>
       </div>
+    </div>
+  );
+}
+
+function ProviderGebaeudeanalyse({ providerId }: { providerId: number }) {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const create = useCreateAssessment();
+  const del = useDeleteAssessment();
+  const { data = [] } = useListAssessments();
+  const [saving, setSaving] = useState(false);
+
+  const mine = data.filter((a) => a.providerId === providerId);
+
+  async function handleSave(input: BuildingInput, label: string) {
+    setSaving(true);
+    try {
+      const energie = calcEnergie(input);
+      const wert = calcWert(input);
+      const result = {
+        energie,
+        wert,
+        value: calcValue(input, energie),
+        restnutzung: calcRestnutzung(input, energie, wert),
+        risk: calcRisk(input),
+        esg: calcESG(energie),
+        solar: calcSolar(input),
+        generatedAt: new Date().toISOString(),
+      };
+      await create.mutateAsync({
+        data: {
+          label,
+          providerId,
+          inputJson: input as unknown as Record<string, unknown>,
+          resultJson: result as unknown as Record<string, unknown>,
+          addressJson: { plz: input.plz, city: input.city ?? null },
+        },
+      });
+      toast({ title: "Mandant gespeichert", description: label });
+      qc.invalidateQueries({ queryKey: getListAssessmentsQueryKey() });
+    } catch (e) {
+      toast({
+        title: "Speichern fehlgeschlagen",
+        description: e instanceof Error ? e.message : "Bitte später erneut versuchen.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      {mine.length > 0 && (
+        <Card className="rounded-[20px] border-[1.5px]">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Gespeicherte Mandanten ({mine.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {mine.map((a) => (
+                <div key={a.id} className="rounded-lg border border-border p-3" data-testid={`provider-saved-${a.id}`}>
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <div className="font-semibold text-sm truncate">{a.label}</div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!confirm("Eintrag löschen?")) return;
+                        try {
+                          await del.mutateAsync({ id: a.id });
+                          toast({ title: "Gelöscht" });
+                          qc.invalidateQueries({ queryKey: getListAssessmentsQueryKey() });
+                        } catch {
+                          toast({ title: "Löschen fehlgeschlagen", variant: "destructive" });
+                        }
+                      }}
+                      className="text-muted-foreground hover:text-destructive"
+                      data-testid={`provider-delete-${a.id}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {new Date(a.createdAt).toLocaleDateString("de-DE")}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      <EnergieVollanalyse onSave={handleSave} saving={saving} showSave />
     </div>
   );
 }

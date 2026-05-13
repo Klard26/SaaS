@@ -32,6 +32,8 @@ tags:
     description: Calendar synchronization (iCalendar feeds)
   - name: storage
     description: Object storage uploads
+  - name: assessments
+    description: Saved building energy assessments
 
 paths:
   /healthz:
@@ -603,6 +605,68 @@ paths:
             text/calendar:
               schema: { type: string }
 
+  /assessments:
+    get:
+      operationId: listAssessments
+      tags: [assessments]
+      summary: List the current user's saved building assessments
+      responses:
+        "200":
+          description: List of assessments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Assessment"
+    post:
+      operationId: createAssessment
+      tags: [assessments]
+      summary: Save a new building assessment for the current user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssessmentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assessment"
+
+  /assessments/{id}:
+    get:
+      operationId: getAssessment
+      tags: [assessments]
+      summary: Get a single saved assessment (owner only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Assessment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assessment"
+    delete:
+      operationId: deleteAssessment
+      tags: [assessments]
+      summary: Delete a saved assessment (owner only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+
   /dashboard/stats:
     get:
       operationId: getPlatformStats
@@ -943,3 +1007,43 @@ components:
         totalBookings:    { type: integer }
         totalCategories:  { type: integer }
         totalReviews:     { type: integer }
+
+    AssessmentInput:
+      type: object
+      required: [label, inputJson, resultJson]
+      properties:
+        label:
+          type: string
+          minLength: 1
+          maxLength: 200
+        addressJson:
+          type: ["object", "null"]
+          additionalProperties: true
+        inputJson:
+          type: object
+          additionalProperties: true
+        resultJson:
+          type: object
+          additionalProperties: true
+        providerId:
+          type: ["integer", "null"]
+
+    Assessment:
+      type: object
+      required: [id, userId, label, inputJson, resultJson, createdAt, updatedAt]
+      properties:
+        id:           { type: integer }
+        userId:       { type: string }
+        providerId:   { type: ["integer", "null"] }
+        label:        { type: string }
+        addressJson:
+          type: ["object", "null"]
+          additionalProperties: true
+        inputJson:
+          type: object
+          additionalProperties: true
+        resultJson:
+          type: object
+          additionalProperties: true
+        createdAt:    { type: string, format: date-time }
+        updatedAt:    { type: string, format: date-time }

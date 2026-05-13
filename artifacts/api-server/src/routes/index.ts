@@ -12,6 +12,7 @@ import dashboardRouter from "./dashboard";
 import billingRouter from "./billing";
 import calendarRouter from "./calendar";
 import storageRouter from "./storage";
+import assessmentsRouter from "./assessments";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use(reviewsRouter);
 router.use(aiRouter);
 router.use(dashboardRouter);
 router.use(storageRouter);
+router.use(assessmentsRouter);
 
 export default router;

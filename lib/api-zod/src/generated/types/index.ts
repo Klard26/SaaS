@@ -8,6 +8,14 @@
 
 export * from "./aiOfferRequest";
 export * from "./aiOfferResponse";
+export * from "./assessment";
+export * from "./assessmentAddressJson";
+export * from "./assessmentInput";
+export * from "./assessmentInputAddressJson";
+export * from "./assessmentInputInputJson";
+export * from "./assessmentInputJson";
+export * from "./assessmentInputResultJson";
+export * from "./assessmentResultJson";
 export * from "./booking";
 export * from "./bookingInput";
 export * from "./bookingPaymentStatus";
