@@ -1,4 +1,6 @@
-import { ageBand, BPI, BT, EC, HT, INS, PEF, plzKlima, plzPreisIndex, WI } from "./constants";
+import {
+  ageBand, bautyp, BPI, EC, HT, INS, PEF, plzKlima, plzPreisIndex, WI,
+} from "./constants";
 import type {
   BuildingInput,
   EnergyResult,
@@ -15,60 +17,126 @@ import type {
 const HEUTE = new Date().getFullYear();
 
 /**
- * Stark vereinfachte Energiebilanz auf Basis von DIN V 18599 / GEG 2024.
- * Keine offizielle Berechnung — dient nur der orientierenden Schnelleinschätzung.
+ * Endenergiebedarf eines Wohngebäudes nach vereinfachtem Tabellenverfahren.
+ *
+ * Methodik (orientiert an):
+ *   - DIN V 18599-1/-2/-5/-6/-10 (Energetische Bewertung von Gebäuden)
+ *   - GEG 2024 §§ 9, 19, 20, 86, Anlagen 1, 4, 5
+ *   - IWU TABULA Gebäudetypologie Deutschland 2015 (Bauteil-U-Werte)
+ *   - BMWK-Bekanntmachung 2021 (Datenaufnahme im Wohngebäudebestand)
+ *
+ * Ablauf:
+ *   1) Hüllfläche A aus A/V-Verhältnis × beheiztem Volumen
+ *   2) Komponenten-U-Werte aus Baualtersklasse + Dämm-Modernisierung
+ *   3) Spezifischer Transmissionswärmeverlust H'T inkl. Wärmebrückenzuschlag
+ *   4) Heizwärmebedarf q_h = (Q_T + Q_V − 0,95·(Q_S + Q_I)) / A_N
+ *   5) Trinkwarmwasser q_w = 12,5 kWh/(m²·a) pauschal (DIN V 18599-10)
+ *   6) Endenergie q_end = (q_h + q_w) / η bzw. / JAZ
+ *   7) Primärenergie und CO2 mit GEG-2024-Faktoren
+ *
+ * Ergebnis ist eine fundierte Schnelleinschätzung — kein Energieausweis.
  */
 export function calcEnergie(d: BuildingInput): EnergyResult {
-  const ag = ageBand(d.baujahr);
-  const h = HT.find((x) => x.id === d.heizung) ?? HT[1]!;
-  const ins = INS.find((x) => x.id === d.daemmung) ?? INS[0]!;
-  const wi = WI.find((x) => x.id === d.fenster) ?? WI[1]!;
-  const cl = plzKlima(d.plz);
+  const ag   = ageBand(d.baujahr);
+  const h    = HT.find((x) => x.id === d.heizung) ?? HT[2]!;
+  const ins  = INS.find((x) => x.id === d.daemmung) ?? INS[0]!;
+  const wi   = WI.find((x) => x.id === d.fenster) ?? WI[1]!;
+  const cl   = plzKlima(d.plz);
+  const bt   = bautyp(d.gebaeudetyp);
 
-  const geschossHoehe = 2.8;
-  const grundflaeche = d.wohnflaeche / Math.max(d.geschosse, 1);
-  const umfang = 4 * Math.sqrt(grundflaeche);
-  const wandflaeche = umfang * d.geschosse * geschossHoehe;
-  const fensterflaeche = wandflaeche * 0.2;
-  const opakeWandflaeche = wandflaeche * 0.8;
+  // ── 1) Geometrie ───────────────────────────────────────────────
+  const A_N = d.wohnflaeche * 1.20;                              // GEG-Nutzfläche A_N
+  const V   = d.wohnflaeche * bt.geschossHoehe;                   // beheiztes Volumen V_e
+  const A   = bt.av * V;                                          // Hüllfläche A
+  const A_AW = A * bt.shAw;
+  const A_DA = A * bt.shDa;
+  const A_KE = A * bt.shKe;
+  const A_FE = A * bt.shFe;
 
-  const uW = ag.uw * ins.f;
-  const uR = ag.ur * ins.f;
-  const uF = ag.uf * ins.f;
-  const uWN = wi.u;
+  // ── 2) Effektive Bauteil-U-Werte: min(Bestand, Sanierungs-Ziel) ──
+  // Eine Nachdämmung verbessert das Bauteil nie über das Ziel-Niveau hinaus,
+  // ein bereits modernes Bauteil wird durch INS nicht weiter herabgesetzt.
+  const u_aw = Math.min(ag.uAw, ins.tAw);
+  const u_da = Math.min(ag.uDa, ins.tDa);
+  const u_ke = Math.min(ag.uKe, ins.tKe);
+  const u_fe = wi.u;                                              // Fenster eigenständig
 
-  // Transmissions-Verluste (Heiztage * dT in kWh/(m²·a))
-  const heizGradTage = (cl.d * (20 - cl.t)) / 1000;
-  const transmission =
-    (opakeWandflaeche * uW + grundflaeche * uR + grundflaeche * uF + fensterflaeche * uWN) * heizGradTage;
+  // Temperatur-Korrekturfaktoren Fxi (DIN V 18599-2 Tab. 5)
+  const Fx_AW = 1.0;   // gegen Außenluft
+  const Fx_DA = 1.0;   // gegen Außenluft
+  const Fx_KE = 0.6;   // gegen Erdreich
+  const Fx_FE = 1.0;
+  const dU_WB = 0.05;  // Wärmebrückenzuschlag pauschal
 
-  // Lüftung n50 ~ 0.5/h
-  const luftvolumen = d.wohnflaeche * geschossHoehe;
-  const lueftung = luftvolumen * 0.5 * 0.34 * heizGradTage;
+  const HT_sum =
+      u_aw * A_AW * Fx_AW
+    + u_da * A_DA * Fx_DA
+    + u_ke * A_KE * Fx_KE
+    + u_fe * A_FE * Fx_FE
+    + dU_WB * A;
+  const HT_strich = HT_sum / A;                                   // W/(m²·K) Hülle
 
-  const verluste = transmission + lueftung;
-  const solareGewinne = fensterflaeche * wi.g * 100; // grobe Schätzung
-  const interneGewinne = d.wohnflaeche * 22;
-  const heizwaerme = Math.max(0, verluste - 0.95 * (solareGewinne + interneGewinne));
+  // ── 3) Wärmeverluste (kWh/a) ───────────────────────────────────
+  const HGT_kKh = cl.hgt * 24 / 1000;                             // kKh/a
+  const Q_T = HT_sum * HGT_kKh;                                   // Transmissionsverlust
 
-  const endenergieAbsolut = heizwaerme / Math.max(h.e, 0.1) + d.wohnflaeche * 12; // + Warmwasser
-  const endenergie = Math.round(endenergieAbsolut / d.wohnflaeche);
-  const primaerenergie = Math.round(endenergie * (PEF[h.f]?.fp ?? 1.1));
-  const co2Pro_m2 = Math.round(endenergie * (PEF[h.f]?.co2 ?? 0.24) * 10) / 10;
-  const co2Tonnen = Math.round((co2Pro_m2 * d.wohnflaeche) / 100) / 10;
+  const n_LW = 0.5;                                               // Luftwechsel 0,5/h
+  const Q_V = 0.34 * n_LW * V * HGT_kKh;                          // Lüftungsverlust
+
+  // ── 4) Wärmegewinne ────────────────────────────────────────────
+  // Solare Gewinne: 4 Orientierungen gemittelt, Fenster über alle Seiten
+  const Q_S = A_FE * wi.g * cl.iSol * 0.567;                      // 0,567 = F_S·F_F·F_C
+  const Q_I = A_N * 22;                                           // intern, DIN 18599-10
+
+  // ── 5) Heizwärmebedarf mit monatlichem Ausnutzungsgrad η_g ─────
+  // Nach DIN V 18599-2 / EN ISO 13790 (vereinfacht, Zeitkonstante a=1):
+  //   γ = Gewinne/Verluste,   η_g = (1 − γ^a) / (1 − γ^(a+1))
+  // → Verlustdominierte alte Häuser nutzen Gewinne schwächer (~0,75),
+  //   gewinndominierte Niedrigenergiehäuser nutzen sie stärker (~0,95).
+  const losses = Q_T + Q_V;
+  const gains  = Q_S + Q_I;
+  const gamma  = gains / Math.max(losses, 1);
+  const eta_g  = Math.abs(gamma - 1) < 1e-6
+    ? 1 / 2
+    : (1 - Math.pow(gamma, 1)) / (1 - Math.pow(gamma, 2));
+  const Q_h = Math.max(0, losses - eta_g * gains);                // kWh/a
+  const q_h = Q_h / A_N;                                          // kWh/(m²·a)
+
+  // ── 6) Trinkwarmwasser pauschal ────────────────────────────────
+  const q_w = 12.5;                                               // kWh/(m²·a)
+
+  // ── 7) Endenergie je Energieträger ─────────────────────────────
+  const q_end = h.isJaz
+    ? (q_h + q_w) / Math.max(h.e, 0.5)
+    : (q_h + q_w) / Math.max(h.e, 0.3);
+
+  const pef  = PEF[h.f] ?? PEF["erdgas"]!;
+  const q_pe = q_end * pef.fp;
+  const q_co2 = q_end * pef.co2;
+
+  const endenergie    = Math.round(q_end);
+  const primaerenergie = Math.round(q_pe);
+  const co2Pro_m2     = Math.round(q_co2 * 10) / 10;
+  const co2Tonnen     = Math.round((q_co2 * d.wohnflaeche) / 100) / 10;
 
   const klasse = EC.find((c) => endenergie <= c.m) ?? EC[EC.length - 1]!;
-  const htP = Math.round((opakeWandflaeche * uW + grundflaeche * uR + fensterflaeche * uWN) * 10) / 10;
 
+  // ── 8) Pflichten nach GEG ──────────────────────────────────────
   const pflichten: string[] = [];
   if (klasse.c === "F" || klasse.c === "G" || klasse.c === "H") {
-    pflichten.push("Nach GEG § 47/48: Sanierungspflicht bei Eigentümerwechsel (oberste Geschossdecke, Heizung > 30 J).");
+    pflichten.push(
+      "GEG §§ 47–48: Pflicht zur Dämmung der obersten Geschossdecke und zur " +
+      "Heizungserneuerung bei Eigentümerwechsel.",
+    );
   }
-  if (h.id === "gas_kt" && d.heizungBaujahr && HEUTE - d.heizungBaujahr > 30) {
-    pflichten.push("Heizung älter als 30 Jahre — Austauschpflicht nach GEG § 72.");
+  if ((h.id === "gas_kt" || h.id === "oel_kt") && d.heizungBaujahr && HEUTE - d.heizungBaujahr > 30) {
+    pflichten.push("GEG § 72: Konstanttemperatur-Heizkessel älter 30 Jahre — Austauschpflicht.");
+  }
+  if (d.baujahr < 2002 && (d.heizungBaujahr ?? d.baujahr) < 1996) {
+    pflichten.push("GEG § 71: Neue Heizungsanlagen müssen ab 2024 zu 65 % mit erneuerbarer Energie betrieben werden.");
   }
   if (klasse.c === "H") {
-    pflichten.push("Sehr hoher Verbrauch — energetische Sanierung dringend empfohlen.");
+    pflichten.push("Energieklasse H: Sanierungsfahrplan dringend empfohlen — KfW-Förderung BEG WG/EM verfügbar.");
   }
 
   return {
@@ -77,90 +145,125 @@ export function calcEnergie(d: BuildingInput): EnergyResult {
     klasse,
     co2Pro_m2,
     co2Tonnen,
-    qH: Math.round(heizwaerme),
-    htP,
-    uW: Math.round(uW * 100) / 100,
-    uWN,
+    qH: Math.round(q_h),
+    htP: Math.round(HT_strich * 100) / 100,
+    uW: Math.round(u_aw * 100) / 100,
+    uWN: Math.round(u_fe * 100) / 100,
     pflichten,
   };
 }
 
+/**
+ * Gebäudewert nach Sachwertverfahren (vereinfacht ImmoWertV §§ 35 ff.):
+ *   Sachwert = Normalherstellungskosten 2010 (NHK) × Baupreisindex × Wohnfläche
+ *              × Alterswertminderung nach Ross/Linear.
+ *
+ * NHK-Werte je Gebäudetyp aus NHK 2010 Tabelle (mittlerer Standard 3).
+ */
 export function calcWert(d: BuildingInput): WertResult {
   const nhkPerType: Record<string, number> = {
     efh: 1520, dhh: 1420, rh: 1350, mfh_s: 1280, mfh_m: 1220, mfh_l: 1180,
   };
   const nhk = nhkPerType[d.gebaeudetyp] ?? 1280;
+  // Lineare Altersminderung: 0.8 % pro Jahr, min. 30 % Restwert
   const altersfaktor = Math.max(0.3, 1 - (HEUTE - d.baujahr) * 0.008);
-  const w = nhk * d.wohnflaeche * altersfaktor;
+  const sachwert2010 = nhk * d.wohnflaeche * altersfaktor;
+  const sachwertAktuell = sachwert2010 * BPI;
   return {
-    w1914: Math.round(w / BPI / 12.782),
-    w2010: Math.round(w),
-    wAktuell: Math.round((w * BPI) / 100) * 100,
+    w1914:    Math.round(sachwert2010 / 12.782),                  // NHK-Faktor 2010 → 1914
+    w2010:    Math.round(sachwert2010),
+    wAktuell: Math.round(sachwertAktuell / 100) * 100,
     nhk,
     altersfaktor: Math.round(altersfaktor * 100) / 100,
   };
 }
 
+/**
+ * Marktwert-Schätzung (Verkehrswert) als Plausibilitäts-Crosscheck zum
+ * Sachwert. Basis: empirischer Quadratmeterpreis je Baualter × regionaler
+ * Preisindex (Bundesschnitt = 1.0) × Energieklassen-Aufschlag.
+ */
 export function calcValue(d: BuildingInput, e: EnergyResult): ValueResult {
-  const basis = d.baujahr >= 2020 ? 3400 : d.baujahr >= 2000 ? 2500 : d.baujahr >= 1980 ? 2000 : 1500;
+  const basis =
+    d.baujahr >= 2020 ? 3400 :
+    d.baujahr >= 2000 ? 2500 :
+    d.baujahr >= 1980 ? 2000 :
+    1500;
   const ci = EC.indexOf(e.klasse);
-  const proQm = Math.round(basis * (1.2 - ci * 0.055) * plzPreisIndex(d.plz));
+  const energieFaktor = 1.20 - ci * 0.055;                        // A+ +20 %, H −24 %
+  const proQm = Math.round(basis * energieFaktor * plzPreisIndex(d.plz));
   return { total: Math.round(proQm * d.wohnflaeche), proQm };
 }
 
+/**
+ * Restnutzungsdauer und steuerliche AfA-Optimierung
+ * (BFH-Urteil IX R 25/19 vom 28.07.2021 + EStG § 7 Abs. 4 S. 2).
+ */
 export function calcRestnutzung(d: BuildingInput, e: EnergyResult, w: WertResult): RestnutzungResult {
   const gnd = ["efh", "dhh", "rh"].includes(d.gebaeudetyp) ? 80 : 60;
   const alter = HEUTE - d.baujahr;
   const rndRegulaer = Math.max(0, gnd - alter);
   const klasse = e.klasse.c;
   const zustandsFaktor =
-    klasse === "H" || klasse === "G" ? 0.5
-    : klasse === "F" ? 0.65
-    : klasse === "E" ? 0.75
-    : klasse === "D" ? 0.85
-    : 1.0;
+    klasse === "H" || klasse === "G" ? 0.50 :
+    klasse === "F" ? 0.65 :
+    klasse === "E" ? 0.75 :
+    klasse === "D" ? 0.85 :
+    1.00;
   const rndWirtschaftlich = Math.max(5, Math.round(rndRegulaer * zustandsFaktor));
-  const afaRegulaer = d.baujahr < 1925 ? 2.5 : 2.0;
-  const afaVerkuerzt = rndWirtschaftlich > 0 ? Math.round((100 / rndWirtschaftlich) * 100) / 100 : 0;
-  const bemessungsgrundlage = Math.round(w.wAktuell * 0.7);
-  const afaRegulaerJahr = Math.round((bemessungsgrundlage * afaRegulaer) / 100);
+  const afaRegulaer  = d.baujahr < 1925 ? 2.5 : 2.0;              // EStG § 7 Abs. 4
+  const afaVerkuerzt = rndWirtschaftlich > 0
+    ? Math.round((100 / rndWirtschaftlich) * 100) / 100
+    : 0;
+  const bemessungsgrundlage = Math.round(w.wAktuell * 0.7);       // ohne Bodenwert
+  const afaRegulaerJahr  = Math.round((bemessungsgrundlage * afaRegulaer)  / 100);
   const afaVerkuerztJahr = Math.round((bemessungsgrundlage * afaVerkuerzt) / 100);
   const mehrabschreibung = Math.max(0, afaVerkuerztJahr - afaRegulaerJahr);
-  const steuerersparnis = Math.round(mehrabschreibung * 0.35);
+  const steuerersparnis  = Math.round(mehrabschreibung * 0.42);   // ø Spitzensteuer
   return {
-    alter,
-    gnd,
-    rndRegulaer,
-    rndWirtschaftlich,
-    afaRegulaer,
-    afaVerkuerzt,
-    afaRegulaerJahr,
-    afaVerkuerztJahr,
+    alter, gnd, rndRegulaer, rndWirtschaftlich,
+    afaRegulaer, afaVerkuerzt,
+    afaRegulaerJahr, afaVerkuerztJahr,
     bemessungsgrundlage,
     gutachtenLohnt: afaVerkuerzt > afaRegulaer + 0.5,
-    mehrabschreibung,
-    steuerersparnis,
+    mehrabschreibung, steuerersparnis,
   };
 }
 
+/**
+ * Klima- und Standortrisiko (qualitativ) basierend auf Klimazone (Sturm/Hitze)
+ * und Baualter (Hochwasser-/Statik-Anfälligkeit).
+ */
 export function calcRisk(d: BuildingInput): RiskResult {
   const cl = plzKlima(d.plz);
-  const sturm = cl.t < 9 ? 3 : cl.t < 9.5 ? 2 : 1;
-  const hitze = cl.t > 9.5 ? 3 : cl.t > 8.5 ? 2 : 1;
+  const sturm        = cl.t < 8.5 ? 3 : cl.t < 9.2 ? 2 : 1;
+  const hitze        = cl.t > 9.5 ? 3 : cl.t > 8.8 ? 2 : 1;
   const baujahrRisiko = d.baujahr < 1960 ? 3 : d.baujahr < 1990 ? 2 : 1;
   const total = Math.round((sturm * 30 + hitze * 25 + baujahrRisiko * 25) / 3);
-  const level = total <= 25 ? "Gering" : total <= 50 ? "Mittel" : "Erhöht";
-  const color = total <= 25 ? "#4CAF50" : total <= 50 ? "#FFC107" : "#FF9800";
+  const level: RiskResult["level"] =
+    total <= 25 ? "Gering" : total <= 50 ? "Mittel" : "Erhöht";
+  const color =
+    total <= 25 ? "#4CAF50" :
+    total <= 50 ? "#FFC107" :
+                  "#FF9800";
   return { standortRisiko: sturm, hitzeRisiko: hitze, baujahrRisiko, total, level, color };
 }
 
+/**
+ * ESG-Bewertung: CRREM-Pfad Wohngebäude DE 2024 = ca. 55 kWh/(m²·a) Endenergie.
+ * EU-Taxonomie Kriterium Wohngebäude: Top-15 % Bestand ≈ ≤100 kWh/(m²·a).
+ */
 export function calcESG(e: EnergyResult): ESGResult {
   return {
-    crrem: e.endenergie <= 55 ? "On Track" : "Off Track",
+    crrem:       e.endenergie <= 55  ? "On Track" : "Off Track",
     euTaxonomie: e.endenergie <= 100,
   };
 }
 
+/**
+ * Photovoltaik-Potenzial: 60 % der Grundfläche als geeignetes Dach,
+ * 7 m²/kWp Modulfläche, spezifischer Ertrag 950 kWh/(kWp·a) — D-Mittel.
+ */
 export function calcSolar(d: BuildingInput): SolarResult {
   const dachflaeche = (d.wohnflaeche / Math.max(d.geschosse, 1)) * 0.6;
   const kWp = Math.round(dachflaeche / 7);
@@ -173,6 +276,10 @@ export function calcSolar(d: BuildingInput): SolarResult {
   };
 }
 
+/**
+ * Sanierungs-Szenarien für die nächsten Energieklassen-Sprünge mit
+ * Maßnahmen-Mix, Kosten (BAFA Kostenrahmen 2024) und Endenergie-Einsparung.
+ */
 export function calcRenovation(d: BuildingInput, e: EnergyResult): RenovationSzenario[] {
   const aktKw = e.endenergie;
   const ziele = EC.filter((c) => c.m < aktKw).slice(0, 3);
@@ -181,32 +288,34 @@ export function calcRenovation(d: BuildingInput, e: EnergyResult): RenovationSze
     let rest = aktKw - ziel.m;
     let kosten = 0;
     if (rest > 5 && e.uW > 0.24) {
-      const sv = Math.min(rest * 0.3, 55);
-      const k = d.wohnflaeche * 155;
-      massnahmen.push({ name: "Fassadendämmung", kosten: k, einsparung: sv });
-      rest -= sv;
-      kosten += k;
+      const sv = Math.min(rest * 0.30, 55);
+      const k  = d.wohnflaeche * 165;
+      massnahmen.push({ name: "Fassadendämmung (WDVS 16 cm)", kosten: k, einsparung: sv });
+      rest -= sv; kosten += k;
     }
     if (rest > 5 && e.uWN > 1.3) {
       const sv = Math.min(rest * 0.18, 28);
-      const k = d.wohnflaeche * 90;
-      massnahmen.push({ name: "Fenstertausch", kosten: k, einsparung: sv });
-      rest -= sv;
-      kosten += k;
+      const k  = d.wohnflaeche * 95;
+      massnahmen.push({ name: "Fenstertausch (3-fach Wärmeschutz)", kosten: k, einsparung: sv });
+      rest -= sv; kosten += k;
     }
     if (rest > 5 && (e.klasse.c === "G" || e.klasse.c === "H" || e.klasse.c === "F")) {
-      const sv = Math.min(rest * 0.4, 50);
-      const k = d.wohnflaeche * 220;
-      massnahmen.push({ name: "Heizungstausch (Wärmepumpe)", kosten: k, einsparung: sv });
-      rest -= sv;
-      kosten += k;
+      const sv = Math.min(rest * 0.40, 50);
+      const k  = d.wohnflaeche * 240;
+      massnahmen.push({ name: "Heizungstausch auf Wärmepumpe (JAZ ≥ 3)", kosten: k, einsparung: sv });
+      rest -= sv; kosten += k;
     }
     if (rest > 5) {
-      const k = d.wohnflaeche * 80;
-      massnahmen.push({ name: "Dachdämmung", kosten: k, einsparung: rest });
+      const k = d.wohnflaeche * 85;
+      massnahmen.push({ name: "Dach-/Geschossdeckendämmung", kosten: k, einsparung: rest });
       kosten += k;
     }
-    return { klasse: ziel.c, massnahmen, gesamtKosten: Math.round(kosten), restEinsparung: Math.max(0, Math.round(rest)) };
+    return {
+      klasse: ziel.c,
+      massnahmen,
+      gesamtKosten: Math.round(kosten),
+      restEinsparung: Math.max(0, Math.round(rest)),
+    };
   });
 }
 

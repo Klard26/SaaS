@@ -176,7 +176,7 @@ export function EnergieVollanalyse({ initial, onSave, saving, showSave }: Props)
           {klima && (
             <div className="text-xs text-muted-foreground rounded-md bg-secondary/40 p-2.5 leading-relaxed">
               <div><strong>Region:</strong> {land || klima.l}</div>
-              <div>{klima.d} Heiztage · ⌀ {klima.t} °C</div>
+              <div>{klima.hgt} Kd Heizgradtage · ⌀ {klima.t} °C</div>
             </div>
           )}
 

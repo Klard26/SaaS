@@ -135,7 +135,7 @@ export function EnergieSchnellcheck({ variant = "card", showCta = true }: Props)
 
           {klima && (
             <p className="mt-3 text-xs text-muted-foreground">
-              Klimaregion: {klima.l} · {klima.d} Heiztage · ⌀ {klima.t} °C
+              Klimaregion: {klima.l} · {klima.hgt} Kd Heizgradtage · ⌀ {klima.t} °C
             </p>
           )}
         </div>
