@@ -198,6 +198,36 @@ export async function sendPaymentConfirmation(ctx: BookingEmailContext): Promise
   });
 }
 
+export async function sendProviderAssessmentSaved(p: {
+  providerEmail: string;
+  providerName: string;
+  label: string;
+  energyClass?: string | null;
+  marketValue?: number | null;
+  city?: string | null;
+}): Promise<void> {
+  if (!p.providerEmail) return;
+  const safeLabel = p.label.replace(/[\r\n]+/g, " ").slice(0, 200);
+  const html = wrap(
+    `Mandant gespeichert: ${safeLabel}`,
+    `<p>Hallo ${p.providerName},</p>
+     <p>Sie haben für den Mandanten <strong>${safeLabel}</strong> eine neue Gebäudeanalyse in Ihrem Klard-Dashboard gespeichert.</p>
+     <table style="font-size:14px;line-height:1.6">
+       ${p.city ? `<tr><td><strong>Standort:</strong></td><td>&nbsp;${p.city}</td></tr>` : ""}
+       ${p.energyClass ? `<tr><td><strong>Energieklasse:</strong></td><td>&nbsp;${p.energyClass}</td></tr>` : ""}
+       ${p.marketValue ? `<tr><td><strong>Marktwert (Schätzung):</strong></td><td>&nbsp;${Math.round(p.marketValue).toLocaleString("de-DE")} €</td></tr>` : ""}
+     </table>
+     <p>Sie können den Mandanten jederzeit im Dashboard erneut aufrufen oder mit einem Termin verknüpfen.</p>
+     <p><a href="${APP_URL}/dashboard" style="display:inline-block;background:#111;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">Zum Dashboard</a></p>`,
+  );
+  await send({
+    to: p.providerEmail,
+    subject: `Mandant gespeichert: ${safeLabel}`,
+    html,
+    text: `Gebäudeanalyse für ${safeLabel} gespeichert.`,
+  });
+}
+
 export async function sendBookingReminder(ctx: BookingEmailContext): Promise<void> {
   if (!ctx.customerEmail) return;
   const when = fmtDateTime(ctx.scheduledAt);

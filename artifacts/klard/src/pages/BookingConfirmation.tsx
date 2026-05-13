@@ -13,6 +13,7 @@ import {
   useListAvailability, getListAvailabilityQueryKey,
   useCreateBooking,
   getListMyBookingsQueryKey,
+  useListAssessments, getListAssessmentsQueryKey,
 } from "@workspace/api-client-react";
 import { CheckCircle, Clock, MapPin, Calendar, Info, Download } from "lucide-react";
 import { getGetBookingCalendarFileUrl } from "@workspace/api-client-react";
@@ -32,6 +33,7 @@ export default function BookingConfirmation() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [notes, setNotes] = useState("");
+  const [assessmentId, setAssessmentId] = useState<string>("none");
   const [confirmed, setConfirmed] = useState(false);
   const [bookingId, setBookingId] = useState<number | null>(null);
 
@@ -47,6 +49,10 @@ export default function BookingConfirmation() {
 
   const createBooking = useCreateBooking();
 
+  const { data: assessments = [] } = useListAssessments({
+    query: { enabled: !!user, queryKey: getListAssessmentsQueryKey() },
+  });
+
   const service = services.find(s => s.id === serviceId);
   const slot = slots.find(s => s.id === slotId);
 
@@ -55,7 +61,13 @@ export default function BookingConfirmation() {
   async function handleConfirm() {
     try {
       const res = await createBooking.mutateAsync({
-        data: { providerId, serviceId, slotId, notes: notes || undefined }
+        data: {
+          providerId,
+          serviceId,
+          slotId,
+          notes: notes || undefined,
+          assessmentId: assessmentId !== "none" ? Number(assessmentId) : undefined,
+        }
       });
       qc.invalidateQueries({ queryKey: getListMyBookingsQueryKey() });
       if (res?.id) setBookingId(res.id);
@@ -168,6 +180,28 @@ export default function BookingConfirmation() {
               </div>
 
               <Separator />
+
+              {user && assessments.length > 0 && (
+                <div>
+                  <label className="text-sm font-medium text-foreground block mb-2">
+                    Gebäudeanalyse verknüpfen (optional)
+                  </label>
+                  <select
+                    value={assessmentId}
+                    onChange={(e) => setAssessmentId(e.target.value)}
+                    className="w-full bg-white border-[1.5px] border-border rounded-lg px-3 py-2 text-sm outline-none focus:border-primary"
+                    data-testid="select-assessment"
+                  >
+                    <option value="none">— Keine verknüpfen —</option>
+                    {assessments.map((a) => (
+                      <option key={a.id} value={String(a.id)}>{a.label}</option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Der Berater erhält Zugriff auf Ihre Analyse als Gesprächsgrundlage.
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label className="text-sm font-medium text-foreground block mb-2">

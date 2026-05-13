@@ -17,6 +17,7 @@ export function Footer() {
         <div>
           <h4 className="text-white/70 text-[0.74rem] font-bold tracking-wider uppercase mb-3">Für Kunden</h4>
           <Link href="/search" className="block text-[0.78rem] text-white/35 hover:text-white/70 mb-2">Berater finden</Link>
+          <Link href="/gebaeudecheck" className="block text-[0.78rem] text-white/35 hover:text-white/70 mb-2" data-testid="footer-gebaeudecheck">Gebäudecheck (kostenlos)</Link>
           <Link href="/search" className="block text-[0.78rem] text-white/35 hover:text-white/70 mb-2">Preisvergleich</Link>
           <Link href="/search" className="block text-[0.78rem] text-white/35 hover:text-white/70 mb-2">KI-Angebot</Link>
           <Link href="/search" className="block text-[0.78rem] text-white/35 hover:text-white/70 mb-2">Bewertungen</Link>

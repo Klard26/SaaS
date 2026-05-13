@@ -11,4 +11,6 @@ export interface BookingInput {
   serviceId: number;
   slotId: number;
   notes?: string;
+  /** @nullable */
+  assessmentId?: number | null;
 }

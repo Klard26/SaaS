@@ -384,6 +384,7 @@ export const CreateBookingBody = zod.object({
   serviceId: zod.number(),
   slotId: zod.number(),
   notes: zod.string().optional(),
+  assessmentId: zod.number().nullish(),
 });
 
 /**
@@ -407,6 +408,8 @@ export const ListMyBookingsResponseItem = zod.object({
     .enum(["not_required", "pending", "paid", "failed", "refunded"])
     .optional(),
   stripeCheckoutSessionId: zod.string().nullish(),
+  assessmentId: zod.number().nullish(),
+  assessmentLabel: zod.string().nullish(),
   createdAt: zod.string().optional(),
 });
 export const ListMyBookingsResponse = zod.array(ListMyBookingsResponseItem);
@@ -436,6 +439,8 @@ export const GetBookingResponse = zod.object({
     .enum(["not_required", "pending", "paid", "failed", "refunded"])
     .optional(),
   stripeCheckoutSessionId: zod.string().nullish(),
+  assessmentId: zod.number().nullish(),
+  assessmentLabel: zod.string().nullish(),
   createdAt: zod.string().optional(),
 });
 
@@ -468,6 +473,8 @@ export const UpdateBookingStatusResponse = zod.object({
     .enum(["not_required", "pending", "paid", "failed", "refunded"])
     .optional(),
   stripeCheckoutSessionId: zod.string().nullish(),
+  assessmentId: zod.number().nullish(),
+  assessmentLabel: zod.string().nullish(),
   createdAt: zod.string().optional(),
 });
 
@@ -496,6 +503,8 @@ export const ListProviderBookingsResponseItem = zod.object({
     .enum(["not_required", "pending", "paid", "failed", "refunded"])
     .optional(),
   stripeCheckoutSessionId: zod.string().nullish(),
+  assessmentId: zod.number().nullish(),
+  assessmentLabel: zod.string().nullish(),
   createdAt: zod.string().optional(),
 });
 export const ListProviderBookingsResponse = zod.array(
@@ -579,6 +588,8 @@ export const GetProviderDashboardResponse = zod.object({
         .enum(["not_required", "pending", "paid", "failed", "refunded"])
         .optional(),
       stripeCheckoutSessionId: zod.string().nullish(),
+      assessmentId: zod.number().nullish(),
+      assessmentLabel: zod.string().nullish(),
       createdAt: zod.string().optional(),
     }),
   ),

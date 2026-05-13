@@ -1,12 +1,14 @@
 import { pgTable, text, serial, integer, real, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { assessmentsTable } from "./assessments";
 
 export const bookingsTable = pgTable("bookings", {
   id: serial("id").primaryKey(),
   customerId: text("customer_id").notNull(),
   customerName: text("customer_name"),
   customerEmail: text("customer_email"),
+  assessmentId: integer("assessment_id").references(() => assessmentsTable.id, { onDelete: "set null" }),
   providerId: integer("provider_id").notNull(),
   providerName: text("provider_name").notNull(),
   serviceId: integer("service_id").notNull(),

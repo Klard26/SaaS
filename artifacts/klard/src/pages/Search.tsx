@@ -193,6 +193,30 @@ export default function SearchPage() {
 
         {/* RESULTS */}
         <section className="min-w-0">
+          {activeCategory?.slug === "energieberatung" && (
+            <div
+              className="mb-4 rounded-[16px] border-[1.5px] border-[var(--klard-teal-p)] bg-[var(--klard-teal-l)]/40 p-4 flex items-start gap-3"
+              data-testid="banner-gebaeudecheck"
+            >
+              <div className="flex-1 min-w-0">
+                <div className="font-serif text-sm font-semibold text-foreground mb-0.5">
+                  Vorab-Einschätzung Ihrer Immobilie?
+                </div>
+                <p className="text-xs text-[var(--klard-mid)] leading-relaxed">
+                  Mit unserem kostenlosen Gebäudecheck erhalten Sie in 60 Sekunden Energieklasse,
+                  Marktwert und Klimarisiko — perfekt als Basis für Ihr Beratungsgespräch.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLocation("/gebaeudecheck")}
+                className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-[var(--klard-teal-d)] hover:bg-[var(--klard-teal)] text-white text-xs font-semibold px-3.5 py-1.5"
+                data-testid="button-banner-gebaeudecheck"
+              >
+                Jetzt prüfen
+              </button>
+            </div>
+          )}
           <div className="flex items-center justify-between mb-5">
             <h2 className="font-serif text-xl font-bold text-foreground">
               {activeCategory ? activeCategory.name : "Alle Branchen"}

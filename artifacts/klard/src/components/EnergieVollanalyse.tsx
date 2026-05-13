@@ -16,7 +16,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EnergyBar } from "@/components/EnergieSchnellcheck";
-import { AlertCircle, Save, Sun, TrendingUp, Zap, Shield, Banknote, Hammer } from "lucide-react";
+import { AlertCircle, Save, Sun, TrendingUp, Zap, Shield, Banknote, Hammer, Printer } from "lucide-react";
 
 const DEFAULT: BuildingInput = {
   plz: "",
@@ -64,7 +64,7 @@ export function EnergieVollanalyse({ initial, onSave, saving, showSave }: Props)
   const land = valid ? plzBundesland(d.plz) : "";
 
   return (
-    <div className="grid lg:grid-cols-[380px_1fr] gap-6">
+    <div className="grid lg:grid-cols-[380px_1fr] gap-6 print-area">
       {/* INPUTS */}
       <Card>
         <CardHeader>
@@ -403,13 +403,28 @@ export function EnergieVollanalyse({ initial, onSave, saving, showSave }: Props)
           </Tabs>
         )}
 
-        <p className="mt-4 text-[11px] text-muted-foreground leading-relaxed">
-          Alle Werte sind unverbindliche Schätzungen auf Basis vereinfachter Modelle
-          (DIN V 18599, NHK 2010 mit BPI {`${(1.487).toFixed(3)}`}, ImmoWertV).
-          Rechtsgültige Energieausweise, Verkehrswertgutachten und Sanierungsfahrpläne
-          erstellen ausschließlich qualifizierte Sachverständige bzw. eingetragene
-          Energieberater.
-        </p>
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 no-print">
+          <p className="text-[11px] text-muted-foreground leading-relaxed flex-1 min-w-[220px]">
+            Alle Werte sind unverbindliche Schätzungen auf Basis vereinfachter Modelle
+            (DIN V 18599, NHK 2010 mit BPI {`${(1.487).toFixed(3)}`}, ImmoWertV).
+            Rechtsgültige Energieausweise, Verkehrswertgutachten und Sanierungsfahrpläne
+            erstellen ausschließlich qualifizierte Sachverständige bzw. eingetragene
+            Energieberater.
+          </p>
+          {valid && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-full border-[1.5px] gap-1.5 shrink-0"
+              onClick={() => window.print()}
+              data-testid="button-export-pdf"
+            >
+              <Printer className="h-3.5 w-3.5" />
+              Als PDF speichern
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

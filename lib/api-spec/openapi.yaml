@@ -914,16 +914,19 @@ components:
         paymentRequired: { type: boolean }
         paymentStatus:   { type: string, enum: [not_required, pending, paid, failed, refunded] }
         stripeCheckoutSessionId: { type: ["string", "null"] }
+        assessmentId:    { type: ["integer", "null"] }
+        assessmentLabel: { type: ["string", "null"] }
         createdAt:    { type: string }
 
     BookingInput:
       type: object
       required: [providerId, serviceId, slotId]
       properties:
-        providerId:  { type: integer }
-        serviceId:   { type: integer }
-        slotId:      { type: integer }
-        notes:       { type: string }
+        providerId:    { type: integer }
+        serviceId:     { type: integer }
+        slotId:        { type: integer }
+        notes:         { type: string }
+        assessmentId:  { type: ["integer", "null"] }
 
     BookingStatusUpdate:
       type: object

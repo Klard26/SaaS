@@ -395,3 +395,26 @@
     inset: -1px;
   }
 }
+
+@media print {
+  body {
+    background: white !important;
+  }
+  nav, footer, .no-print, [data-testid="navbar"], header {
+    display: none !important;
+  }
+  .print-area {
+    display: block !important;
+  }
+  .print-area > * {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .print-area button,
+  .print-area [role="tab"] {
+    display: none !important;
+  }
+  .print-area [role="tabpanel"][hidden] {
+    display: block !important;
+  }
+}

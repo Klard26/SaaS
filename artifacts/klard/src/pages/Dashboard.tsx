@@ -326,7 +326,16 @@ export default function Dashboard() {
                   <tbody className="divide-y divide-border">
                     {bookings.slice(0, 20).map(booking => (
                       <tr key={booking.id} data-testid={`row-booking-${booking.id}`} className="group">
-                        <td className="py-3 pr-4 font-medium text-foreground">{booking.customerName ?? "Anonym"}</td>
+                        <td className="py-3 pr-4 font-medium text-foreground">
+                          {booking.customerName ?? "Anonym"}
+                          {booking.assessmentLabel && (
+                            <div className="mt-0.5">
+                              <Badge variant="outline" className="text-[10px] font-normal" data-testid={`badge-mandant-${booking.id}`}>
+                                Mandant: {booking.assessmentLabel}
+                              </Badge>
+                            </div>
+                          )}
+                        </td>
                         <td className="py-3 pr-4 text-muted-foreground">{booking.serviceName}</td>
                         <td className="py-3 pr-4 text-muted-foreground">
                           {new Date(booking.scheduledAt).toLocaleDateString("de-DE", { day: "numeric", month: "short" })}

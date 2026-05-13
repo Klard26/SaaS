@@ -27,5 +27,9 @@ export interface Booking {
   paymentStatus?: BookingPaymentStatus;
   /** @nullable */
   stripeCheckoutSessionId?: string | null;
+  /** @nullable */
+  assessmentId?: number | null;
+  /** @nullable */
+  assessmentLabel?: string | null;
   createdAt?: string;
 }

@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { bookingsTable, timeSlotsTable, servicesTable, providersTable, categoriesTable } from "@workspace/db";
+import { bookingsTable, timeSlotsTable, servicesTable, providersTable, categoriesTable, assessmentsTable } from "@workspace/db";
 import { clerkClient } from "@clerk/express";
 import {
   CreateBookingBody,
@@ -9,7 +9,7 @@ import {
   UpdateBookingStatusBody,
   ListProviderBookingsParams,
 } from "@workspace/api-zod";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import {
   sendBookingConfirmationToCustomer,
@@ -20,6 +20,28 @@ import {
 import { buildIcs } from "../lib/icsBuilder";
 
 const router: IRouter = Router();
+
+type BookingRow = typeof bookingsTable.$inferSelect;
+
+async function withAssessmentLabels<T extends BookingRow | undefined>(
+  rows: T[],
+): Promise<Array<T & { assessmentLabel: string | null }>> {
+  const ids = Array.from(
+    new Set(rows.flatMap((r) => (r?.assessmentId != null ? [r.assessmentId] : []))),
+  );
+  const labels = new Map<number, string>();
+  if (ids.length > 0) {
+    const found = await db
+      .select({ id: assessmentsTable.id, label: assessmentsTable.label })
+      .from(assessmentsTable)
+      .where(inArray(assessmentsTable.id, ids));
+    for (const a of found) labels.set(a.id, a.label);
+  }
+  return rows.map((r) => ({
+    ...(r as T),
+    assessmentLabel: r?.assessmentId != null ? labels.get(r.assessmentId) ?? null : null,
+  })) as Array<T & { assessmentLabel: string | null }>;
+}
 
 router.post("/bookings", async (req, res): Promise<void> => {
   try {
@@ -69,6 +91,20 @@ router.post("/bookings", async (req, res): Promise<void> => {
 
     const paymentRequired = !(category?.requiresDirectBilling ?? false);
 
+    let linkedAssessmentId: number | null = null;
+    if (d.assessmentId != null) {
+      const [a] = await db
+        .select()
+        .from(assessmentsTable)
+        .where(eq(assessmentsTable.id, d.assessmentId))
+        .limit(1);
+      if (!a || a.userId !== userId) {
+        res.status(403).json({ error: "Diese Analyse gehört nicht zu Ihrem Konto." });
+        return;
+      }
+      linkedAssessmentId = a.id;
+    }
+
     let customerName: string | null = null;
     let customerEmail: string | null = null;
     try {
@@ -116,6 +152,7 @@ router.post("/bookings", async (req, res): Promise<void> => {
           notes: d.notes,
           paymentRequired,
           paymentStatus: paymentRequired ? "pending" : "not_required",
+          assessmentId: linkedAssessmentId,
         })
         .returning();
 
@@ -184,7 +221,7 @@ router.get("/bookings", async (req, res): Promise<void> => {
       .from(bookingsTable)
       .where(eq(bookingsTable.customerId, userId))
       .orderBy(bookingsTable.scheduledAt);
-    res.json(bookings);
+    res.json(await withAssessmentLabels(bookings));
   } catch (err) {
     req.log.error({ err }, "Failed to fetch bookings");
     res.status(500).json({ error: "Internal server error" });
@@ -227,7 +264,8 @@ router.get("/bookings/:id", async (req, res): Promise<void> => {
       }
     }
 
-    res.json(booking);
+    const [withLabel] = await withAssessmentLabels([booking]);
+    res.json(withLabel);
   } catch (err) {
     req.log.error({ err }, "Failed to fetch booking");
     res.status(500).json({ error: "Internal server error" });
@@ -353,7 +391,7 @@ router.get("/providers/:id/bookings", async (req, res): Promise<void> => {
       .from(bookingsTable)
       .where(eq(bookingsTable.providerId, parsed.data.id))
       .orderBy(bookingsTable.scheduledAt);
-    res.json(bookings);
+    res.json(await withAssessmentLabels(bookings));
   } catch (err) {
     req.log.error({ err }, "Failed to fetch provider bookings");
     res.status(500).json({ error: "Internal server error" });
