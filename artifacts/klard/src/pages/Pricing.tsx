@@ -178,8 +178,8 @@ export default function Pricing() {
 
         <div className="mt-16 text-center text-sm text-muted-foreground">
           <p>
-            Anwälte, Steuerberater und Notare rechnen ihre Mandate weiterhin direkt mit ihren Mandanten ab –
-            entsprechend der berufsrechtlichen Vorgaben (RVG, StBVV).
+            Klard ist auf die Bau- und Energiebranche fokussiert: Energieberatung, Architektur,
+            Tragwerksplanung, Bauberatung, Sachverständige, Vermessung, TGA-Fachplanung und Bauphysik.
           </p>
         </div>
       </div>

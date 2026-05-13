@@ -66,8 +66,8 @@ export default function Home() {
           </h1>
 
           <p className="text-white/75 text-base md:text-[1rem] font-light leading-[1.75] max-w-[560px] mx-auto mb-10">
-            Steuerberater, Energieberater, Rechtsanwälte und 47+ Branchen –
-            echte Festpreise, verifizierte Profile, Direktbuchung wie beim Arzt.
+            Energieberater, Architekten, Statiker, Bauberater und weitere Bau- &
+            Energieexperten – echte Festpreise, verifizierte Profile, Direktbuchung wie beim Arzt.
           </p>
 
           {/* 3-field hero search */}

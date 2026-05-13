@@ -1,47 +1,59 @@
-import { db, categoriesTable } from "@workspace/db";
-import { sql } from "drizzle-orm";
+import {
+  db,
+  categoriesTable,
+  providersTable,
+  servicesTable,
+  bookingsTable,
+  reviewsTable,
+  timeSlotsTable,
+} from "@workspace/db";
+import { sql, inArray, notInArray } from "drizzle-orm";
 
-const CATEGORIES: Array<{ name: string; slug: string; icon: string; requiresDirectBilling?: boolean }> = [
-  { name: "Steuerberater", slug: "steuerberater", icon: "calculator", requiresDirectBilling: true },
-  { name: "Rechtsanwalt", slug: "rechtsanwalt", icon: "scale", requiresDirectBilling: true },
-  { name: "Notar", slug: "notar", icon: "file-signature", requiresDirectBilling: true },
-  { name: "Wirtschaftsprüfer", slug: "wirtschaftspruefer", icon: "clipboard-check", requiresDirectBilling: true },
-  { name: "Unternehmensberater", slug: "unternehmensberater", icon: "briefcase" },
-  { name: "Strategieberater", slug: "strategieberater", icon: "compass" },
-  { name: "Finanzberater", slug: "finanzberater", icon: "trending-up" },
-  { name: "Versicherungsmakler", slug: "versicherungsmakler", icon: "shield" },
-  { name: "Immobilienmakler", slug: "immobilienmakler", icon: "home" },
-  { name: "Existenzgründungsberater", slug: "existenzgruendungsberater", icon: "rocket" },
-  { name: "Fördermittelberater", slug: "foerdermittelberater", icon: "coins" },
-  { name: "Marketingberater", slug: "marketingberater", icon: "megaphone" },
-  { name: "SEO- & Online-Marketing", slug: "seo-online-marketing", icon: "search" },
-  { name: "PR-Berater", slug: "pr-berater", icon: "newspaper" },
-  { name: "Vertriebsberater", slug: "vertriebsberater", icon: "target" },
-  { name: "IT- & Digitalberatung", slug: "it-digitalberatung", icon: "laptop" },
-  { name: "Datenschutzbeauftragter (DSGVO)", slug: "datenschutzbeauftragter", icon: "lock" },
-  { name: "Cybersecurity-Berater", slug: "cybersecurity-berater", icon: "shield-check" },
-  { name: "Personalberater", slug: "personalberater", icon: "users" },
-  { name: "Karriere- & Bewerbungscoach", slug: "karriere-coach", icon: "user-check" },
-  { name: "Business- & Life-Coach", slug: "business-life-coach", icon: "sparkles" },
-  { name: "Mediator", slug: "mediator", icon: "handshake" },
-  { name: "Psychologische Beratung", slug: "psychologische-beratung", icon: "brain" },
-  { name: "Verkehrspsychologie", slug: "verkehrspsychologie", icon: "car" },
-  { name: "MPU-Beratung", slug: "mpu-beratung", icon: "clipboard-list" },
-  { name: "Ernährungsberater", slug: "ernaehrungsberater", icon: "apple" },
-  { name: "Gesundheitscoach", slug: "gesundheitscoach", icon: "heart-pulse" },
-  { name: "Energieberater", slug: "energieberater", icon: "zap" },
-  { name: "Nachhaltigkeits- & ESG-Berater", slug: "nachhaltigkeits-esg-berater", icon: "leaf" },
-  { name: "Architekt & Bauberater", slug: "architekt-bauberater", icon: "ruler" },
-  { name: "Sachverständiger / Gutachter", slug: "sachverstaendiger", icon: "search-check" },
-  { name: "Erbrechts- & Vorsorgeberatung", slug: "erbrecht-vorsorge", icon: "scroll" },
-  { name: "Logistik- & Supply-Chain-Berater", slug: "logistik-berater", icon: "truck" },
-  { name: "M&A- & Transaktionsberater", slug: "ma-transaktionsberater", icon: "git-merge" },
-  { name: "Innovations- & R&D-Berater", slug: "innovations-berater", icon: "lightbulb" },
-  { name: "Steuer-Coach für Privatpersonen", slug: "steuer-coach-privat", icon: "receipt" },
+const CATEGORIES: Array<{
+  name: string;
+  slug: string;
+  icon: string;
+  requiresDirectBilling?: boolean;
+}> = [
+  { name: "Energieberatung", slug: "energieberatung", icon: "zap" },
+  { name: "Architektur", slug: "architektur", icon: "ruler" },
+  { name: "Statiker / Tragwerksplaner", slug: "statiker-tragwerksplaner", icon: "pen-tool" },
+  { name: "Bauberatung / Baubegleitung", slug: "bauberatung-baubegleitung", icon: "hard-hat" },
+  { name: "Gebäudesachverständige", slug: "gebaeudesachverstaendige", icon: "search-check" },
+  { name: "Vermesser / Geodäten", slug: "vermesser-geodaeten", icon: "map" },
+  { name: "TGA-Fachplaner (Haustechnik)", slug: "tga-fachplaner-haustechnik", icon: "thermometer" },
+  { name: "Bauphysik & Spezialberatung", slug: "bauphysik-spezialberatung", icon: "shield" },
 ];
 
 async function main() {
-  console.log(`Seeding ${CATEGORIES.length} categories...`);
+  const keepSlugs = CATEGORIES.map((c) => c.slug);
+
+  console.log("Cleanup: removing providers (and their data) outside the new branch list…");
+
+  const orphanProviders = await db
+    .select({ id: providersTable.id })
+    .from(providersTable)
+    .where(notInArray(providersTable.categorySlug, keepSlugs));
+  const orphanIds = orphanProviders.map((p) => p.id);
+
+  if (orphanIds.length > 0) {
+    console.log(`  → ${orphanIds.length} orphan providers to remove`);
+    await db.delete(reviewsTable).where(inArray(reviewsTable.providerId, orphanIds));
+    await db.delete(bookingsTable).where(inArray(bookingsTable.providerId, orphanIds));
+    await db.delete(timeSlotsTable).where(inArray(timeSlotsTable.providerId, orphanIds));
+    await db.delete(servicesTable).where(inArray(servicesTable.providerId, orphanIds));
+    await db.delete(providersTable).where(inArray(providersTable.id, orphanIds));
+  } else {
+    console.log("  → no orphan providers");
+  }
+
+  const removed = await db
+    .delete(categoriesTable)
+    .where(notInArray(categoriesTable.slug, keepSlugs))
+    .returning({ slug: categoriesTable.slug });
+  console.log(`  → removed ${removed.length} categories not in PDF`);
+
+  console.log(`Seeding ${CATEGORIES.length} categories…`);
   for (const cat of CATEGORIES) {
     await db
       .insert(categoriesTable)
