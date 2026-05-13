@@ -23,6 +23,29 @@ async function getDirectBillingMap(): Promise<Record<string, boolean>> {
   return map;
 }
 
+/**
+ * Resolve a user-supplied category string to a real entry in `categories`.
+ * Accepts either the canonical slug or the display name. Returns null if no
+ * matching category exists, so the caller can respond with a 400 instead of
+ * silently writing an orphan slug into the providers table.
+ */
+async function resolveCategory(input: string): Promise<{ name: string; slug: string } | null> {
+  const candidate = slugify(input);
+  const [bySlug] = await db
+    .select({ name: categoriesTable.name, slug: categoriesTable.slug })
+    .from(categoriesTable)
+    .where(eq(categoriesTable.slug, candidate))
+    .limit(1);
+  if (bySlug) return bySlug;
+
+  const [byName] = await db
+    .select({ name: categoriesTable.name, slug: categoriesTable.slug })
+    .from(categoriesTable)
+    .where(eq(categoriesTable.name, input))
+    .limit(1);
+  return byName ?? null;
+}
+
 function withDirectBilling<T extends { categorySlug?: string | null }>(p: T, map: Record<string, boolean>): T & { requiresDirectBilling: boolean } {
   return { ...p, requiresDirectBilling: !!(p.categorySlug && map[p.categorySlug]) };
 }
@@ -132,6 +155,11 @@ router.post("/providers", async (req, res): Promise<void> => {
       return;
     }
     const d = parsed.data;
+    const category = await resolveCategory(d.category);
+    if (!category) {
+      res.status(400).json({ error: `Unbekannte Branche: ${d.category}` });
+      return;
+    }
     let email = "";
     try {
       const u = await clerkClient.users.getUser(userId);
@@ -146,8 +174,8 @@ router.post("/providers", async (req, res): Promise<void> => {
         displayName: d.displayName,
         email,
         bio: d.bio,
-        category: d.category,
-        categorySlug: slugify(d.category),
+        category: category.name,
+        categorySlug: category.slug,
         city: d.city,
         zip: d.zip,
         address: d.address,
@@ -197,8 +225,13 @@ router.patch("/providers/:id", async (req, res): Promise<void> => {
     if (d.displayName !== undefined) updateData.displayName = d.displayName;
     if (d.bio !== undefined) updateData.bio = d.bio;
     if (d.category !== undefined) {
-      updateData.category = d.category;
-      updateData.categorySlug = slugify(d.category);
+      const category = await resolveCategory(d.category);
+      if (!category) {
+        res.status(400).json({ error: `Unbekannte Branche: ${d.category}` });
+        return;
+      }
+      updateData.category = category.name;
+      updateData.categorySlug = category.slug;
     }
     if (d.city !== undefined) updateData.city = d.city;
     if (d.zip !== undefined) updateData.zip = d.zip;
