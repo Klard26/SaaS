@@ -5,12 +5,22 @@
  * Klard – Booking platform for consultants
  * OpenAPI spec version: 0.1.0
  */
+import type { CategoryQualifications } from "./categoryQualifications";
 
 export interface Category {
   id: number;
   name: string;
   slug: string;
   icon: string;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  color?: string | null;
+  /** @nullable */
+  colorLight?: string | null;
+  displayOrder?: number;
   providerCount?: number;
   requiresDirectBilling?: boolean;
+  /** @nullable */
+  qualifications?: CategoryQualifications;
 }

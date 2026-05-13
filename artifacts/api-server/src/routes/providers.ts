@@ -188,6 +188,7 @@ router.post("/providers", async (req, res): Promise<void> => {
         responseTime: d.responseTime,
         consultationMode: d.consultationMode ?? "both",
         certificates: d.certificates ?? [],
+        qualifications: d.qualifications ?? null,
         icalToken: randomBytes(24).toString("hex"),
       })
       .returning();
@@ -213,6 +214,19 @@ router.patch("/providers/:id", async (req, res): Promise<void> => {
     const paramsParsed = UpdateProviderParams.safeParse({ id: Number(req.params.id) });
     if (!paramsParsed.success) {
       res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+    const [existing] = await db
+      .select({ id: providersTable.id, clerkUserId: providersTable.clerkUserId })
+      .from(providersTable)
+      .where(eq(providersTable.id, paramsParsed.data.id))
+      .limit(1);
+    if (!existing) {
+      res.status(404).json({ error: "Provider not found" });
+      return;
+    }
+    if (existing.clerkUserId !== userId) {
+      res.status(403).json({ error: "Forbidden" });
       return;
     }
     const bodyParsed = UpdateProviderBody.safeParse(req.body);
@@ -246,6 +260,7 @@ router.patch("/providers/:id", async (req, res): Promise<void> => {
     if (d.responseTime !== undefined) updateData.responseTime = d.responseTime;
     if (d.consultationMode !== undefined) updateData.consultationMode = d.consultationMode;
     if (d.certificates !== undefined) updateData.certificates = d.certificates;
+    if (d.qualifications !== undefined) updateData.qualifications = d.qualifications;
 
     const [updated] = await db
       .update(providersTable)

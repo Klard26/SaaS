@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ProviderConsultationMode } from "./providerConsultationMode";
+import type { ProviderQualifications } from "./providerQualifications";
 import type { ProviderSubscriptionTier } from "./providerSubscriptionTier";
 
 export interface Provider {
@@ -50,5 +51,7 @@ export interface Provider {
   responseTime?: string | null;
   consultationMode?: ProviderConsultationMode;
   certificates?: string[];
+  /** @nullable */
+  qualifications?: ProviderQualifications;
   createdAt?: string;
 }

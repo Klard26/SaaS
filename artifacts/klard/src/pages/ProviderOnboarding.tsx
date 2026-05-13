@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { QualificationsForm, type QualificationsValue } from "@/components/QualificationsForm";
 import { useCreateProvider, useListCategories, getGetMyProviderProfileQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -43,6 +44,7 @@ export default function ProviderOnboarding() {
   const qc = useQueryClient();
   const { upload, isUploading } = useFileUploader();
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [qualifications, setQualifications] = useState<QualificationsValue>({});
 
   const { data: categories = [] } = useListCategories();
   const createProvider = useCreateProvider();
@@ -81,7 +83,10 @@ export default function ProviderOnboarding() {
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
-      await createProvider.mutateAsync({ data: { ...rest, certificates } });
+      const hasQualifications = Object.keys(qualifications).length > 0;
+      await createProvider.mutateAsync({
+        data: { ...rest, certificates, ...(hasQualifications ? { qualifications } : {}) },
+      });
       qc.invalidateQueries({ queryKey: getGetMyProviderProfileQueryKey() });
       toast({ title: "Willkommen!", description: "Ihr Berater-Profil wurde erstellt." });
       setLocation("/dashboard");
@@ -125,7 +130,13 @@ export default function ProviderOnboarding() {
                   <FormField control={form.control} name="category" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Fachbereich *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select
+                        onValueChange={(v) => {
+                          field.onChange(v);
+                          setQualifications({});
+                        }}
+                        value={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger data-testid="select-category">
                             <SelectValue placeholder="Fachbereich wählen" />
@@ -325,6 +336,15 @@ export default function ProviderOnboarding() {
                     )} />
                   </div>
                 </div>
+
+                <QualificationsForm
+                  config={
+                    (categories.find((c) => c.name === form.watch("category"))?.qualifications ?? null) as
+                      | Parameters<typeof QualificationsForm>[0]["config"]
+                  }
+                  value={qualifications}
+                  onChange={setQualifications}
+                />
 
                 <Button type="submit" className="w-full" disabled={createProvider.isPending} data-testid="button-submit-onboarding">
                   {createProvider.isPending ? "Wird erstellt..." : "Profil erstellen und starten"}

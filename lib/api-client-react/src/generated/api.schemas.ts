@@ -9,13 +9,27 @@ export interface HealthStatus {
   status: string;
 }
 
+/**
+ * @nullable
+ */
+export type CategoryQualifications = { [key: string]: unknown } | null;
+
 export interface Category {
   id: number;
   name: string;
   slug: string;
   icon: string;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  color?: string | null;
+  /** @nullable */
+  colorLight?: string | null;
+  displayOrder?: number;
   providerCount?: number;
   requiresDirectBilling?: boolean;
+  /** @nullable */
+  qualifications?: CategoryQualifications;
 }
 
 export type ProviderSummarySubscriptionTier =
@@ -66,6 +80,11 @@ export const ProviderConsultationMode = {
   both: "both",
 } as const;
 
+/**
+ * @nullable
+ */
+export type ProviderQualifications = { [key: string]: unknown } | null;
+
 export interface Provider {
   id: number;
   clerkUserId: string;
@@ -108,6 +127,8 @@ export interface Provider {
   responseTime?: string | null;
   consultationMode?: ProviderConsultationMode;
   certificates?: string[];
+  /** @nullable */
+  qualifications?: ProviderQualifications;
   createdAt?: string;
 }
 
@@ -119,6 +140,8 @@ export const ProviderInputConsultationMode = {
   "in-person": "in-person",
   both: "both",
 } as const;
+
+export type ProviderInputQualifications = { [key: string]: unknown };
 
 export interface ProviderInput {
   displayName: string;
@@ -136,6 +159,7 @@ export interface ProviderInput {
   responseTime?: string;
   consultationMode?: ProviderInputConsultationMode;
   certificates?: string[];
+  qualifications?: ProviderInputQualifications;
 }
 
 export type ProviderUpdateConsultationMode =
@@ -146,6 +170,8 @@ export const ProviderUpdateConsultationMode = {
   "in-person": "in-person",
   both: "both",
 } as const;
+
+export type ProviderUpdateQualifications = { [key: string]: unknown };
 
 export interface ProviderUpdate {
   displayName?: string;
@@ -164,6 +190,7 @@ export interface ProviderUpdate {
   responseTime?: string;
   consultationMode?: ProviderUpdateConsultationMode;
   certificates?: string[];
+  qualifications?: ProviderUpdateQualifications;
 }
 
 export interface Service {
@@ -198,12 +225,35 @@ export interface ServiceUpdate {
   durationMinutes?: number;
 }
 
+/**
+ * @nullable
+ */
+export type ServiceTemplatePriceType =
+  | (typeof ServiceTemplatePriceType)[keyof typeof ServiceTemplatePriceType]
+  | null;
+
+export const ServiceTemplatePriceType = {
+  fix: "fix",
+  hr: "hr",
+  pa: "pa",
+  hoai: "hoai",
+  on: "on",
+} as const;
+
 export interface ServiceTemplate {
   id: number;
   categorySlug: string;
+  /** @nullable */
+  groupName?: string | null;
   name: string;
   /** @nullable */
   description?: string | null;
+  /** @nullable */
+  priceType?: ServiceTemplatePriceType;
+  /** @nullable */
+  referencePrice?: string | null;
+  /** @nullable */
+  durationLabel?: string | null;
   defaultDurationMinutes: number;
   /** @nullable */
   defaultPrice?: number | null;

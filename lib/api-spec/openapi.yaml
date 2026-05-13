@@ -633,8 +633,15 @@ components:
         name:  { type: string }
         slug:  { type: string }
         icon:  { type: string }
+        description:   { type: ["string", "null"] }
+        color:         { type: ["string", "null"] }
+        colorLight:    { type: ["string", "null"] }
+        displayOrder:  { type: integer }
         providerCount: { type: integer }
         requiresDirectBilling: { type: boolean }
+        qualifications:
+          type: ["object", "null"]
+          additionalProperties: true
 
     ProviderSummary:
       type: object
@@ -689,6 +696,9 @@ components:
         responseTime:    { type: ["string", "null"] }
         consultationMode: { type: string, enum: [online, in-person, both] }
         certificates:    { type: array, items: { type: string } }
+        qualifications:
+          type: ["object", "null"]
+          additionalProperties: true
         createdAt:    { type: string }
 
     ProviderInput:
@@ -710,6 +720,9 @@ components:
         responseTime: { type: string }
         consultationMode: { type: string, enum: [online, in-person, both] }
         certificates: { type: array, items: { type: string } }
+        qualifications:
+          type: object
+          additionalProperties: true
 
     ProviderUpdate:
       type: object
@@ -730,6 +743,9 @@ components:
         responseTime: { type: string }
         consultationMode: { type: string, enum: [online, in-person, both] }
         certificates: { type: array, items: { type: string } }
+        qualifications:
+          type: object
+          additionalProperties: true
 
     Service:
       type: object
@@ -772,8 +788,12 @@ components:
       properties:
         id:                     { type: integer }
         categorySlug:           { type: string }
+        groupName:              { type: ["string", "null"] }
         name:                   { type: string }
         description:            { type: ["string", "null"] }
+        priceType:              { type: ["string", "null"], enum: [fix, hr, pa, hoai, on, null] }
+        referencePrice:         { type: ["string", "null"] }
+        durationLabel:          { type: ["string", "null"] }
         defaultDurationMinutes: { type: integer }
         defaultPrice:           { type: ["number", "null"] }
         sortOrder:              { type: integer }

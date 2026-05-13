@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ProviderUpdateConsultationMode } from "./providerUpdateConsultationMode";
+import type { ProviderUpdateQualifications } from "./providerUpdateQualifications";
 
 export interface ProviderUpdate {
   displayName?: string;
@@ -24,4 +25,5 @@ export interface ProviderUpdate {
   responseTime?: string;
   consultationMode?: ProviderUpdateConsultationMode;
   certificates?: string[];
+  qualifications?: ProviderUpdateQualifications;
 }

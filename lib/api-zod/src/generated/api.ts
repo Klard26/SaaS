@@ -22,8 +22,13 @@ export const ListCategoriesResponseItem = zod.object({
   name: zod.string(),
   slug: zod.string(),
   icon: zod.string(),
+  description: zod.string().nullish(),
+  color: zod.string().nullish(),
+  colorLight: zod.string().nullish(),
+  displayOrder: zod.number().optional(),
   providerCount: zod.number().optional(),
   requiresDirectBilling: zod.boolean().optional(),
+  qualifications: zod.record(zod.string(), zod.unknown()).nullish(),
 });
 export const ListCategoriesResponse = zod.array(ListCategoriesResponseItem);
 
@@ -37,8 +42,21 @@ export const ListServiceTemplatesQueryParams = zod.object({
 export const ListServiceTemplatesResponseItem = zod.object({
   id: zod.number(),
   categorySlug: zod.string(),
+  groupName: zod.string().nullish(),
   name: zod.string(),
   description: zod.string().nullish(),
+  priceType: zod
+    .union([
+      zod.literal("fix"),
+      zod.literal("hr"),
+      zod.literal("pa"),
+      zod.literal("hoai"),
+      zod.literal("on"),
+      zod.literal(null),
+    ])
+    .nullish(),
+  referencePrice: zod.string().nullish(),
+  durationLabel: zod.string().nullish(),
   defaultDurationMinutes: zod.number(),
   defaultPrice: zod.number().nullish(),
   sortOrder: zod.number().optional(),
@@ -114,6 +132,7 @@ export const CreateProviderBody = zod.object({
   responseTime: zod.string().optional(),
   consultationMode: zod.enum(["online", "in-person", "both"]).optional(),
   certificates: zod.array(zod.string()).optional(),
+  qualifications: zod.record(zod.string(), zod.unknown()).optional(),
 });
 
 /**
@@ -152,6 +171,7 @@ export const GetProviderResponse = zod.object({
   responseTime: zod.string().nullish(),
   consultationMode: zod.enum(["online", "in-person", "both"]).optional(),
   certificates: zod.array(zod.string()).optional(),
+  qualifications: zod.record(zod.string(), zod.unknown()).nullish(),
   createdAt: zod.string().optional(),
 });
 
@@ -179,6 +199,7 @@ export const UpdateProviderBody = zod.object({
   responseTime: zod.string().optional(),
   consultationMode: zod.enum(["online", "in-person", "both"]).optional(),
   certificates: zod.array(zod.string()).optional(),
+  qualifications: zod.record(zod.string(), zod.unknown()).optional(),
 });
 
 export const UpdateProviderResponse = zod.object({
@@ -210,6 +231,7 @@ export const UpdateProviderResponse = zod.object({
   responseTime: zod.string().nullish(),
   consultationMode: zod.enum(["online", "in-person", "both"]).optional(),
   certificates: zod.array(zod.string()).optional(),
+  qualifications: zod.record(zod.string(), zod.unknown()).nullish(),
   createdAt: zod.string().optional(),
 });
 
@@ -245,6 +267,7 @@ export const GetMyProviderProfileResponse = zod.object({
   responseTime: zod.string().nullish(),
   consultationMode: zod.enum(["online", "in-person", "both"]).optional(),
   certificates: zod.array(zod.string()).optional(),
+  qualifications: zod.record(zod.string(), zod.unknown()).nullish(),
   createdAt: zod.string().optional(),
 });
 

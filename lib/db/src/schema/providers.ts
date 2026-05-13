@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, real, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, real, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { sql } from "drizzle-orm";
 import { z } from "zod/v4";
@@ -33,6 +33,7 @@ export const providersTable = pgTable("providers", {
   stripeSubscriptionId: text("stripe_subscription_id"),
   icalToken: text("ical_token"),
   calendarSyncUrl: text("calendar_sync_url"),
+  qualifications: jsonb("qualifications"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

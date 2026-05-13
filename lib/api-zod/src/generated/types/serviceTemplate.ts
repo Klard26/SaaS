@@ -5,13 +5,22 @@
  * Klard – Booking platform for consultants
  * OpenAPI spec version: 0.1.0
  */
+import type { ServiceTemplatePriceType } from "./serviceTemplatePriceType";
 
 export interface ServiceTemplate {
   id: number;
   categorySlug: string;
+  /** @nullable */
+  groupName?: string | null;
   name: string;
   /** @nullable */
   description?: string | null;
+  /** @nullable */
+  priceType?: ServiceTemplatePriceType;
+  /** @nullable */
+  referencePrice?: string | null;
+  /** @nullable */
+  durationLabel?: string | null;
   defaultDurationMinutes: number;
   /** @nullable */
   defaultPrice?: number | null;
