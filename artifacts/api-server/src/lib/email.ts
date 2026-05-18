@@ -34,7 +34,7 @@ interface SendArgs {
   subject: string;
   html: string;
   text?: string;
-  attachments?: Array<{ filename: string; content: string }>;
+  attachments?: Array<{ filename: string; content: string; isBase64?: boolean }>;
 }
 
 async function send(args: SendArgs): Promise<void> {
@@ -52,7 +52,7 @@ async function send(args: SendArgs): Promise<void> {
       text: args.text,
       attachments: args.attachments?.map((a) => ({
         filename: a.filename,
-        content: Buffer.from(a.content, "utf8").toString("base64"),
+        content: a.isBase64 ? a.content : Buffer.from(a.content, "utf8").toString("base64"),
       })),
     });
     if (error) {
@@ -225,6 +225,38 @@ export async function sendProviderAssessmentSaved(p: {
     subject: `Mandant gespeichert: ${safeLabel}`,
     html,
     text: `Gebäudeanalyse für ${safeLabel} gespeichert.`,
+  });
+}
+
+export async function sendInvoiceWithAttachment(p: {
+  to: string;
+  customerName: string | null;
+  providerName: string;
+  invoiceNumber: string;
+  kind: "invoice" | "storno";
+  totalCents: number;
+  pdfBase64: string;
+  filename: string;
+}): Promise<void> {
+  const totalEur = (p.totalCents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+  const isStorno = p.kind === "storno";
+  const title = isStorno ? "Stornorechnung" : "Ihre Rechnung";
+  const subject = `${title} ${p.invoiceNumber} – ${p.providerName}`;
+  const html = wrap(
+    title,
+    `<p>Hallo${p.customerName ? ` ${p.customerName}` : ""},</p>
+     <p>${isStorno
+        ? `anbei erhalten Sie die <strong>Stornorechnung ${p.invoiceNumber}</strong> für Ihren stornierten Termin bei ${p.providerName}.`
+        : `vielen Dank für Ihre Buchung bei ${p.providerName}. Anbei erhalten Sie Ihre Rechnung <strong>${p.invoiceNumber}</strong> über <strong>${totalEur}</strong>.`}</p>
+     <p>Die Rechnung ist als PDF im Anhang dieser E-Mail.</p>
+     <p><a href="${APP_URL}/bookings" style="display:inline-block;background:#111;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">Meine Buchungen</a></p>`,
+  );
+  await send({
+    to: p.to,
+    subject,
+    html,
+    text: `${title} ${p.invoiceNumber} – ${p.providerName}. Betrag: ${totalEur}.`,
+    attachments: [{ filename: p.filename, content: p.pdfBase64, isBase64: true }],
   });
 }
 

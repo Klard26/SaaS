@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, real, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, real, timestamp, jsonb, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { sql } from "drizzle-orm";
 import { z } from "zod/v4";
@@ -34,6 +34,13 @@ export const providersTable = pgTable("providers", {
   icalToken: text("ical_token"),
   calendarSyncUrl: text("calendar_sync_url"),
   qualifications: jsonb("qualifications"),
+  kleinunternehmer: boolean("kleinunternehmer").notNull().default(false),
+  vatRate: numeric("vat_rate", { precision: 5, scale: 2 }).notNull().default("19.00"),
+  invoicePrefix: text("invoice_prefix"),
+  nextInvoiceNumber: integer("next_invoice_number").notNull().default(1),
+  iban: text("iban"),
+  invoiceFooter: text("invoice_footer"),
+  autoIssueInvoices: boolean("auto_issue_invoices").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

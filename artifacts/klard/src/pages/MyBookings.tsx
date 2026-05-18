@@ -9,8 +9,10 @@ import {
   useCreateReview, getGetProviderQueryKey,
   useCreateBookingCheckout,
   getGetBookingCalendarFileUrl,
+  useListMyCustomerInvoices, getListMyCustomerInvoicesQueryKey,
+  getGetInvoicePdfUrl,
 } from "@workspace/api-client-react";
-import { Calendar, Clock, MapPin, Star, CreditCard, Download } from "lucide-react";
+import { Calendar, Clock, Star, CreditCard, Download, FileText } from "lucide-react";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -43,6 +45,13 @@ export default function MyBookings() {
   const { data: bookings = [], isLoading } = useListMyBookings({
     query: { queryKey: getListMyBookingsQueryKey() },
   });
+
+  const { data: invoices = [] } = useListMyCustomerInvoices({
+    query: { queryKey: getListMyCustomerInvoicesQueryKey() },
+  });
+  const invoiceByBooking = new Map(
+    invoices.filter((i) => i.kind === "invoice").map((i) => [i.bookingId, i]),
+  );
 
   const createReview = useCreateReview();
   const payCheckout = useCreateBookingCheckout();
@@ -123,6 +132,18 @@ export default function MyBookings() {
                   <a href={getGetBookingCalendarFileUrl(booking.id)} download data-testid={`link-ics-${booking.id}`}>
                     <Button size="sm" variant="outline" className="gap-1.5 h-8 rounded-full border-[1.5px]">
                       <Download className="h-3.5 w-3.5" /> Zum Kalender
+                    </Button>
+                  </a>
+                )}
+                {invoiceByBooking.get(booking.id)?.hasPdf && (
+                  <a
+                    href={`${import.meta.env.BASE_URL.replace(/\/$/, "")}/api${getGetInvoicePdfUrl(invoiceByBooking.get(booking.id)!.id)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    data-testid={`link-invoice-${booking.id}`}
+                  >
+                    <Button size="sm" variant="outline" className="gap-1.5 h-8 rounded-full border-[1.5px]">
+                      <FileText className="h-3.5 w-3.5" /> Rechnung
                     </Button>
                   </a>
                 )}

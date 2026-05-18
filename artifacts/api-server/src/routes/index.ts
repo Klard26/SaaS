@@ -13,6 +13,7 @@ import billingRouter from "./billing";
 import calendarRouter from "./calendar";
 import storageRouter from "./storage";
 import assessmentsRouter from "./assessments";
+import invoicesRouter from "./invoices";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(aiRouter);
 router.use(dashboardRouter);
 router.use(storageRouter);
 router.use(assessmentsRouter);
+router.use(invoicesRouter);
 
 export default router;

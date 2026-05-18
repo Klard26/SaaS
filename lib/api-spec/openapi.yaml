@@ -34,6 +34,8 @@ tags:
     description: Object storage uploads
   - name: assessments
     description: Saved building energy assessments
+  - name: invoices
+    description: Provider invoices (§ 14 UStG)
 
 paths:
   /healthz:
@@ -667,6 +669,103 @@ paths:
         "204":
           description: Deleted
 
+  /providers/me/invoice-settings:
+    get:
+      operationId: getMyInvoiceSettings
+      tags: [invoices]
+      summary: Get the authenticated provider's invoice settings
+      responses:
+        "200":
+          description: Invoice settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceSettings"
+    patch:
+      operationId: updateMyInvoiceSettings
+      tags: [invoices]
+      summary: Update the authenticated provider's invoice settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvoiceSettingsUpdate"
+      responses:
+        "200":
+          description: Updated invoice settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceSettings"
+
+  /invoices/me:
+    get:
+      operationId: listMyProviderInvoices
+      tags: [invoices]
+      summary: List invoices issued by the authenticated provider
+      responses:
+        "200":
+          description: List of invoices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Invoice"
+
+  /invoices/customer:
+    get:
+      operationId: listMyCustomerInvoices
+      tags: [invoices]
+      summary: List invoices received by the authenticated customer
+      responses:
+        "200":
+          description: List of invoices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Invoice"
+
+  /invoices/{id}/pdf:
+    get:
+      operationId: getInvoicePdf
+      tags: [invoices]
+      summary: Download an invoice PDF (provider owner or booking customer)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: PDF
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+  /bookings/{id}/invoice:
+    post:
+      operationId: issueInvoiceForBooking
+      tags: [invoices]
+      summary: Manually issue (or re-fetch) the invoice for a paid booking
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Invoice
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Invoice"
+
   /dashboard/stats:
     get:
       operationId: getPlatformStats
@@ -1050,3 +1149,57 @@ components:
           additionalProperties: true
         createdAt:    { type: string, format: date-time }
         updatedAt:    { type: string, format: date-time }
+
+    InvoiceSettings:
+      type: object
+      required: [kleinunternehmer, vatRate, nextInvoiceNumber, autoIssueInvoices]
+      properties:
+        kleinunternehmer:    { type: boolean }
+        vatRate:             { type: string, description: "Numeric percentage as string (e.g. '19.00')" }
+        invoicePrefix:       { type: ["string", "null"] }
+        nextInvoiceNumber:   { type: integer }
+        iban:                { type: ["string", "null"] }
+        invoiceFooter:       { type: ["string", "null"] }
+        autoIssueInvoices:   { type: boolean }
+        companyLegalName:    { type: ["string", "null"] }
+        taxId:               { type: ["string", "null"] }
+        address:             { type: ["string", "null"] }
+        zip:                 { type: ["string", "null"] }
+        city:                { type: ["string", "null"] }
+
+    InvoiceSettingsUpdate:
+      type: object
+      properties:
+        kleinunternehmer:    { type: boolean }
+        vatRate:             { type: string }
+        invoicePrefix:       { type: ["string", "null"] }
+        iban:                { type: ["string", "null"] }
+        invoiceFooter:       { type: ["string", "null"] }
+        autoIssueInvoices:   { type: boolean }
+        companyLegalName:    { type: ["string", "null"] }
+        taxId:               { type: ["string", "null"] }
+        address:             { type: ["string", "null"] }
+
+    Invoice:
+      type: object
+      required: [id, providerId, bookingId, invoiceNumber, kind, issuedAt, netCents, taxRate, taxCents, totalCents, currency, serviceName, status]
+      properties:
+        id:                  { type: integer }
+        providerId:          { type: integer }
+        bookingId:           { type: integer }
+        invoiceNumber:       { type: string }
+        kind:                { type: string, enum: [invoice, storno] }
+        originalInvoiceId:   { type: ["integer", "null"] }
+        issuedAt:            { type: string, format: date-time }
+        netCents:            { type: integer }
+        taxRate:             { type: string }
+        taxCents:            { type: integer }
+        totalCents:          { type: integer }
+        currency:            { type: string }
+        customerName:        { type: ["string", "null"] }
+        customerEmail:       { type: ["string", "null"] }
+        customerAddress:     { type: ["string", "null"] }
+        serviceName:         { type: string }
+        serviceDescription:  { type: ["string", "null"] }
+        status:              { type: string }
+        hasPdf:              { type: boolean }

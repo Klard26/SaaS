@@ -18,6 +18,7 @@ import {
   type BookingEmailContext,
 } from "../lib/email";
 import { buildIcs } from "../lib/icsBuilder";
+import { issueStornoForBooking, sendInvoiceEmail } from "../lib/invoiceService";
 
 const router: IRouter = Router();
 
@@ -350,6 +351,21 @@ router.patch("/bookings/:id/status", async (req, res): Promise<void> => {
         },
         isProviderOwner ? "provider" : "customer",
       );
+
+      // If an invoice was already issued for this booking, auto-issue a
+      // Stornorechnung. Fire-and-forget — never block the status response.
+      if (updated.paymentStatus === "paid") {
+        void (async () => {
+          try {
+            const storno = await issueStornoForBooking(updated.id);
+            if (storno && providerRow) {
+              await sendInvoiceEmail({ invoice: storno, provider: providerRow, booking: updated });
+            }
+          } catch (err) {
+            req.log.error({ err, bookingId: updated.id }, "Storno issue failed");
+          }
+        })();
+      }
     }
 
     res.json(updated);

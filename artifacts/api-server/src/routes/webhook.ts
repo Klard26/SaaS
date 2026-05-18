@@ -5,6 +5,7 @@ import { providersTable, bookingsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { getUncachableStripeClient } from "../lib/stripeClient";
 import { sendPaymentConfirmation } from "../lib/email";
+import { issueInvoiceForBooking, sendInvoiceEmail } from "../lib/invoiceService";
 
 const router: IRouter = Router();
 
@@ -84,6 +85,28 @@ router.post(
                   totalPrice: updated.totalPrice,
                   paymentRequired: updated.paymentRequired,
                 });
+                // Fire-and-forget invoice generation + email so a PDF/Resend
+                // outage never delays the webhook ack.
+                void (async () => {
+                  try {
+                    const result = await issueInvoiceForBooking({ bookingId: updated.id });
+                    if (result) {
+                      const [provider] = await db
+                        .select()
+                        .from(providersTable)
+                        .where(eq(providersTable.id, updated.providerId))
+                        .limit(1);
+                      // sendInvoiceEmail is itself idempotent via emailSentAt CAS,
+                      // so it's safe to call regardless of `created` — but we only
+                      // do so on fresh issuance to avoid load on webhook retries.
+                      if (provider && result.created) {
+                        await sendInvoiceEmail({ invoice: result.invoice, provider, booking: updated });
+                      }
+                    }
+                  } catch (err) {
+                    req.log.error({ err, bookingId: updated.id }, "Invoice issue failed in webhook");
+                  }
+                })();
               }
             }
           }

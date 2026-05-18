@@ -14,7 +14,8 @@ import {
   useGetMySubscription, getGetMySubscriptionQueryKey,
   getGetProviderCalendarFeedUrl,
 } from "@workspace/api-client-react";
-import { Star, TrendingUp, Calendar, DollarSign, Users, PlusCircle, Settings, Clock, Crown, Copy, Sparkles, Building2, Lock } from "lucide-react";
+import { Star, TrendingUp, Calendar, DollarSign, Users, PlusCircle, Settings, Clock, Crown, Copy, Sparkles, Building2, Lock, Receipt } from "lucide-react";
+import { InvoicesPanel } from "@/components/InvoicesPanel";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -266,7 +267,14 @@ export default function Dashboard() {
               <Building2 className="h-4 w-4 mr-1.5" /> Gebäudeanalyse
               {!isPremium && <Lock className="h-3 w-3 ml-1.5 text-muted-foreground" />}
             </TabsTrigger>
+            <TabsTrigger value="invoices" data-testid="tab-invoices-section">
+              <Receipt className="h-4 w-4 mr-1.5" /> Rechnungen
+            </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="invoices" className="mt-4">
+            <InvoicesPanel />
+          </TabsContent>
 
           <TabsContent value="gebaeude" className="mt-4">
             {isPremium && profile ? (

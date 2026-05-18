@@ -471,6 +471,82 @@ export interface Assessment {
   updatedAt: string;
 }
 
+export interface InvoiceSettings {
+  kleinunternehmer: boolean;
+  /** Numeric percentage as string (e.g. '19.00') */
+  vatRate: string;
+  /** @nullable */
+  invoicePrefix?: string | null;
+  nextInvoiceNumber: number;
+  /** @nullable */
+  iban?: string | null;
+  /** @nullable */
+  invoiceFooter?: string | null;
+  autoIssueInvoices: boolean;
+  /** @nullable */
+  companyLegalName?: string | null;
+  /** @nullable */
+  taxId?: string | null;
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  zip?: string | null;
+  /** @nullable */
+  city?: string | null;
+}
+
+export interface InvoiceSettingsUpdate {
+  kleinunternehmer?: boolean;
+  vatRate?: string;
+  /** @nullable */
+  invoicePrefix?: string | null;
+  /** @nullable */
+  iban?: string | null;
+  /** @nullable */
+  invoiceFooter?: string | null;
+  autoIssueInvoices?: boolean;
+  /** @nullable */
+  companyLegalName?: string | null;
+  /** @nullable */
+  taxId?: string | null;
+  /** @nullable */
+  address?: string | null;
+}
+
+export type InvoiceKind = (typeof InvoiceKind)[keyof typeof InvoiceKind];
+
+export const InvoiceKind = {
+  invoice: "invoice",
+  storno: "storno",
+} as const;
+
+export interface Invoice {
+  id: number;
+  providerId: number;
+  bookingId: number;
+  invoiceNumber: string;
+  kind: InvoiceKind;
+  /** @nullable */
+  originalInvoiceId?: number | null;
+  issuedAt: string;
+  netCents: number;
+  taxRate: string;
+  taxCents: number;
+  totalCents: number;
+  currency: string;
+  /** @nullable */
+  customerName?: string | null;
+  /** @nullable */
+  customerEmail?: string | null;
+  /** @nullable */
+  customerAddress?: string | null;
+  serviceName: string;
+  /** @nullable */
+  serviceDescription?: string | null;
+  status: string;
+  hasPdf?: boolean;
+}
+
 export type ListServiceTemplatesParams = {
   category: string;
 };

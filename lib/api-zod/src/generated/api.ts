@@ -707,6 +707,146 @@ export const DeleteAssessmentParams = zod.object({
 });
 
 /**
+ * @summary Get the authenticated provider's invoice settings
+ */
+export const GetMyInvoiceSettingsResponse = zod.object({
+  kleinunternehmer: zod.boolean(),
+  vatRate: zod.string().describe("Numeric percentage as string (e.g. '19.00')"),
+  invoicePrefix: zod.string().nullish(),
+  nextInvoiceNumber: zod.number(),
+  iban: zod.string().nullish(),
+  invoiceFooter: zod.string().nullish(),
+  autoIssueInvoices: zod.boolean(),
+  companyLegalName: zod.string().nullish(),
+  taxId: zod.string().nullish(),
+  address: zod.string().nullish(),
+  zip: zod.string().nullish(),
+  city: zod.string().nullish(),
+});
+
+/**
+ * @summary Update the authenticated provider's invoice settings
+ */
+export const UpdateMyInvoiceSettingsBody = zod.object({
+  kleinunternehmer: zod.boolean().optional(),
+  vatRate: zod.string().optional(),
+  invoicePrefix: zod.string().nullish(),
+  iban: zod.string().nullish(),
+  invoiceFooter: zod.string().nullish(),
+  autoIssueInvoices: zod.boolean().optional(),
+  companyLegalName: zod.string().nullish(),
+  taxId: zod.string().nullish(),
+  address: zod.string().nullish(),
+});
+
+export const UpdateMyInvoiceSettingsResponse = zod.object({
+  kleinunternehmer: zod.boolean(),
+  vatRate: zod.string().describe("Numeric percentage as string (e.g. '19.00')"),
+  invoicePrefix: zod.string().nullish(),
+  nextInvoiceNumber: zod.number(),
+  iban: zod.string().nullish(),
+  invoiceFooter: zod.string().nullish(),
+  autoIssueInvoices: zod.boolean(),
+  companyLegalName: zod.string().nullish(),
+  taxId: zod.string().nullish(),
+  address: zod.string().nullish(),
+  zip: zod.string().nullish(),
+  city: zod.string().nullish(),
+});
+
+/**
+ * @summary List invoices issued by the authenticated provider
+ */
+export const ListMyProviderInvoicesResponseItem = zod.object({
+  id: zod.number(),
+  providerId: zod.number(),
+  bookingId: zod.number(),
+  invoiceNumber: zod.string(),
+  kind: zod.enum(["invoice", "storno"]),
+  originalInvoiceId: zod.number().nullish(),
+  issuedAt: zod.coerce.date(),
+  netCents: zod.number(),
+  taxRate: zod.string(),
+  taxCents: zod.number(),
+  totalCents: zod.number(),
+  currency: zod.string(),
+  customerName: zod.string().nullish(),
+  customerEmail: zod.string().nullish(),
+  customerAddress: zod.string().nullish(),
+  serviceName: zod.string(),
+  serviceDescription: zod.string().nullish(),
+  status: zod.string(),
+  hasPdf: zod.boolean().optional(),
+});
+export const ListMyProviderInvoicesResponse = zod.array(
+  ListMyProviderInvoicesResponseItem,
+);
+
+/**
+ * @summary List invoices received by the authenticated customer
+ */
+export const ListMyCustomerInvoicesResponseItem = zod.object({
+  id: zod.number(),
+  providerId: zod.number(),
+  bookingId: zod.number(),
+  invoiceNumber: zod.string(),
+  kind: zod.enum(["invoice", "storno"]),
+  originalInvoiceId: zod.number().nullish(),
+  issuedAt: zod.coerce.date(),
+  netCents: zod.number(),
+  taxRate: zod.string(),
+  taxCents: zod.number(),
+  totalCents: zod.number(),
+  currency: zod.string(),
+  customerName: zod.string().nullish(),
+  customerEmail: zod.string().nullish(),
+  customerAddress: zod.string().nullish(),
+  serviceName: zod.string(),
+  serviceDescription: zod.string().nullish(),
+  status: zod.string(),
+  hasPdf: zod.boolean().optional(),
+});
+export const ListMyCustomerInvoicesResponse = zod.array(
+  ListMyCustomerInvoicesResponseItem,
+);
+
+/**
+ * @summary Download an invoice PDF (provider owner or booking customer)
+ */
+export const GetInvoicePdfParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Manually issue (or re-fetch) the invoice for a paid booking
+ */
+export const IssueInvoiceForBookingParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const IssueInvoiceForBookingResponse = zod.object({
+  id: zod.number(),
+  providerId: zod.number(),
+  bookingId: zod.number(),
+  invoiceNumber: zod.string(),
+  kind: zod.enum(["invoice", "storno"]),
+  originalInvoiceId: zod.number().nullish(),
+  issuedAt: zod.coerce.date(),
+  netCents: zod.number(),
+  taxRate: zod.string(),
+  taxCents: zod.number(),
+  totalCents: zod.number(),
+  currency: zod.string(),
+  customerName: zod.string().nullish(),
+  customerEmail: zod.string().nullish(),
+  customerAddress: zod.string().nullish(),
+  serviceName: zod.string(),
+  serviceDescription: zod.string().nullish(),
+  status: zod.string(),
+  hasPdf: zod.boolean().optional(),
+});
+
+/**
  * @summary Platform-level stats (total providers, categories, bookings)
  */
 export const GetPlatformStatsResponse = zod.object({
