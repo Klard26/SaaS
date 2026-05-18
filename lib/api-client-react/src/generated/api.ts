@@ -17,6 +17,13 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  AdminBookingRow,
+  AdminCategoryRow,
+  AdminCustomerRow,
+  AdminMe,
+  AdminProviderRow,
+  AdminStats,
+  AdminTimeseriesPoint,
   AiOfferRequest,
   AiOfferResponse,
   Assessment,
@@ -27,10 +34,12 @@ import type {
   Category,
   CheckoutSession,
   DeleteTimeSlotParams,
+  GetAdminTimeseriesParams,
   HealthStatus,
   Invoice,
   InvoiceSettings,
   InvoiceSettingsUpdate,
+  ListAdminBookingsParams,
   ListProvidersParams,
   ListServiceTemplatesParams,
   PlatformStats,
@@ -3593,6 +3602,573 @@ export function useGetPlatformStats<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetPlatformStatsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Returns whether the current user is an admin
+ */
+export const getGetAdminMeUrl = () => {
+  return `/api/admin/me`;
+};
+
+export const getAdminMe = async (options?: RequestInit): Promise<AdminMe> => {
+  return customFetch<AdminMe>(getGetAdminMeUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetAdminMeQueryKey = () => {
+  return [`/api/admin/me`] as const;
+};
+
+export const getGetAdminMeQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAdminMe>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminMe>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetAdminMeQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminMe>>> = ({
+    signal,
+  }) => getAdminMe({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminMe>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetAdminMeQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getAdminMe>>
+>;
+export type GetAdminMeQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Returns whether the current user is an admin
+ */
+
+export function useGetAdminMe<
+  TData = Awaited<ReturnType<typeof getAdminMe>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminMe>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAdminMeQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Platform-wide aggregate statistics
+ */
+export const getGetAdminStatsUrl = () => {
+  return `/api/admin/stats`;
+};
+
+export const getAdminStats = async (
+  options?: RequestInit,
+): Promise<AdminStats> => {
+  return customFetch<AdminStats>(getGetAdminStatsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetAdminStatsQueryKey = () => {
+  return [`/api/admin/stats`] as const;
+};
+
+export const getGetAdminStatsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAdminStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetAdminStatsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminStats>>> = ({
+    signal,
+  }) => getAdminStats({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminStats>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetAdminStatsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getAdminStats>>
+>;
+export type GetAdminStatsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Platform-wide aggregate statistics
+ */
+
+export function useGetAdminStats<
+  TData = Awaited<ReturnType<typeof getAdminStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAdminStatsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Daily bookings and revenue time-series
+ */
+export const getGetAdminTimeseriesUrl = (params?: GetAdminTimeseriesParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/timeseries?${stringifiedParams}`
+    : `/api/admin/timeseries`;
+};
+
+export const getAdminTimeseries = async (
+  params?: GetAdminTimeseriesParams,
+  options?: RequestInit,
+): Promise<AdminTimeseriesPoint[]> => {
+  return customFetch<AdminTimeseriesPoint[]>(getGetAdminTimeseriesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetAdminTimeseriesQueryKey = (
+  params?: GetAdminTimeseriesParams,
+) => {
+  return [`/api/admin/timeseries`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetAdminTimeseriesQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAdminTimeseries>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetAdminTimeseriesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getAdminTimeseries>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetAdminTimeseriesQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getAdminTimeseries>>
+  > = ({ signal }) => getAdminTimeseries(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAdminTimeseries>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetAdminTimeseriesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getAdminTimeseries>>
+>;
+export type GetAdminTimeseriesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Daily bookings and revenue time-series
+ */
+
+export function useGetAdminTimeseries<
+  TData = Awaited<ReturnType<typeof getAdminTimeseries>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetAdminTimeseriesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getAdminTimeseries>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAdminTimeseriesQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary All providers with usage metrics
+ */
+export const getListAdminProvidersUrl = () => {
+  return `/api/admin/providers`;
+};
+
+export const listAdminProviders = async (
+  options?: RequestInit,
+): Promise<AdminProviderRow[]> => {
+  return customFetch<AdminProviderRow[]>(getListAdminProvidersUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListAdminProvidersQueryKey = () => {
+  return [`/api/admin/providers`] as const;
+};
+
+export const getListAdminProvidersQueryOptions = <
+  TData = Awaited<ReturnType<typeof listAdminProviders>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listAdminProviders>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListAdminProvidersQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listAdminProviders>>
+  > = ({ signal }) => listAdminProviders({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listAdminProviders>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListAdminProvidersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listAdminProviders>>
+>;
+export type ListAdminProvidersQueryError = ErrorType<unknown>;
+
+/**
+ * @summary All providers with usage metrics
+ */
+
+export function useListAdminProviders<
+  TData = Awaited<ReturnType<typeof listAdminProviders>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listAdminProviders>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListAdminProvidersQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Distinct customers with booking aggregates
+ */
+export const getListAdminCustomersUrl = () => {
+  return `/api/admin/customers`;
+};
+
+export const listAdminCustomers = async (
+  options?: RequestInit,
+): Promise<AdminCustomerRow[]> => {
+  return customFetch<AdminCustomerRow[]>(getListAdminCustomersUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListAdminCustomersQueryKey = () => {
+  return [`/api/admin/customers`] as const;
+};
+
+export const getListAdminCustomersQueryOptions = <
+  TData = Awaited<ReturnType<typeof listAdminCustomers>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listAdminCustomers>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListAdminCustomersQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listAdminCustomers>>
+  > = ({ signal }) => listAdminCustomers({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listAdminCustomers>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListAdminCustomersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listAdminCustomers>>
+>;
+export type ListAdminCustomersQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Distinct customers with booking aggregates
+ */
+
+export function useListAdminCustomers<
+  TData = Awaited<ReturnType<typeof listAdminCustomers>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listAdminCustomers>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListAdminCustomersQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Recent bookings across the platform
+ */
+export const getListAdminBookingsUrl = (params?: ListAdminBookingsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/bookings?${stringifiedParams}`
+    : `/api/admin/bookings`;
+};
+
+export const listAdminBookings = async (
+  params?: ListAdminBookingsParams,
+  options?: RequestInit,
+): Promise<AdminBookingRow[]> => {
+  return customFetch<AdminBookingRow[]>(getListAdminBookingsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListAdminBookingsQueryKey = (
+  params?: ListAdminBookingsParams,
+) => {
+  return [`/api/admin/bookings`, ...(params ? [params] : [])] as const;
+};
+
+export const getListAdminBookingsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listAdminBookings>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListAdminBookingsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listAdminBookings>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListAdminBookingsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listAdminBookings>>
+  > = ({ signal }) => listAdminBookings(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listAdminBookings>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListAdminBookingsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listAdminBookings>>
+>;
+export type ListAdminBookingsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Recent bookings across the platform
+ */
+
+export function useListAdminBookings<
+  TData = Awaited<ReturnType<typeof listAdminBookings>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListAdminBookingsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listAdminBookings>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListAdminBookingsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Category breakdown with booking and revenue counts
+ */
+export const getListAdminCategoriesUrl = () => {
+  return `/api/admin/categories`;
+};
+
+export const listAdminCategories = async (
+  options?: RequestInit,
+): Promise<AdminCategoryRow[]> => {
+  return customFetch<AdminCategoryRow[]>(getListAdminCategoriesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListAdminCategoriesQueryKey = () => {
+  return [`/api/admin/categories`] as const;
+};
+
+export const getListAdminCategoriesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listAdminCategories>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listAdminCategories>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListAdminCategoriesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listAdminCategories>>
+  > = ({ signal }) => listAdminCategories({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listAdminCategories>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListAdminCategoriesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listAdminCategories>>
+>;
+export type ListAdminCategoriesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Category breakdown with booking and revenue counts
+ */
+
+export function useListAdminCategories<
+  TData = Awaited<ReturnType<typeof listAdminCategories>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listAdminCategories>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListAdminCategoriesQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

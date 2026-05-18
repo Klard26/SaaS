@@ -855,3 +855,158 @@ export const GetPlatformStatsResponse = zod.object({
   totalCategories: zod.number(),
   totalReviews: zod.number(),
 });
+
+/**
+ * @summary Returns whether the current user is an admin
+ */
+export const GetAdminMeResponse = zod.object({
+  isAdmin: zod.boolean(),
+});
+
+/**
+ * @summary Platform-wide aggregate statistics
+ */
+export const GetAdminStatsResponse = zod.object({
+  bookings: zod.object({
+    total: zod.number(),
+    pending: zod.number(),
+    confirmed: zod.number(),
+    completed: zod.number(),
+    cancelled: zod.number(),
+    revenueAll: zod.number(),
+    revenuePaidCents: zod.number(),
+  }),
+  providers: zod.object({
+    total: zod.number(),
+    premium: zod.number(),
+    verified: zod.number(),
+  }),
+  customers: zod.object({
+    total: zod.number(),
+  }),
+  categories: zod.object({
+    total: zod.number(),
+  }),
+  reviews: zod.object({
+    total: zod.number(),
+    averageRating: zod.number(),
+  }),
+  invoices: zod.object({
+    total: zod.number(),
+    storno: zod.number(),
+    totalCents: zod.number(),
+  }),
+});
+
+/**
+ * @summary Daily bookings and revenue time-series
+ */
+export const getAdminTimeseriesQueryDaysDefault = 30;
+export const getAdminTimeseriesQueryDaysMax = 365;
+
+export const GetAdminTimeseriesQueryParams = zod.object({
+  days: zod.coerce
+    .number()
+    .min(1)
+    .max(getAdminTimeseriesQueryDaysMax)
+    .default(getAdminTimeseriesQueryDaysDefault),
+});
+
+export const GetAdminTimeseriesResponseItem = zod.object({
+  day: zod.string(),
+  bookings: zod.number(),
+  paidRevenueCents: zod.number(),
+});
+export const GetAdminTimeseriesResponse = zod.array(
+  GetAdminTimeseriesResponseItem,
+);
+
+/**
+ * @summary All providers with usage metrics
+ */
+export const ListAdminProvidersResponseItem = zod.object({
+  id: zod.number(),
+  displayName: zod.string(),
+  email: zod.string(),
+  category: zod.string(),
+  categorySlug: zod.string(),
+  city: zod.string(),
+  subscriptionTier: zod.string(),
+  verified: zod.boolean(),
+  rating: zod.number(),
+  reviewCount: zod.number(),
+  createdAt: zod.coerce.date(),
+  bookingCount: zod.number(),
+  paidRevenueCents: zod.number(),
+  distinctCustomers: zod.number(),
+});
+export const ListAdminProvidersResponse = zod.array(
+  ListAdminProvidersResponseItem,
+);
+
+/**
+ * @summary Distinct customers with booking aggregates
+ */
+export const ListAdminCustomersResponseItem = zod.object({
+  customerId: zod.string(),
+  customerName: zod.string().nullish(),
+  customerEmail: zod.string().nullish(),
+  bookingCount: zod.number(),
+  paidCount: zod.number(),
+  totalSpentCents: zod.number(),
+  firstBooking: zod.coerce.date(),
+  lastBooking: zod.coerce.date(),
+});
+export const ListAdminCustomersResponse = zod.array(
+  ListAdminCustomersResponseItem,
+);
+
+/**
+ * @summary Recent bookings across the platform
+ */
+export const listAdminBookingsQueryLimitDefault = 100;
+export const listAdminBookingsQueryLimitMax = 500;
+
+export const ListAdminBookingsQueryParams = zod.object({
+  limit: zod.coerce
+    .number()
+    .min(1)
+    .max(listAdminBookingsQueryLimitMax)
+    .default(listAdminBookingsQueryLimitDefault),
+  status: zod
+    .enum(["pending", "confirmed", "completed", "cancelled"])
+    .optional(),
+});
+
+export const ListAdminBookingsResponseItem = zod.object({
+  id: zod.number(),
+  customerId: zod.string(),
+  customerName: zod.string().nullish(),
+  customerEmail: zod.string().nullish(),
+  providerId: zod.number(),
+  providerName: zod.string(),
+  serviceName: zod.string(),
+  status: zod.string(),
+  paymentStatus: zod.string(),
+  totalPrice: zod.number(),
+  scheduledAt: zod.coerce.date(),
+  createdAt: zod.coerce.date(),
+});
+export const ListAdminBookingsResponse = zod.array(
+  ListAdminBookingsResponseItem,
+);
+
+/**
+ * @summary Category breakdown with booking and revenue counts
+ */
+export const ListAdminCategoriesResponseItem = zod.object({
+  slug: zod.string(),
+  name: zod.string(),
+  requiresDirectBilling: zod.boolean(),
+  providerCount: zod.number(),
+  bookingCount: zod.number(),
+  paidRevenueCents: zod.number(),
+});
+export const ListAdminCategoriesResponse = zod.array(
+  ListAdminCategoriesResponseItem,
+);

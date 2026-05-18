@@ -1,6 +1,8 @@
 import { useClerk, useUser } from "@clerk/react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
+import { useGetAdminMe, getGetAdminMeQueryKey } from "@workspace/api-client-react";
+import { Shield } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +22,10 @@ export function Navbar() {
   const [, setLocation] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [navQ, setNavQ] = useState("");
+  const { data: adminMe } = useGetAdminMe({
+    query: { queryKey: getGetAdminMeQueryKey(), enabled: !!isSignedIn },
+  });
+  const isAdmin = !!adminMe?.isAdmin;
 
   const initials = user?.firstName
     ? `${user.firstName[0]}${user.lastName?.[0] ?? ""}`.toUpperCase()
@@ -88,6 +94,11 @@ export function Navbar() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => setLocation("/dashboard")} data-testid="menu-item-dashboard">Dashboard</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setLocation("/bookings")} data-testid="menu-item-bookings">Meine Buchungen</DropdownMenuItem>
+                {isAdmin && (
+                  <DropdownMenuItem onClick={() => setLocation("/admin")} data-testid="menu-item-admin">
+                    <Shield className="h-4 w-4 mr-2" /> Plattform-Admin
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => setLocation("/provider/onboarding")} data-testid="menu-item-onboarding">Als Berater registrieren</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setLocation("/provider/profile")} data-testid="menu-item-profile">Berater-Profil</DropdownMenuItem>

@@ -36,6 +36,8 @@ tags:
     description: Saved building energy assessments
   - name: invoices
     description: Provider invoices (§ 14 UStG)
+  - name: admin
+    description: Platform operator admin dashboard
 
 paths:
   /healthz:
@@ -779,8 +781,240 @@ paths:
               schema:
                 $ref: "#/components/schemas/PlatformStats"
 
+  /admin/me:
+    get:
+      operationId: getAdminMe
+      tags: [admin]
+      summary: Returns whether the current user is an admin
+      responses:
+        "200":
+          description: Admin status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMe"
+
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Platform-wide aggregate statistics
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+
+  /admin/timeseries:
+    get:
+      operationId: getAdminTimeseries
+      tags: [admin]
+      summary: Daily bookings and revenue time-series
+      parameters:
+        - name: days
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 365, default: 30 }
+      responses:
+        "200":
+          description: Daily points
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminTimeseriesPoint"
+
+  /admin/providers:
+    get:
+      operationId: listAdminProviders
+      tags: [admin]
+      summary: All providers with usage metrics
+      responses:
+        "200":
+          description: Providers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminProviderRow"
+
+  /admin/customers:
+    get:
+      operationId: listAdminCustomers
+      tags: [admin]
+      summary: Distinct customers with booking aggregates
+      responses:
+        "200":
+          description: Customers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminCustomerRow"
+
+  /admin/bookings:
+    get:
+      operationId: listAdminBookings
+      tags: [admin]
+      summary: Recent bookings across the platform
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 500, default: 100 }
+        - name: status
+          in: query
+          schema: { type: string, enum: [pending, confirmed, completed, cancelled] }
+      responses:
+        "200":
+          description: Bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminBookingRow"
+
+  /admin/categories:
+    get:
+      operationId: listAdminCategories
+      tags: [admin]
+      summary: Category breakdown with booking and revenue counts
+      responses:
+        "200":
+          description: Categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminCategoryRow"
+
 components:
   schemas:
+    AdminMe:
+      type: object
+      required: [isAdmin]
+      properties:
+        isAdmin: { type: boolean }
+
+    AdminStats:
+      type: object
+      required: [bookings, providers, customers, categories, reviews, invoices]
+      properties:
+        bookings:
+          type: object
+          required: [total, pending, confirmed, completed, cancelled, revenueAll, revenuePaidCents]
+          properties:
+            total: { type: integer }
+            pending: { type: integer }
+            confirmed: { type: integer }
+            completed: { type: integer }
+            cancelled: { type: integer }
+            revenueAll: { type: integer }
+            revenuePaidCents: { type: integer }
+        providers:
+          type: object
+          required: [total, premium, verified]
+          properties:
+            total: { type: integer }
+            premium: { type: integer }
+            verified: { type: integer }
+        customers:
+          type: object
+          required: [total]
+          properties:
+            total: { type: integer }
+        categories:
+          type: object
+          required: [total]
+          properties:
+            total: { type: integer }
+        reviews:
+          type: object
+          required: [total, averageRating]
+          properties:
+            total: { type: integer }
+            averageRating: { type: number }
+        invoices:
+          type: object
+          required: [total, storno, totalCents]
+          properties:
+            total: { type: integer }
+            storno: { type: integer }
+            totalCents: { type: integer }
+
+    AdminTimeseriesPoint:
+      type: object
+      required: [day, bookings, paidRevenueCents]
+      properties:
+        day: { type: string }
+        bookings: { type: integer }
+        paidRevenueCents: { type: integer }
+
+    AdminProviderRow:
+      type: object
+      required: [id, displayName, email, category, categorySlug, city, subscriptionTier, verified, rating, reviewCount, createdAt, bookingCount, paidRevenueCents, distinctCustomers]
+      properties:
+        id: { type: integer }
+        displayName: { type: string }
+        email: { type: string }
+        category: { type: string }
+        categorySlug: { type: string }
+        city: { type: string }
+        subscriptionTier: { type: string }
+        verified: { type: boolean }
+        rating: { type: number }
+        reviewCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+        bookingCount: { type: integer }
+        paidRevenueCents: { type: integer }
+        distinctCustomers: { type: integer }
+
+    AdminCustomerRow:
+      type: object
+      required: [customerId, bookingCount, paidCount, totalSpentCents, firstBooking, lastBooking]
+      properties:
+        customerId: { type: string }
+        customerName: { type: string, nullable: true }
+        customerEmail: { type: string, nullable: true }
+        bookingCount: { type: integer }
+        paidCount: { type: integer }
+        totalSpentCents: { type: integer }
+        firstBooking: { type: string, format: date-time }
+        lastBooking: { type: string, format: date-time }
+
+    AdminBookingRow:
+      type: object
+      required: [id, customerId, providerId, providerName, serviceName, status, paymentStatus, totalPrice, scheduledAt, createdAt]
+      properties:
+        id: { type: integer }
+        customerId: { type: string }
+        customerName: { type: string, nullable: true }
+        customerEmail: { type: string, nullable: true }
+        providerId: { type: integer }
+        providerName: { type: string }
+        serviceName: { type: string }
+        status: { type: string }
+        paymentStatus: { type: string }
+        totalPrice: { type: number }
+        scheduledAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+
+    AdminCategoryRow:
+      type: object
+      required: [slug, name, requiresDirectBilling, providerCount, bookingCount, paidRevenueCents]
+      properties:
+        slug: { type: string }
+        name: { type: string }
+        requiresDirectBilling: { type: boolean }
+        providerCount: { type: integer }
+        bookingCount: { type: integer }
+        paidRevenueCents: { type: integer }
+
     HealthStatus:
       type: object
       required: [status]

@@ -14,6 +14,7 @@ import calendarRouter from "./calendar";
 import storageRouter from "./storage";
 import assessmentsRouter from "./assessments";
 import invoicesRouter from "./invoices";
+import adminRouter from "./admin";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use(dashboardRouter);
 router.use(storageRouter);
 router.use(assessmentsRouter);
 router.use(invoicesRouter);
+router.use(adminRouter);
 
 export default router;

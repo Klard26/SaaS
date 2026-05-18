@@ -15,6 +15,7 @@ import ProviderDetail from "./pages/ProviderDetail";
 import BookingConfirmation from "./pages/BookingConfirmation";
 import MyBookings from "./pages/MyBookings";
 import Dashboard from "./pages/Dashboard";
+import Admin from "./pages/Admin";
 import ProviderOnboarding from "./pages/ProviderOnboarding";
 import ProviderProfile from "./pages/ProviderProfile";
 import ProviderServices from "./pages/ProviderServices";
@@ -204,6 +205,9 @@ function ClerkProviderWithRoutes() {
           </Route>
           <Route path="/dashboard">
             {() => <AuthRoute component={Dashboard} />}
+          </Route>
+          <Route path="/admin">
+            {() => <AuthRoute component={Admin} />}
           </Route>
           <Route path="/provider/onboarding">
             {() => <AuthRoute component={ProviderOnboarding} />}

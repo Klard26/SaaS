@@ -5,6 +5,112 @@
  * Klard – Booking platform for consultants
  * OpenAPI spec version: 0.1.0
  */
+export interface AdminMe {
+  isAdmin: boolean;
+}
+
+export type AdminStatsBookings = {
+  total: number;
+  pending: number;
+  confirmed: number;
+  completed: number;
+  cancelled: number;
+  revenueAll: number;
+  revenuePaidCents: number;
+};
+
+export type AdminStatsProviders = {
+  total: number;
+  premium: number;
+  verified: number;
+};
+
+export type AdminStatsCustomers = {
+  total: number;
+};
+
+export type AdminStatsCategories = {
+  total: number;
+};
+
+export type AdminStatsReviews = {
+  total: number;
+  averageRating: number;
+};
+
+export type AdminStatsInvoices = {
+  total: number;
+  storno: number;
+  totalCents: number;
+};
+
+export interface AdminStats {
+  bookings: AdminStatsBookings;
+  providers: AdminStatsProviders;
+  customers: AdminStatsCustomers;
+  categories: AdminStatsCategories;
+  reviews: AdminStatsReviews;
+  invoices: AdminStatsInvoices;
+}
+
+export interface AdminTimeseriesPoint {
+  day: string;
+  bookings: number;
+  paidRevenueCents: number;
+}
+
+export interface AdminProviderRow {
+  id: number;
+  displayName: string;
+  email: string;
+  category: string;
+  categorySlug: string;
+  city: string;
+  subscriptionTier: string;
+  verified: boolean;
+  rating: number;
+  reviewCount: number;
+  createdAt: string;
+  bookingCount: number;
+  paidRevenueCents: number;
+  distinctCustomers: number;
+}
+
+export interface AdminCustomerRow {
+  customerId: string;
+  customerName?: string | null;
+  customerEmail?: string | null;
+  bookingCount: number;
+  paidCount: number;
+  totalSpentCents: number;
+  firstBooking: string;
+  lastBooking: string;
+}
+
+export interface AdminBookingRow {
+  id: number;
+  customerId: string;
+  customerName?: string | null;
+  customerEmail?: string | null;
+  providerId: number;
+  providerName: string;
+  serviceName: string;
+  status: string;
+  paymentStatus: string;
+  totalPrice: number;
+  scheduledAt: string;
+  createdAt: string;
+}
+
+export interface AdminCategoryRow {
+  slug: string;
+  name: string;
+  requiresDirectBilling: boolean;
+  providerCount: number;
+  bookingCount: number;
+  paidRevenueCents: number;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -565,3 +671,30 @@ export type ListProvidersParams = {
 export type DeleteTimeSlotParams = {
   slotId: number;
 };
+
+export type GetAdminTimeseriesParams = {
+  /**
+   * @minimum 1
+   * @maximum 365
+   */
+  days?: number;
+};
+
+export type ListAdminBookingsParams = {
+  /**
+   * @minimum 1
+   * @maximum 500
+   */
+  limit?: number;
+  status?: ListAdminBookingsStatus;
+};
+
+export type ListAdminBookingsStatus =
+  (typeof ListAdminBookingsStatus)[keyof typeof ListAdminBookingsStatus];
+
+export const ListAdminBookingsStatus = {
+  pending: "pending",
+  confirmed: "confirmed",
+  completed: "completed",
+  cancelled: "cancelled",
+} as const;
