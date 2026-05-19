@@ -91,6 +91,20 @@ Klard is a Doctolib-style booking marketplace for German consultants (Berater) �
 - **Per-booking download** (all customers): `GET /bookings/{id}/calendar.ics` returns a single VEVENT for the booking owner. Exposed as a "Zum Kalender" download button in BookingConfirmation success screen and MyBookings cards.
 - Implementation in `artifacts/api-server/src/routes/calendar.ts` — minimal iCal builder, no external library.
 
+## Platform Admin
+
+- **Allowlist**: `ADMIN_CLERK_USER_IDS` env var (comma-separated Clerk user IDs). Empty/unset → no admin access (fail-closed).
+- **Auth helper**: `artifacts/api-server/src/lib/adminAuth.ts` — `requireAdmin` middleware (401 unsigned / 403 non-admin); `isAdminUserId()` for ad-hoc checks.
+- **Endpoints** (all gated by `requireAdmin` except `/admin/me`):
+  - `GET /admin/me` — open; returns `{isAdmin: boolean}` for current session. Used by Navbar to conditionally show the "Plattform-Admin" menu item.
+  - `GET /admin/stats` — global counts/revenue across bookings, providers, customers, reviews, invoices.
+  - `GET /admin/timeseries?days=` — daily bookings + paid revenue (1–365 days).
+  - `GET /admin/providers` — all providers with `bookingCount`, `paidRevenueCents`, `distinctCustomers`.
+  - `GET /admin/customers` — distinct customers (by `bookings.customerId`) with aggregates.
+  - `GET /admin/bookings?limit=&status=` — recent bookings; validates `status` against the enum (400 on invalid).
+  - `GET /admin/categories` — category breakdown.
+- **Frontend**: `/admin` page (`artifacts/klard/src/pages/Admin.tsx`) with tabs (Übersicht, Buchungen, Anbieter, Kunden, Kategorien). German status/payment labels via `STATUS_LABELS` / `PAYMENT_LABELS`.
+
 ## User preferences
 
 _Populate as needed._

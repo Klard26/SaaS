@@ -302,6 +302,20 @@ function TopProvidersPanel() {
   );
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Offen",
+  confirmed: "Bestätigt",
+  completed: "Abgeschlossen",
+  cancelled: "Storniert",
+};
+const PAYMENT_LABELS: Record<string, string> = {
+  paid: "Bezahlt",
+  pending: "Offen",
+  failed: "Fehlgeschlagen",
+  refunded: "Erstattet",
+  not_required: "Direkt",
+};
+
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
     pending: "bg-amber-100 text-amber-900",
@@ -309,7 +323,7 @@ function StatusBadge({ status }: { status: string }) {
     completed: "bg-sky-100 text-sky-900",
     cancelled: "bg-rose-100 text-rose-900",
   };
-  return <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${map[status] ?? "bg-secondary"}`}>{status}</span>;
+  return <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${map[status] ?? "bg-secondary"}`}>{STATUS_LABELS[status] ?? status}</span>;
 }
 
 function PaymentBadge({ status }: { status: string }) {
@@ -320,7 +334,7 @@ function PaymentBadge({ status }: { status: string }) {
     refunded: "bg-slate-200 text-slate-900",
     not_required: "bg-secondary text-muted-foreground",
   };
-  return <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${map[status] ?? "bg-secondary"}`}>{status}</span>;
+  return <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${map[status] ?? "bg-secondary"}`}>{PAYMENT_LABELS[status] ?? status}</span>;
 }
 
 function BookingsPanel() {
@@ -343,7 +357,7 @@ function BookingsPanel() {
                   statusFilter === s ? "bg-primary text-white border-primary" : "bg-white text-muted-foreground border-border"
                 }`}
                 data-testid={`button-bookings-filter-${s ?? "all"}`}
-              >{s ?? "alle"}</button>
+              >{s ? STATUS_LABELS[s] : "Alle"}</button>
             ))}
           </div>
         </div>

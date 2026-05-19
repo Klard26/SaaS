@@ -234,8 +234,13 @@ router.get("/admin/customers", requireAdmin, async (req, res): Promise<void> => 
 router.get("/admin/bookings", requireAdmin, async (req, res): Promise<void> => {
   try {
     const limit = Math.max(1, Math.min(500, Number(req.query.limit) || 100));
-    const status = typeof req.query.status === "string" ? req.query.status : null;
-    const conditions = status ? [eq(bookingsTable.status, status)] : [];
+    const allowedStatuses = new Set(["pending", "confirmed", "completed", "cancelled"]);
+    const rawStatus = typeof req.query.status === "string" ? req.query.status : null;
+    if (rawStatus && !allowedStatuses.has(rawStatus)) {
+      res.status(400).json({ error: "Ungültiger Statusfilter" });
+      return;
+    }
+    const conditions = rawStatus ? [eq(bookingsTable.status, rawStatus)] : [];
     const rows = await db
       .select()
       .from(bookingsTable)
