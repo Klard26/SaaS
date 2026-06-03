@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Rechnung {{invoiceNumber}} – {{providerName}}</title>
+<style>
+/*
+  ═══════════════════════════════════════════════════════════════════════════
+  KLARD – Rechnungs-Template (dynamisch, §14 UStG-konform)
+  ═══════════════════════════════════════════════════════════════════════════
+  • Erfüllt alle Pflichtangaben nach §14 Abs. 4 UStG:
+      1. Vollständiger Name und Anschrift Anbieter
+      2. Vollständiger Name und Anschrift Leistungsempfänger
+      3. Steuernummer oder USt-IdNr. des Anbieters
+      4. Ausstellungsdatum der Rechnung
+      5. Fortlaufende Rechnungsnummer (eindeutig)
+      6. Menge und Art der gelieferten Gegenstände/Leistungen
+      7. Zeitpunkt der Lieferung/Leistung
+      8. Entgelt nach Steuersätzen aufgeschlüsselt
+      9. Steuersatz und Steuerbetrag oder Hinweis auf Steuerbefreiung
+     10. Bei Gutschrift: Hinweis "Gutschrift"
+     11. Bei Kleinunternehmer (§19 UStG): Hinweis auf Befreiung
+
+  • E-Rechnungs-fähig (XRechnung / ZUGFeRD 2.x ab 2025 B2B-Pflicht)
+  • Hybrides Format: Mensch lesbar (HTML/PDF) + maschinenlesbar (ZUGFeRD-XML
+    wird vom Backend separat angehängt — diese HTML ist die Sichtansicht)
+  ═══════════════════════════════════════════════════════════════════════════
+*/
+
+:root {
+  /* Brand */
+  --ink:        #0E1B2E;
+  --ink-soft:   #1F2D44;
+  --teal:       #0E7490;
+  --teal-deep:  #155E68;
+  --teal-light: #E0F7FA;
+  --teal-pale:  #F0FDFF;
+  --amber:      #B45309;
+  --amber-soft: #FEF3C7;
+  --amber-line: #F59E0B;
+  --green:      #047857;
+  --green-soft: #D1FAE5;
+  --red:        #B91C1C;
+
+  /* Neutrals - paper editorial */
+  --paper:      #FBFAF5;
+  --paper-soft: #F5F2E8;
+  --rule:       #D7D3C4;
+  --rule-soft:  #E8E5D7;
+  --muted:      #6B6657;
+  --muted-2:    #8B8676;
+  --text:       #1F2D44;
+
+  /* Type */
+  --serif:  "Source Serif Pro", "Lora", Georgia, "Times New Roman", serif;
+  --sans:   "Inter Tight", "DM Sans", -apple-system, sans-serif;
+  --mono:   "JetBrains Mono", "Courier New", monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+@page { size: A4; margin: 0; }
+
+html, body {
+  background: #E5E2D8;
+  font-family: var(--sans);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+@media print {
+  html, body { background: white; }
+  .no-print { display: none !important; }
+  .page { box-shadow: none !important; margin: 0 !important; page-break-after: always; }
+}
+
+/* ── PAGE FRAME ─────────────────────────────────────────────────────────── */
+.page {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 24px auto;
+  background: var(--paper);
+  position: relative;
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.04),
+    0 8px 32px rgba(0,0,0,0.08),
+    0 24px 80px rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+
+/* Vertical brand stripe — distinct from offer (amber instead of teal-amber gradient) */
+.page::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 8mm;
+  background: var(--ink);
+}
+.page::after {
+  content: "";
+  position: absolute;
+  top: 30mm; left: 0;
+  width: 8mm; height: 60mm;
+  background: linear-gradient(180deg, var(--amber-line) 0%, var(--red) 100%);
+}
+
+.page-inner {
+  padding: 22mm 18mm 22mm 26mm;
+  position: relative;
+  z-index: 2;
+}
+
+/* ── HEADER ─────────────────────────────────────────────────────────────── */
+.head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12mm;
+  align-items: start;
+  margin-bottom: 14mm;
+}
+.head-brand {
+  display: flex; align-items: baseline; gap: 4mm;
+  margin-bottom: 6mm;
+}
+.brand-logo {
+  font-family: var(--serif);
+  font-size: 32pt; font-weight: 600;
+  color: var(--ink); letter-spacing: -0.5px;
+  line-height: 1;
+}
+.brand-logo .dot { color: var(--teal); }
+.brand-tag {
+  font-size: 7pt; color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1.5px; font-weight: 600;
+  padding-bottom: 2mm;
+}
+.head-meta {
+  text-align: right; font-size: 8.5pt; color: var(--muted);
+  line-height: 1.65; padding-top: 2mm;
+}
+.head-meta strong { color: var(--ink); display: block; font-size: 9pt; margin-bottom: 1mm; }
+
+/* ── DOCUMENT STRIP ─────────────────────────────────────────────────────── */
+.doc-strip {
+  display: flex; align-items: center;
+  gap: 4mm; margin-top: 8mm;
+  padding: 3mm 0;
+  border-top: 0.5pt solid var(--rule);
+  border-bottom: 0.5pt solid var(--rule);
+}
+.doc-chip {
+  background: var(--amber); color: white;
+  font-family: var(--sans); font-weight: 700;
+  font-size: 7.5pt; letter-spacing: 1.8px;
+  padding: 2.5mm 5mm; border-radius: 2mm;
+  text-transform: uppercase;
+}
+.doc-meta { flex: 1; display: flex; gap: 6mm; font-size: 8.5pt; color: var(--muted); }
+.doc-meta div { display: flex; flex-direction: column; gap: 0.5mm; }
+.doc-meta-label {
+  font-size: 7pt; text-transform: uppercase;
+  letter-spacing: 1.2px; color: var(--muted-2); font-weight: 600;
+}
+.doc-meta-value { color: var(--ink); font-weight: 500; font-family: var(--mono); font-size: 9pt; }
+
+/* E-Invoice marker (when format is XRechnung/ZUGFeRD) */
+.e-invoice-badge {
+  display: inline-block;
+  background: var(--green-soft); color: var(--green);
+  font-size: 7pt; font-weight: 700;
+  padding: 1.5mm 3mm; border-radius: 1mm;
+  letter-spacing: 1px; text-transform: uppercase;
+  border: 0.5pt solid var(--green);
+}
+
+/* ── TITLE BLOCK ────────────────────────────────────────────────────────── */
+.title-block { margin-bottom: 10mm; }
+.title-eyebrow {
+  display: inline-block;
+  font-size: 7.5pt; font-weight: 700;
+  color: var(--amber); letter-spacing: 2.5px;
+  text-transform: uppercase; margin-bottom: 4mm;
+}
+.title-main {
+  font-family: var(--serif); font-size: 28pt;
+  color: var(--ink); line-height: 1.1;
+  font-weight: 600; letter-spacing: -0.6px;
+  margin-bottom: 3mm;
+}
+.title-sub {
+  font-size: 9.5pt; color: var(--muted);
+  line-height: 1.55;
+}
+
+/* ── PARTY BLOCKS ───────────────────────────────────────────────────────── */
+.parties {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8mm; margin-bottom: 10mm;
+}
+.party {
+  background: white;
+  border: 0.5pt solid var(--rule);
+  padding: 6mm 7mm;
+  position: relative;
+}
+.party-label {
+  position: absolute; top: -3mm; left: 5mm;
+  background: var(--paper); padding: 0 2mm;
+  font-size: 7pt; font-weight: 700;
+  color: var(--muted); letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.party-name {
+  font-family: var(--serif); font-size: 13pt;
+  color: var(--ink); font-weight: 600;
+  margin-bottom: 1mm; line-height: 1.2;
+}
+.party-sub { font-size: 8.5pt; color: var(--muted); margin-bottom: 4mm; line-height: 1.4; }
+.party-lines { font-size: 9pt; color: var(--text); line-height: 1.65; }
+.party-lines .ico { display: inline-block; width: 4mm; color: var(--muted-2); }
+.party-lines strong { color: var(--ink); font-weight: 600; }
+
+/* ── PERFORMANCE PERIOD BOX (§14 Abs. 4 Nr. 6 UStG — Pflicht!) ─────────── */
+.performance-box {
+  background: var(--teal-pale);
+  border-left: 3pt solid var(--teal);
+  padding: 4mm 5mm;
+  margin-bottom: 8mm;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6mm;
+  font-size: 9pt;
+}
+.perf-item {
+  display: flex; flex-direction: column; gap: 1mm;
+}
+.perf-label {
+  font-size: 7pt; font-weight: 700;
+  color: var(--teal); letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+.perf-value {
+  color: var(--ink); font-weight: 500;
+  font-family: var(--mono); font-size: 10pt;
+}
+
+/* ── SERVICES TABLE ─────────────────────────────────────────────────────── */
+.svc-section { margin-bottom: 8mm; }
+.svc-header {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 4mm; padding-bottom: 2mm;
+  border-bottom: 1pt solid var(--ink);
+}
+.svc-header h3 {
+  font-family: var(--serif); font-size: 14pt;
+  color: var(--ink); font-weight: 600;
+}
+.svc-header-meta { font-size: 8pt; color: var(--muted); }
+
+.svc-table { width: 100%; border-collapse: collapse; }
+.svc-table thead th {
+  font-size: 7pt; font-weight: 700;
+  color: var(--muted); letter-spacing: 1.2px;
+  text-transform: uppercase;
+  text-align: left; padding: 2mm 2mm 3mm;
+  border-bottom: 0.5pt solid var(--rule);
+  background: var(--paper-soft);
+}
+.svc-table thead th.num { text-align: right; }
+.svc-table thead th.center { text-align: center; }
+.svc-table tbody td {
+  font-size: 9.5pt;
+  padding: 3.5mm 2mm;
+  border-bottom: 0.5pt solid var(--rule);
+  vertical-align: top;
+}
+.svc-pos {
+  font-family: var(--mono); color: var(--muted-2);
+  font-size: 8pt; width: 7mm;
+}
+.svc-name {
+  font-weight: 500; color: var(--ink);
+  margin-bottom: 1mm; font-size: 10pt;
+}
+.svc-desc {
+  font-size: 8.5pt; color: var(--muted);
+  line-height: 1.5; max-width: 90mm;
+}
+.svc-period {
+  font-size: 7.5pt; color: var(--teal);
+  margin-top: 1mm; font-style: italic;
+}
+.svc-qty {
+  font-family: var(--mono); color: var(--text);
+  text-align: center; font-size: 9pt;
+}
+.svc-vat {
+  font-family: var(--mono); color: var(--text);
+  text-align: center; font-size: 9pt;
+}
+.svc-unit-price, .svc-line-total {
+  font-family: var(--mono); color: var(--ink);
+  text-align: right; font-size: 9.5pt;
+  white-space: nowrap;
+}
+.svc-line-total { font-weight: 700; }
+
+/* ── TOTALS — VAT-AUFSCHLÜSSELUNG (§14 Abs. 4 Nr. 8 UStG) ─────────────── */
+.totals {
+  display: grid;
+  grid-template-columns: 1fr 95mm;
+  gap: 8mm; margin-bottom: 10mm;
+}
+.totals-note {
+  font-size: 8.5pt; color: var(--muted);
+  line-height: 1.55; padding-top: 3mm;
+}
+.totals-note strong { color: var(--ink); }
+
+.totals-grid {
+  background: white;
+  border: 0.5pt solid var(--rule);
+  padding: 5mm;
+}
+.totals-row {
+  display: flex; justify-content: space-between;
+  padding: 1.5mm 0; font-size: 9.5pt;
+  color: var(--text);
+}
+.totals-row.line {
+  border-bottom: 0.5pt solid var(--rule);
+  margin-bottom: 1.5mm; padding-bottom: 2.5mm;
+}
+.totals-row .num { font-family: var(--mono); font-weight: 500; }
+
+/* VAT breakdown table */
+.vat-breakdown {
+  background: var(--paper-soft);
+  padding: 3mm 4mm; margin: 3mm 0;
+  border-radius: 1mm;
+  font-size: 8.5pt;
+}
+.vat-breakdown-title {
+  font-size: 7pt; font-weight: 700;
+  color: var(--muted); letter-spacing: 1.2px;
+  text-transform: uppercase; margin-bottom: 2mm;
+}
+.vat-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 3mm; padding: 1mm 0;
+  font-size: 8.5pt;
+}
+.vat-row .label { color: var(--muted); }
+.vat-row .net { color: var(--text); text-align: right; font-family: var(--mono); font-size: 8pt; }
+.vat-row .amount { font-family: var(--mono); color: var(--ink); font-weight: 600; }
+
+.totals-row.grand {
+  margin-top: 3mm; padding-top: 3.5mm;
+  border-top: 1pt solid var(--ink);
+  font-size: 13pt; font-weight: 700;
+  font-family: var(--serif); color: var(--ink);
+}
+.totals-row.grand .num {
+  font-family: var(--serif); font-size: 16pt;
+  color: var(--amber);
+}
+
+/* ── PAYMENT INFO ───────────────────────────────────────────────────────── */
+.payment-section {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 8mm; margin-bottom: 10mm;
+}
+.payment-card {
+  background: var(--ink); color: white;
+  padding: 6mm 7mm;
+  position: relative;
+  overflow: hidden;
+}
+.payment-card::before {
+  content: "";
+  position: absolute; top: 0; right: 0;
+  width: 60mm; height: 60mm;
+  background: radial-gradient(circle at top right, rgba(245,158,11,0.18), transparent 65%);
+  pointer-events: none;
+}
+.payment-label {
+  font-size: 7.5pt; font-weight: 700;
+  color: var(--amber-line); letter-spacing: 2px;
+  text-transform: uppercase; margin-bottom: 3mm;
+}
+.payment-title {
+  font-family: var(--serif); font-size: 13pt;
+  margin-bottom: 5mm; font-weight: 600;
+}
+.payment-lines {
+  font-size: 9pt; line-height: 1.7;
+  color: rgba(255,255,255,0.85);
+  font-family: var(--mono);
+  position: relative; z-index: 2;
+}
+.payment-lines strong {
+  color: white; font-weight: 600;
+  display: inline-block; min-width: 28mm;
+  font-family: var(--sans);
+}
+.payment-due {
+  margin-top: 4mm; padding-top: 4mm;
+  border-top: 0.5pt solid rgba(255,255,255,0.2);
+}
+.payment-due-date {
+  font-family: var(--serif); font-size: 14pt;
+  color: var(--amber-line); font-weight: 600;
+}
+
+/* SEPA QR / Verwendungszweck */
+.payment-ref {
+  background: var(--paper-soft);
+  border: 0.5pt solid var(--rule);
+  padding: 5mm;
+}
+.payment-ref-label {
+  font-size: 7pt; font-weight: 700;
+  color: var(--muted); letter-spacing: 1.2px;
+  text-transform: uppercase; margin-bottom: 3mm;
+}
+.payment-ref-value {
+  font-family: var(--mono); font-size: 11pt;
+  color: var(--ink); font-weight: 600;
+  margin-bottom: 4mm;
+  word-break: break-all;
+}
+.payment-ref-note {
+  font-size: 8pt; color: var(--muted);
+  line-height: 1.5;
+}
+
+/* ── LEGAL FOOTER ───────────────────────────────────────────────────────── */
+.legal-block {
+  font-size: 7.5pt; color: var(--muted);
+  line-height: 1.55; margin-bottom: 8mm;
+  padding: 4mm 5mm;
+  background: var(--paper-soft);
+  border-radius: 1mm;
+}
+.legal-block strong { color: var(--text); display: block; margin-bottom: 1mm; font-size: 8pt; }
+.legal-block p { margin-bottom: 2mm; }
+.legal-block p:last-child { margin-bottom: 0; }
+
+.foot {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6mm;
+  padding-top: 4mm;
+  border-top: 0.5pt solid var(--rule);
+  font-size: 7.5pt; color: var(--muted);
+  line-height: 1.5;
+}
+.foot strong {
+  display: block; color: var(--ink);
+  font-size: 8pt; margin-bottom: 1.5mm;
+  font-family: var(--serif);
+}
+.foot a { color: var(--teal); text-decoration: none; }
+
+.page-num {
+  position: absolute; bottom: 10mm; right: 18mm;
+  font-size: 7pt; color: var(--muted-2);
+  font-family: var(--mono);
+}
+
+/* ── PRINT BAR ──────────────────────────────────────────────────────────── */
+.print-bar {
+  position: sticky; top: 0;
+  background: var(--ink); color: white;
+  padding: 12px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  z-index: 100;
+  font-family: var(--sans);
+}
+.print-bar h1 { font-family: var(--serif); font-size: 16px; font-weight: 500; }
+.print-bar h1 .acc { color: var(--amber-line); }
+.print-bar button {
+  background: var(--amber); color: white; border: none;
+  padding: 8px 20px; border-radius: 4px;
+  font-family: var(--sans); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: background 0.2s;
+}
+.print-bar button:hover { background: #92400E; }
+</style>
+</head>
+<body>
+
+<!-- Web-only print bar -->
+<div class="print-bar no-print">
+  <h1>Klard — <span class="acc">Rechnung</span> · {{invoiceNumber}}</h1>
+  <button onclick="window.print()">🖨 Als PDF speichern / drucken</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- INVOICE PAGE                                                            -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="page">
+  <div class="page-inner">
+
+    <!-- ── HEADER ────────────────────────────────────────────────────── -->
+    <div class="head">
+      <div>
+        <div class="head-brand">
+          <div class="brand-logo">klar<span class="dot">d</span></div>
+          <div class="brand-tag">Doctolib für Bau- & Energieberater</div>
+        </div>
+        <div style="font-size: 8pt; color: var(--muted); line-height: 1.5;">
+          klard.de · hello@klard.de · Berlin, Deutschland
+        </div>
+      </div>
+      <div class="head-meta">
+        <strong>Rechnungsdokument</strong>
+        Rechnungsdatum: <strong style="display:inline;">{{invoiceDate}}</strong><br>
+        Fälligkeitsdatum: <strong style="display:inline; color: var(--amber);">{{dueDate}}</strong><br>
+        <span class="e-invoice-badge" style="margin-top: 2mm; display: inline-block;">{{einvoiceFormat}}</span>
+      </div>
+    </div>
+
+    <!-- Document strip -->
+    <div class="doc-strip">
+      <div class="doc-chip">Rechnung</div>
+      <div class="doc-meta">
+        <div>
+          <span class="doc-meta-label">Rechnungs-Nr.</span>
+          <span class="doc-meta-value">{{invoiceNumber}}</span>
+        </div>
+        <div>
+          <span class="doc-meta-label">Bezug auf Angebot</span>
+          <span class="doc-meta-value">{{offerNumber}}</span>
+        </div>
+        <div>
+          <span class="doc-meta-label">Kunden-Nr.</span>
+          <span class="doc-meta-value">{{customerId}}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TITLE ─────────────────────────────────────────────────────── -->
+    <div class="title-block" style="margin-top: 10mm;">
+      <div class="title-eyebrow">Ihre Rechnung</div>
+      <h1 class="title-main">{{invoiceTitle}}</h1>
+      <p class="title-sub">Vielen Dank für Ihren Auftrag. Bitte überweisen Sie den unten genannten Betrag bis zum <strong style="color: var(--amber);">{{dueDate}}</strong> auf das angegebene Konto.</p>
+    </div>
+
+    <!-- ── PARTIES (§14 Abs. 4 Nr. 1+2 UStG) ─────────────────────────── -->
+    <div class="parties">
+      <!-- Anbieter -->
+      <div class="party">
+        <span class="party-label">Rechnungssteller</span>
+        <div class="party-name">{{providerName}}</div>
+        <div class="party-sub">{{providerBranch}}</div>
+        <div class="party-lines">
+          <span class="ico">⌂</span>{{providerStreet}}<br>
+          <span class="ico">📍</span>{{providerZip}} {{providerCity}}<br>
+          <span class="ico">☎</span>{{providerPhone}}<br>
+          <span class="ico">✉</span>{{providerEmail}}<br>
+          <span class="ico">⚖</span><strong>USt-IdNr.:</strong> <span style="font-family:var(--mono);">{{providerVatId}}</span><br>
+          <span class="ico">#</span><strong>Steuer-Nr.:</strong> <span style="font-family:var(--mono);">{{providerTaxId}}</span>
+        </div>
+      </div>
+
+      <!-- Empfänger -->
+      <div class="party">
+        <span class="party-label">Leistungsempfänger</span>
+        <div class="party-name">{{customerName}}</div>
+        <div class="party-sub">{{customerCompany}}</div>
+        <div class="party-lines">
+          <span class="ico">⌂</span>{{customerStreet}}<br>
+          <span class="ico">📍</span>{{customerZip}} {{customerCity}}<br>
+          <span class="ico">☎</span>{{customerPhone}}<br>
+          <span class="ico">✉</span>{{customerEmail}}<br>
+          <span class="ico">#</span><strong>Kunden-Nr.:</strong> <span style="font-family:var(--mono);">{{customerId}}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PERFORMANCE PERIOD (§14 Abs. 4 Nr. 6 UStG — Pflicht!) ─────── -->
+    <div class="performance-box">
+      <div class="perf-item">
+        <span class="perf-label">Leistungszeitraum</span>
+        <span class="perf-value">{{performanceStart}} – {{performanceEnd}}</span>
+      </div>
+      <div class="perf-item">
+        <span class="perf-label">Zahlungsbedingungen</span>
+        <span class="perf-value">{{paymentTermsDays}} Tage netto</span>
+      </div>
+      <div class="perf-item">
+        <span class="perf-label">Skonto</span>
+        <span class="perf-value">{{skontoPercent}}% bei Zahlung bis {{skontoDate}}</span>
+      </div>
+    </div>
+
+    <!-- ── SERVICES TABLE (§14 Abs. 4 Nr. 5+6 UStG) ──────────────────── -->
+    <div class="svc-section">
+      <div class="svc-header">
+        <h3>Abgerechnete Leistungen</h3>
+        <span class="svc-header-meta">{{serviceCount}} Positionen · Alle Preise netto in Euro</span>
+      </div>
+      <table class="svc-table">
+        <thead>
+          <tr>
+            <th class="num">Pos.</th>
+            <th>Leistung</th>
+            <th class="num">Menge</th>
+            <th class="center">USt</th>
+            <th class="num">Einzelpreis</th>
+            <th class="num">Gesamt netto</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- {{#each services}} -->
+          <tr>
+            <td class="svc-pos">{{position}}</td>
+            <td>
+              <div class="svc-name">{{name}}</div>
+              <div class="svc-desc">{{description}}</div>
+              <div class="svc-period">Geleistet am: {{performanceDate}}</div>
+            </td>
+            <td class="svc-qty">{{quantity}}</td>
+            <td class="svc-vat">{{vatRate}}%</td>
+            <td class="svc-unit-price">{{unitPrice}}</td>
+            <td class="svc-line-total">{{lineTotal}}</td>
+          </tr>
+          <!-- {{/each}} -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── TOTALS WITH VAT BREAKDOWN (§14 Abs. 4 Nr. 8 UStG) ─────────── -->
+    <div class="totals">
+      <div class="totals-note">
+        <strong>Hinweise zur Rechnung:</strong><br>
+        Diese Rechnung wurde elektronisch erstellt und ist auch ohne Unterschrift gültig.
+        Bitte beachten Sie die gesetzliche Aufbewahrungspflicht von 10 Jahren (§ 147 AO).
+        Bei Rückfragen zu dieser Rechnung wenden Sie sich bitte an {{providerEmail}}
+        unter Angabe der Rechnungsnummer.
+      </div>
+      <div class="totals-grid">
+        <div class="totals-row">
+          <span>Zwischensumme (netto)</span>
+          <span class="num">{{subtotalNet}}</span>
+        </div>
+        {{#if discountAmount}}
+        <div class="totals-row" style="color: var(--amber);">
+          <span>{{discountLabel}}</span>
+          <span class="num">−{{discountAmount}}</span>
+        </div>
+        {{/if}}
+        <div class="totals-row line">
+          <span><strong>Netto-Endbetrag</strong></span>
+          <span class="num"><strong>{{netTotal}}</strong></span>
+        </div>
+
+        <!-- VAT breakdown by tax rate (Pflicht §14 Abs. 4 Nr. 8 UStG) -->
+        <div class="vat-breakdown">
+          <div class="vat-breakdown-title">USt-Aufschlüsselung nach Steuersätzen</div>
+          <!-- {{#each vatBreakdown}} -->
+          <div class="vat-row">
+            <span class="label">USt {{rate}}% auf</span>
+            <span class="net">{{netBase}}</span>
+            <span class="amount">{{taxAmount}}</span>
+          </div>
+          <!-- {{/each}} -->
+        </div>
+
+        <div class="totals-row grand">
+          <span>Rechnungsbetrag</span>
+          <span class="num">{{grandTotal}}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PAYMENT INFO ──────────────────────────────────────────────── -->
+    <div class="payment-section">
+      <div class="payment-card">
+        <div class="payment-label">Zahlungsinformationen</div>
+        <div class="payment-title">Bankverbindung</div>
+        <div class="payment-lines">
+          <strong>Kontoinhaber:</strong> {{bankAccountHolder}}<br>
+          <strong>IBAN:</strong> {{bankIban}}<br>
+          <strong>BIC:</strong> {{bankBic}}<br>
+          <strong>Bank:</strong> {{bankName}}
+        </div>
+        <div class="payment-due">
+          <div style="font-size: 7pt; color: var(--amber-line); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 1mm;">Fällig bis</div>
+          <div class="payment-due-date">{{dueDate}}</div>
+        </div>
+      </div>
+
+      <div class="payment-ref">
+        <div class="payment-ref-label">Verwendungszweck</div>
+        <div class="payment-ref-value">{{invoiceNumber}}</div>
+        <div class="payment-ref-note">
+          <strong style="color: var(--ink);">Wichtig:</strong> Bitte geben Sie diese
+          Rechnungsnummer im Verwendungszweck Ihrer Überweisung an, damit die Zahlung
+          automatisch zugeordnet werden kann.
+        </div>
+        <div style="margin-top: 4mm; padding-top: 4mm; border-top: 0.5pt solid var(--rule); font-size: 8pt; color: var(--muted); line-height: 1.5;">
+          <strong style="color: var(--green); font-size: 8.5pt;">✓ Skonto-Hinweis:</strong><br>
+          Bei Zahlung bis <strong style="color: var(--green);">{{skontoDate}}</strong> gewähren wir Ihnen <strong style="color: var(--green);">{{skontoPercent}}% Skonto</strong> ({{skontoAmount}}). Endbetrag dann: <strong style="color: var(--green);">{{grandTotalWithSkonto}}</strong>.
+        </div>
+      </div>
+    </div>
+
+    <!-- ── LEGAL FOOTER (§14 UStG Pflichtangaben + Hinweise) ─────────── -->
+    <div class="legal-block">
+      <strong>Rechtliche Hinweise (§ 14 UStG)</strong>
+      <p>
+        Diese Rechnung enthält alle nach § 14 Abs. 4 UStG erforderlichen Pflichtangaben.
+        Sie wird im Sinne des Wachstumschancengesetzes als <strong>{{einvoiceFormat}}</strong>
+        (entspricht EN 16931) im B2B-Bereich ausgestellt. Ein strukturiertes
+        maschinenlesbares XML wurde dieser PDF-Sichtfassung als Anhang beigefügt
+        bzw. liegt diesem Dokument bei (ZUGFeRD-Hybrid).
+      </p>
+      <p>
+        {{#if kleinunternehmer}}
+        <strong style="color: var(--amber);">Hinweis Kleinunternehmer-Regelung:</strong>
+        Gemäß § 19 UStG wird keine Umsatzsteuer berechnet. Diese Rechnung enthält keinen
+        Steuerausweis.
+        {{else}}
+        Die gesetzliche Umsatzsteuer ist in den angegebenen Beträgen enthalten und nach
+        Steuersätzen aufgeschlüsselt ausgewiesen.
+        {{/if}}
+      </p>
+      <p>
+        <strong>Aufbewahrungspflicht:</strong> Diese Rechnung ist gemäß § 147 AO für
+        10 Jahre aufzubewahren (gilt für gewerbliche Empfänger). Bei Privatpersonen
+        Aufbewahrung 2 Jahre nach § 14b Abs. 1 UStG bei Bauleistungen.
+      </p>
+    </div>
+
+    <!-- ── FOOTER ────────────────────────────────────────────────────── -->
+    <div class="foot">
+      <div>
+        <strong>{{providerName}}</strong>
+        {{providerStreet}}<br>
+        {{providerZip}} {{providerCity}}<br>
+        Tel.: {{providerPhone}}<br>
+        E-Mail: {{providerEmail}}
+      </div>
+      <div>
+        <strong>Rechtliches</strong>
+        Geschäftsführer: {{providerCeo}}<br>
+        Handelsregister: {{providerHrb}}<br>
+        Amtsgericht: {{providerCourt}}<br>
+        USt-IdNr.: {{providerVatId}}<br>
+        Steuer-Nr.: {{providerTaxId}}
+      </div>
+      <div>
+        <strong>Plattform</strong>
+        Abgerechnet über klard.de<br>
+        Rechnung: <span style="font-family:var(--mono);">{{invoiceNumber}}</span><br>
+        Erstellt: {{invoiceDate}}<br>
+        <a href="https://klard.de/invoice/{{invoiceNumber}}">Online ansehen →</a>
+      </div>
+    </div>
+
+    <div class="page-num">Seite 1 von 1 · {{invoiceNumber}}</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- DEMO-PREVIEW SCRIPT — entfernen wenn Backend echte Daten injiziert       -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<script>
+/*
+  Demo-Daten zum Testen im Browser.
+  Im Produktivbetrieb wird das Template server-seitig befüllt
+  (Handlebars / Mustache / Jinja2 / React) — dieses Script entfernen.
+*/
+
+const DEMO_DATA = {
+  // Rechnungs-Metadaten
+  invoiceNumber:     "KLD-RE-2025-0418",
+  offerNumber:       "KLD-AO-2025-0247",
+  invoiceDate:       "27.05.2025",
+  dueDate:           "10.06.2025",
+  invoiceTitle:      "Rechnung Nr. 2025-0418",
+  einvoiceFormat:    "ZUGFeRD 2.x",
+
+  // Anbieter (aus DB: providers.*)
+  providerName:      "Energy Impuls GmbH",
+  providerBranch:    "Qualifizierte Energieberatung",
+  providerStreet:    "Kurfürstendamm 218",
+  providerZip:       "10719",
+  providerCity:      "Berlin",
+  providerPhone:     "+49 30 12345678",
+  providerEmail:     "kontakt@energy-impuls.de",
+  providerVatId:     "DE321456789",
+  providerTaxId:     "37/123/45678",
+  providerCeo:       "Mürsel Kareem",
+  providerHrb:       "HRB 234567 B",
+  providerCourt:     "Amtsgericht Berlin (Charlottenburg)",
+
+  // Kunde
+  customerName:      "Dr. Anna Schmidt",
+  customerCompany:   "Schmidt Immobilien GmbH",
+  customerStreet:    "Hauptstraße 47",
+  customerZip:       "10827",
+  customerCity:      "Berlin",
+  customerPhone:     "+49 30 98765432",
+  customerEmail:     "a.schmidt@schmidt-immo.de",
+  customerId:        "KD-2025-0418",
+
+  // Leistungszeitraum (§14 Abs. 4 Nr. 6 UStG Pflicht!)
+  performanceStart:  "01.05.2025",
+  performanceEnd:    "23.05.2025",
+  paymentTermsDays:  "14",
+
+  // Skonto
+  skontoPercent:     "2",
+  skontoDate:        "03.06.2025",
+  skontoAmount:      "63,96 €",
+  grandTotalWithSkonto: "3.134,22 €",
+
+  // Bank
+  bankAccountHolder: "Energy Impuls GmbH",
+  bankIban:          "DE89 1001 0010 0123 4567 89",
+  bankBic:           "PBNKDEFFXXX",
+  bankName:          "Postbank Berlin",
+
+  // Beträge
+  serviceCount:      "4",
+  subtotalNet:       "2.829,00 €",
+  discountLabel:     "Klard-Bonus: 5%",
+  discountAmount:    "141,45 €",
+  netTotal:          "2.687,55 €",
+  grandTotal:        "3.198,18 €",
+
+  // Flag
+  kleinunternehmer:  false,
+};
+
+const DEMO_SERVICES = [
+  {
+    position: "01", quantity: "1", vatRate: "19", unitPrice: "1.450,00 €", lineTotal: "1.450,00 €",
+    name: "Individueller Sanierungsfahrplan (iSFP)",
+    description: "Vollständiger BAFA-geförderter Sanierungsfahrplan inkl. Vor-Ort-Begehung am 06.05.2025, Bestandsaufnahme, Maßnahmenkatalog und 30-seitigem Bericht.",
+    performanceDate: "06.05.2025"
+  },
+  {
+    position: "02", quantity: "1", vatRate: "19", unitPrice: "299,00 €", lineTotal: "299,00 €",
+    name: "Energiebedarfsausweis Wohngebäude (nach GEG)",
+    description: "Vollständiger Bedarfsausweis nach Gebäudeenergiegesetz inkl. Energieeffizienz-Klasse, CO₂-Bilanz und Modernisierungsempfehlungen.",
+    performanceDate: "14.05.2025"
+  },
+  {
+    position: "03", quantity: "1", vatRate: "19", unitPrice: "490,00 €", lineTotal: "490,00 €",
+    name: "Hydraulischer Abgleich Verfahren B",
+    description: "Berechnung und Nachweis nach DIN EN 12831 (Verfahren B) inkl. Voreinstellung der Thermostatventile.",
+    performanceDate: "19.05.2025"
+  },
+  {
+    position: "04", quantity: "1", vatRate: "19", unitPrice: "590,00 €", lineTotal: "590,00 €",
+    name: "BEG-Einzelmaßnahmen Förderantrag",
+    description: "Vollständige Antragstellung BEG EM bei BAFA inkl. Verwendungsnachweis und allen technischen Nachweisen.",
+    performanceDate: "23.05.2025"
+  },
+];
+
+const DEMO_VAT_BREAKDOWN = [
+  { rate: "19", netBase: "auf 2.687,55 € netto", taxAmount: "510,63 €" },
+];
+
+// Demo-Renderer
+function renderDemo() {
+  // 1. Services-Loop
+  const tbody = document.querySelector('.svc-table tbody');
+  if (tbody) {
+    tbody.innerHTML = DEMO_SERVICES.map(s => `
+      <tr>
+        <td class="svc-pos">${s.position}</td>
+        <td>
+          <div class="svc-name">${s.name}</div>
+          <div class="svc-desc">${s.description}</div>
+          <div class="svc-period">Geleistet am: ${s.performanceDate}</div>
+        </td>
+        <td class="svc-qty">${s.quantity}</td>
+        <td class="svc-vat">${s.vatRate}%</td>
+        <td class="svc-unit-price">${s.unitPrice}</td>
+        <td class="svc-line-total">${s.lineTotal}</td>
+      </tr>
+    `).join('');
+  }
+
+  // 2. VAT breakdown loop
+  const vatContainer = document.querySelector('.vat-breakdown');
+  if (vatContainer) {
+    const title = vatContainer.querySelector('.vat-breakdown-title').outerHTML;
+    vatContainer.innerHTML = title + DEMO_VAT_BREAKDOWN.map(v => `
+      <div class="vat-row">
+        <span class="label">USt ${v.rate}% auf</span>
+        <span class="net">${v.netBase}</span>
+        <span class="amount">${v.taxAmount}</span>
+      </div>
+    `).join('');
+  }
+
+  // 3. Replace placeholders
+  let html = document.body.innerHTML;
+  Object.entries(DEMO_DATA).forEach(([key, val]) => {
+    if (typeof val === 'boolean') {
+      // {{#if kleinunternehmer}} ... {{else}} ... {{/if}}
+      if (val) {
+        html = html.replace(/\{\{#if kleinunternehmer\}\}([\s\S]*?)\{\{else\}\}([\s\S]*?)\{\{\/if\}\}/g, '$1');
+      } else {
+        html = html.replace(/\{\{#if kleinunternehmer\}\}([\s\S]*?)\{\{else\}\}([\s\S]*?)\{\{\/if\}\}/g, '$2');
+      }
+    } else {
+      html = html.replaceAll(`{{${key}}}`, val);
+    }
+  });
+  // Strip remaining template markers
+  html = html.replace(/\{\{#if [^}]+\}\}/g, '').replace(/\{\{\/if\}\}/g, '');
+  html = html.replace(/\{\{#each [^}]+\}\}/g, '').replace(/\{\{\/each\}\}/g, '');
+  html = html.replace(/\{\{[^}]+\}\}/g, '—');
+
+  document.body.innerHTML = html;
+
+  const btn = document.querySelector('.print-bar button');
+  if (btn) btn.onclick = () => window.print();
+}
+
+document.addEventListener('DOMContentLoaded', renderDemo);
+</script>
+
+</body>
+</html>

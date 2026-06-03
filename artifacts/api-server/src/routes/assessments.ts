@@ -83,15 +83,15 @@ router.post("/assessments", async (req, res): Promise<void> => {
         .limit(1);
       if (p?.email) {
         const r = (d.resultJson ?? {}) as Record<string, unknown>;
-        const energie = r["energie"] as { klasse?: string } | undefined;
-        const value = r["value"] as { marktwert?: number } | undefined;
+        const energie = r["energie"] as { klasse?: { c?: string } } | undefined;
+        const value = r["value"] as { total?: number } | undefined;
         const addr = (d.addressJson ?? {}) as Record<string, unknown>;
         void sendProviderAssessmentSaved({
           providerEmail: p.email,
           providerName: p.displayName,
           label: d.label,
-          energyClass: energie?.klasse ?? null,
-          marketValue: value?.marktwert ?? null,
+          energyClass: energie?.klasse?.c ?? null,
+          marketValue: value?.total ?? null,
           city: (addr["city"] as string | null) ?? null,
         });
       }

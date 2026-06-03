@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>KI-Angebot {{offerNumber}} – {{providerName}}</title>
+<style>
+/*
+  ═══════════════════════════════════════════════════════════════════════════
+  KLARD – KI-Angebot Template (dynamisch)
+  ═══════════════════════════════════════════════════════════════════════════
+  • Voll dynamisch über Handlebars-Style Platzhalter: {{variable}}
+  • Druckbar (A4) und web-darstellbar
+  • Alle Daten kommen aus dem Backend (provider, customer, services, ai_analysis)
+  • Backend muss vor dem Rendern alle {{...}} ersetzen (Handlebars, Mustache,
+    Jinja2, React-Templates oder Server-Side-Rendering)
+  ═══════════════════════════════════════════════════════════════════════════
+*/
+
+:root {
+  /* Brand */
+  --ink:        #0E1B2E;
+  --ink-soft:   #1F2D44;
+  --teal:       #0E7490;
+  --teal-deep:  #155E68;
+  --teal-light: #E0F7FA;
+  --teal-pale:  #F0FDFF;
+  --amber:      #B45309;
+  --amber-soft: #FEF3C7;
+  --amber-line: #F59E0B;
+  --green:      #047857;
+  --green-soft: #D1FAE5;
+
+  /* Neutrals - warm editorial off-white */
+  --paper:      #FBFAF5;
+  --paper-soft: #F5F2E8;
+  --rule:       #D7D3C4;
+  --muted:      #6B6657;
+  --muted-2:    #8B8676;
+  --text:       #1F2D44;
+
+  /* Type */
+  --serif:  "Source Serif Pro", "Lora", Georgia, "Times New Roman", serif;
+  --sans:   "Inter Tight", "DM Sans", -apple-system, sans-serif;
+  --mono:   "JetBrains Mono", "Courier New", monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+@page { size: A4; margin: 0; }
+
+html, body {
+  background: #E5E2D8;
+  font-family: var(--sans);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+@media print {
+  html, body { background: white; }
+  .no-print { display: none !important; }
+  .page { box-shadow: none !important; margin: 0 !important; page-break-after: always; }
+}
+
+/* ── PAGE FRAME ─────────────────────────────────────────────────────────── */
+.page {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 24px auto;
+  background: var(--paper);
+  position: relative;
+  box-shadow:
+    0 1px 2px rgba(0,0,0,0.04),
+    0 8px 32px rgba(0,0,0,0.08),
+    0 24px 80px rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+
+/* Editorial side-bar with vertical brand element */
+.page::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 8mm;
+  background: var(--ink);
+}
+.page::after {
+  content: "";
+  position: absolute;
+  top: 30mm; left: 0;
+  width: 8mm; height: 60mm;
+  background: linear-gradient(180deg, var(--teal) 0%, var(--amber-line) 100%);
+}
+
+.page-inner {
+  padding: 22mm 18mm 22mm 26mm;
+  position: relative;
+  z-index: 2;
+}
+
+/* ── HEADER ─────────────────────────────────────────────────────────────── */
+.head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12mm;
+  align-items: start;
+  margin-bottom: 14mm;
+}
+.head-brand {
+  display: flex; align-items: baseline; gap: 4mm;
+  margin-bottom: 6mm;
+}
+.brand-logo {
+  font-family: var(--serif);
+  font-size: 32pt; font-weight: 600;
+  color: var(--ink); letter-spacing: -0.5px;
+  line-height: 1;
+}
+.brand-logo .dot { color: var(--teal); }
+.brand-tag {
+  font-size: 7pt; color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1.5px; font-weight: 600;
+  padding-bottom: 2mm;
+}
+.head-meta {
+  text-align: right; font-size: 8.5pt; color: var(--muted);
+  line-height: 1.65; padding-top: 2mm;
+}
+.head-meta strong { color: var(--ink); display: block; font-size: 9pt; margin-bottom: 1mm; }
+
+/* Document type strip */
+.doc-strip {
+  display: flex; align-items: center;
+  gap: 4mm; margin-top: 8mm;
+  padding: 3mm 0;
+  border-top: 0.5pt solid var(--rule);
+  border-bottom: 0.5pt solid var(--rule);
+}
+.doc-chip {
+  background: var(--teal); color: white;
+  font-family: var(--sans); font-weight: 700;
+  font-size: 7.5pt; letter-spacing: 1.8px;
+  padding: 2.5mm 5mm; border-radius: 2mm;
+  text-transform: uppercase;
+}
+.doc-chip-ai { background: var(--ink); }
+.doc-chip-ai::before { content: "✦ "; color: var(--amber-line); }
+.doc-meta { flex: 1; display: flex; gap: 6mm; font-size: 8.5pt; color: var(--muted); }
+.doc-meta div { display: flex; flex-direction: column; gap: 0.5mm; }
+.doc-meta-label {
+  font-size: 7pt; text-transform: uppercase;
+  letter-spacing: 1.2px; color: var(--muted-2); font-weight: 600;
+}
+.doc-meta-value { color: var(--ink); font-weight: 500; font-family: var(--mono); font-size: 9pt; }
+
+/* ── TITLE BLOCK ────────────────────────────────────────────────────────── */
+.title-block { margin-bottom: 12mm; }
+.title-eyebrow {
+  display: inline-block;
+  font-size: 7.5pt; font-weight: 700;
+  color: var(--teal); letter-spacing: 2.5px;
+  text-transform: uppercase; margin-bottom: 4mm;
+}
+.title-main {
+  font-family: var(--serif); font-size: 26pt;
+  color: var(--ink); line-height: 1.15;
+  font-weight: 600; letter-spacing: -0.6px;
+  margin-bottom: 3mm;
+}
+.title-main em { font-style: italic; color: var(--teal); }
+.title-sub {
+  font-size: 10pt; color: var(--muted);
+  line-height: 1.55; max-width: 130mm;
+}
+
+/* ── PARTY BLOCKS (Provider + Customer) ─────────────────────────────────── */
+.parties {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8mm; margin-bottom: 12mm;
+}
+.party {
+  background: white;
+  border: 0.5pt solid var(--rule);
+  padding: 6mm 7mm;
+  position: relative;
+}
+.party-label {
+  position: absolute; top: -3mm; left: 5mm;
+  background: var(--paper); padding: 0 2mm;
+  font-size: 7pt; font-weight: 700;
+  color: var(--muted); letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.party-name {
+  font-family: var(--serif); font-size: 14pt;
+  color: var(--ink); font-weight: 600;
+  margin-bottom: 1mm; line-height: 1.2;
+}
+.party-sub { font-size: 8.5pt; color: var(--muted); margin-bottom: 4mm; line-height: 1.4; }
+.party-lines { font-size: 9pt; color: var(--text); line-height: 1.65; }
+.party-lines .ico { display: inline-block; width: 4mm; color: var(--muted-2); }
+
+/* ── AI ANALYSIS BLOCK (signature feature) ──────────────────────────────── */
+.ai-block {
+  background: var(--ink);
+  color: white;
+  padding: 8mm 9mm;
+  position: relative;
+  margin-bottom: 10mm;
+  overflow: hidden;
+}
+.ai-block::before {
+  content: "";
+  position: absolute; top: 0; right: 0;
+  width: 80mm; height: 80mm;
+  background: radial-gradient(circle at top right, rgba(180,83,9,0.18), transparent 70%);
+  pointer-events: none;
+}
+.ai-block::after {
+  content: "✦";
+  position: absolute; top: 6mm; right: 8mm;
+  font-size: 32pt; color: var(--amber-line);
+  opacity: 0.4; line-height: 1;
+}
+.ai-eyebrow {
+  font-size: 7pt; font-weight: 700;
+  color: var(--amber-line); letter-spacing: 2px;
+  text-transform: uppercase; margin-bottom: 3mm;
+  display: flex; align-items: center; gap: 2mm;
+}
+.ai-eyebrow::before {
+  content: ""; display: inline-block;
+  width: 8mm; height: 1pt; background: var(--amber-line);
+}
+.ai-title {
+  font-family: var(--serif); font-size: 14pt;
+  margin-bottom: 4mm; line-height: 1.3;
+  position: relative; z-index: 2;
+}
+.ai-text {
+  font-size: 9.5pt; line-height: 1.65;
+  color: rgba(255,255,255,0.85);
+  position: relative; z-index: 2;
+  white-space: pre-line;
+  max-width: 130mm;
+}
+.ai-meta {
+  margin-top: 5mm; padding-top: 4mm;
+  border-top: 0.5pt solid rgba(255,255,255,0.15);
+  display: flex; justify-content: space-between;
+  font-size: 7.5pt; color: rgba(255,255,255,0.5);
+}
+
+/* ── SERVICES TABLE ─────────────────────────────────────────────────────── */
+.svc-section { margin-bottom: 10mm; }
+.svc-header {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 4mm; padding-bottom: 2mm;
+  border-bottom: 1pt solid var(--ink);
+}
+.svc-header h3 {
+  font-family: var(--serif); font-size: 14pt;
+  color: var(--ink); font-weight: 600;
+}
+.svc-header-meta { font-size: 8pt; color: var(--muted); }
+
+.svc-table { width: 100%; border-collapse: collapse; }
+.svc-table thead th {
+  font-size: 7pt; font-weight: 700;
+  color: var(--muted); letter-spacing: 1.2px;
+  text-transform: uppercase;
+  text-align: left; padding: 2mm 2mm 3mm;
+  border-bottom: 0.5pt solid var(--rule);
+}
+.svc-table thead th.num { text-align: right; }
+.svc-table tbody td {
+  font-size: 9.5pt;
+  padding: 4mm 2mm;
+  border-bottom: 0.5pt solid var(--rule);
+  vertical-align: top;
+}
+.svc-table tbody tr:hover { background: rgba(14,116,144,0.02); }
+.svc-pos {
+  font-family: var(--mono); color: var(--muted-2);
+  font-size: 8pt; width: 8mm;
+}
+.svc-name {
+  font-weight: 500; color: var(--ink);
+  margin-bottom: 1mm; font-size: 10pt;
+}
+.svc-desc {
+  font-size: 8.5pt; color: var(--muted);
+  line-height: 1.5; max-width: 90mm;
+}
+.svc-meta-row {
+  display: flex; gap: 4mm; margin-top: 1.5mm;
+  font-size: 7.5pt; color: var(--muted-2);
+}
+.svc-meta-row span {
+  display: inline-flex; align-items: center; gap: 1mm;
+}
+.svc-qty {
+  font-family: var(--mono); color: var(--text);
+  text-align: center; font-size: 9pt;
+}
+.svc-unit-price, .svc-line-total {
+  font-family: var(--mono); color: var(--ink);
+  text-align: right; font-size: 9.5pt;
+  white-space: nowrap;
+}
+.svc-line-total { font-weight: 700; }
+
+/* ── TOTALS BLOCK ───────────────────────────────────────────────────────── */
+.totals {
+  display: grid;
+  grid-template-columns: 1fr 90mm;
+  gap: 8mm; margin-bottom: 10mm;
+}
+.totals-note {
+  font-size: 8.5pt; color: var(--muted);
+  line-height: 1.55; padding-top: 3mm;
+}
+.totals-note strong { color: var(--ink); }
+.totals-grid {
+  background: white;
+  border: 0.5pt solid var(--rule);
+  padding: 5mm;
+}
+.totals-row {
+  display: flex; justify-content: space-between;
+  padding: 1.5mm 0; font-size: 9.5pt;
+  color: var(--text);
+}
+.totals-row.line {
+  border-bottom: 0.5pt solid var(--rule);
+  margin-bottom: 1.5mm; padding-bottom: 2.5mm;
+}
+.totals-row .num { font-family: var(--mono); font-weight: 500; }
+.totals-row.grand {
+  margin-top: 3mm; padding-top: 3.5mm;
+  border-top: 1pt solid var(--ink);
+  font-size: 13pt; font-weight: 700;
+  font-family: var(--serif); color: var(--ink);
+}
+.totals-row.grand .num {
+  font-family: var(--serif); font-size: 16pt;
+  color: var(--teal-deep);
+}
+
+/* ── VALIDITY / NEXT STEPS ──────────────────────────────────────────────── */
+.next-steps {
+  background: var(--teal-pale);
+  border: 0.5pt solid var(--teal-light);
+  border-left: 3pt solid var(--teal);
+  padding: 6mm 7mm; margin-bottom: 10mm;
+}
+.next-steps-title {
+  font-size: 7.5pt; font-weight: 700;
+  color: var(--teal); letter-spacing: 1.8px;
+  text-transform: uppercase; margin-bottom: 3mm;
+}
+.next-steps-content {
+  font-family: var(--serif); font-size: 12pt;
+  color: var(--ink); line-height: 1.45;
+  margin-bottom: 4mm; font-weight: 500;
+}
+.next-steps-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 4mm; font-size: 8.5pt; color: var(--text);
+}
+.next-step {
+  padding: 3mm; background: white; border-radius: 1mm;
+  font-size: 8.5pt; line-height: 1.45;
+}
+.next-step strong {
+  display: block; color: var(--teal-deep);
+  font-size: 9pt; margin-bottom: 1mm;
+}
+
+/* ── LEGAL / FOOTER ─────────────────────────────────────────────────────── */
+.legal-block {
+  font-size: 7.5pt; color: var(--muted);
+  line-height: 1.55; margin-bottom: 8mm;
+  padding: 4mm 5mm;
+  background: var(--paper-soft);
+  border-radius: 1mm;
+}
+.legal-block strong { color: var(--text); display: block; margin-bottom: 1mm; font-size: 8pt; }
+.legal-block p { margin-bottom: 2mm; }
+.legal-block p:last-child { margin-bottom: 0; }
+
+.foot {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6mm;
+  padding-top: 4mm;
+  border-top: 0.5pt solid var(--rule);
+  font-size: 7.5pt; color: var(--muted);
+  line-height: 1.5;
+}
+.foot strong {
+  display: block; color: var(--ink);
+  font-size: 8pt; margin-bottom: 1.5mm;
+  font-family: var(--serif);
+}
+.foot a { color: var(--teal); text-decoration: none; }
+
+.page-num {
+  position: absolute; bottom: 10mm; right: 18mm;
+  font-size: 7pt; color: var(--muted-2);
+  font-family: var(--mono);
+}
+
+/* ── PRINT BUTTON (web only) ────────────────────────────────────────────── */
+.print-bar {
+  position: sticky; top: 0;
+  background: var(--ink); color: white;
+  padding: 12px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  z-index: 100;
+  font-family: var(--sans);
+}
+.print-bar h1 { font-family: var(--serif); font-size: 16px; font-weight: 500; }
+.print-bar h1 .acc { color: var(--amber-line); }
+.print-bar button {
+  background: var(--amber); color: white; border: none;
+  padding: 8px 20px; border-radius: 4px;
+  font-family: var(--sans); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: background 0.2s;
+}
+.print-bar button:hover { background: #92400E; }
+</style>
+</head>
+<body>
+
+<!-- Web-only print bar -->
+<div class="print-bar no-print">
+  <h1>Klard — <span class="acc">KI-Angebot</span> · {{offerNumber}}</h1>
+  <button onclick="window.print()">🖨 Als PDF speichern / drucken</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- DOCUMENT PAGE                                                           -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="page">
+  <div class="page-inner">
+
+    <!-- ── HEADER ────────────────────────────────────────────────────── -->
+    <div class="head">
+      <div>
+        <div class="head-brand">
+          <div class="brand-logo">klar<span class="dot">d</span></div>
+          <div class="brand-tag">Doctolib für Bau- & Energieberater</div>
+        </div>
+        <div style="font-size: 8pt; color: var(--muted); line-height: 1.5;">
+          klard.de · hello@klard.de · Berlin, Deutschland
+        </div>
+      </div>
+      <div class="head-meta">
+        <strong>Angebotsdokument</strong>
+        Erstellt am: {{createdDate}}<br>
+        Gültig bis: <strong style="display:inline; color: var(--amber);">{{validUntil}}</strong>
+      </div>
+    </div>
+
+    <!-- Document type strip -->
+    <div class="doc-strip">
+      <div class="doc-chip doc-chip-ai">KI-Angebot</div>
+      <div class="doc-meta">
+        <div>
+          <span class="doc-meta-label">Angebotsnummer</span>
+          <span class="doc-meta-value">{{offerNumber}}</span>
+        </div>
+        <div>
+          <span class="doc-meta-label">Kundenreferenz</span>
+          <span class="doc-meta-value">{{customerRef}}</span>
+        </div>
+        <div>
+          <span class="doc-meta-label">Branche</span>
+          <span class="doc-meta-value">{{branchName}}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TITLE ─────────────────────────────────────────────────────── -->
+    <div class="title-block" style="margin-top: 10mm;">
+      <div class="title-eyebrow">Ihr individuelles Angebot</div>
+      <h1 class="title-main">{{offerTitle}}<br><em>{{offerSubtitle}}</em></h1>
+      <p class="title-sub">{{offerIntro}}</p>
+    </div>
+
+    <!-- ── PARTIES ────────────────────────────────────────────────────── -->
+    <div class="parties">
+      <!-- Anbieter -->
+      <div class="party">
+        <span class="party-label">Anbieter</span>
+        <div class="party-name">{{providerName}}</div>
+        <div class="party-sub">{{providerBranch}}</div>
+        <div class="party-lines">
+          <span class="ico">⌂</span>{{providerStreet}}<br>
+          <span class="ico">📍</span>{{providerZip}} {{providerCity}}<br>
+          <span class="ico">☎</span>{{providerPhone}}<br>
+          <span class="ico">✉</span>{{providerEmail}}<br>
+          <span class="ico">⚖</span>USt-IdNr.: <span style="font-family:var(--mono);">{{providerVatId}}</span>
+        </div>
+      </div>
+
+      <!-- Kunde -->
+      <div class="party">
+        <span class="party-label">Empfänger</span>
+        <div class="party-name">{{customerName}}</div>
+        <div class="party-sub">{{customerCompany}}</div>
+        <div class="party-lines">
+          <span class="ico">⌂</span>{{customerStreet}}<br>
+          <span class="ico">📍</span>{{customerZip}} {{customerCity}}<br>
+          <span class="ico">☎</span>{{customerPhone}}<br>
+          <span class="ico">✉</span>{{customerEmail}}<br>
+          <span class="ico">#</span>Kunden-Nr.: <span style="font-family:var(--mono);">{{customerId}}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── AI ANALYSIS ────────────────────────────────────────────────── -->
+    <div class="ai-block">
+      <div class="ai-eyebrow">KI-Bedarfsanalyse · generiert mit Claude</div>
+      <h3 class="ai-title">{{aiAnalysisTitle}}</h3>
+      <div class="ai-text">{{aiAnalysisText}}</div>
+      <div class="ai-meta">
+        <span>Modell: {{aiModel}} · Generiert am {{aiGeneratedAt}}</span>
+        <span>Konfidenz: {{aiConfidence}}%</span>
+      </div>
+    </div>
+
+    <!-- ── SERVICES TABLE ─────────────────────────────────────────────── -->
+    <div class="svc-section">
+      <div class="svc-header">
+        <h3>Empfohlene Leistungen</h3>
+        <span class="svc-header-meta">{{serviceCount}} Positionen · Alle Preise netto in Euro</span>
+      </div>
+      <table class="svc-table">
+        <thead>
+          <tr>
+            <th class="num">Pos.</th>
+            <th>Leistung</th>
+            <th class="num">Menge</th>
+            <th class="num">Einzelpreis</th>
+            <th class="num">Gesamt</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- {{#each services}} -->
+          <tr>
+            <td class="svc-pos">{{position}}</td>
+            <td>
+              <div class="svc-name">{{name}}</div>
+              <div class="svc-desc">{{description}}</div>
+              <div class="svc-meta-row">
+                <span>⏱ {{duration}}</span>
+                <span>🏷 {{priceTypeLabel}}</span>
+                {{#if category}}<span>📁 {{category}}</span>{{/if}}
+              </div>
+            </td>
+            <td class="svc-qty">{{quantity}}</td>
+            <td class="svc-unit-price">{{unitPrice}}</td>
+            <td class="svc-line-total">{{lineTotal}}</td>
+          </tr>
+          <!-- {{/each}} -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── TOTALS ─────────────────────────────────────────────────────── -->
+    <div class="totals">
+      <div class="totals-note">
+        <strong>Hinweise zur Preisgestaltung:</strong><br>
+        Alle Preise verstehen sich als Nettopreise zuzüglich der gesetzlichen Umsatzsteuer.
+        Fördermittel-Anträge ({{providerProgrammeShort}}) werden separat abgerechnet, sofern
+        nicht im Leistungsumfang enthalten. Reisekosten außerhalb {{providerCity}} nach Aufwand.
+      </div>
+      <div class="totals-grid">
+        <div class="totals-row">
+          <span>Zwischensumme (netto)</span>
+          <span class="num">{{subtotalNet}}</span>
+        </div>
+        {{#if discountAmount}}
+        <div class="totals-row" style="color: var(--amber);">
+          <span>{{discountLabel}}</span>
+          <span class="num">−{{discountAmount}}</span>
+        </div>
+        {{/if}}
+        <div class="totals-row line">
+          <span>Netto-Endbetrag</span>
+          <span class="num">{{netTotal}}</span>
+        </div>
+        <div class="totals-row">
+          <span>zzgl. Umsatzsteuer ({{vatRate}}%)</span>
+          <span class="num">{{vatAmount}}</span>
+        </div>
+        <div class="totals-row grand">
+          <span>Gesamtbetrag</span>
+          <span class="num">{{grandTotal}}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── NEXT STEPS ─────────────────────────────────────────────────── -->
+    <div class="next-steps">
+      <div class="next-steps-title">Nächste Schritte</div>
+      <div class="next-steps-content">
+        Buchen Sie direkt online über Klard.de oder antworten Sie einfach auf diese E-Mail.
+      </div>
+      <div class="next-steps-grid">
+        <div class="next-step">
+          <strong>1. Annehmen</strong>
+          Online über klard.de/offer/{{offerNumber}} bestätigen oder per E-Mail antworten
+        </div>
+        <div class="next-step">
+          <strong>2. Termin buchen</strong>
+          Verfügbare Termine im Klard-Kalender direkt online buchbar
+        </div>
+        <div class="next-step">
+          <strong>3. Rechnung & Start</strong>
+          Sofortige Bestätigung, Rechnung und Projektstart-Datum
+        </div>
+      </div>
+    </div>
+
+    <!-- ── LEGAL BLOCK ────────────────────────────────────────────────── -->
+    <div class="legal-block">
+      <strong>Rechtliche Hinweise & Gültigkeit</strong>
+      <p>
+        Dieses Angebot ist gültig bis <strong style="color: var(--amber);">{{validUntil}}</strong>
+        und unverbindlich, sofern nicht ausdrücklich anders vermerkt. Die in diesem Angebot
+        genannten Leistungen entsprechen den Beschreibungen auf klard.de zum Zeitpunkt der
+        Angebotserstellung.
+      </p>
+      <p>
+        Es gelten die AGB des Anbieters {{providerName}} sowie die Nutzungsbedingungen
+        der Plattform Klard.de. Bei Förderprogrammen ({{providerProgrammeShort}}) gilt
+        die Listung des Anbieters auf der dena-Energieeffizienz-Expertenliste
+        (Stand: {{denaListingDate}}, Nr.: {{denaListingId}}) als Voraussetzung.
+      </p>
+      <p>
+        Mit der Annahme dieses Angebots wird ein Werk- oder Dienstvertrag geschlossen.
+        Widerrufsbelehrung gemäß § 312g BGB bei Verbrauchergeschäften liegt der Annahme bei.
+      </p>
+    </div>
+
+    <!-- ── FOOTER ─────────────────────────────────────────────────────── -->
+    <div class="foot">
+      <div>
+        <strong>{{providerName}}</strong>
+        {{providerStreet}}<br>
+        {{providerZip}} {{providerCity}}<br>
+        Tel.: {{providerPhone}}<br>
+        E-Mail: {{providerEmail}}
+      </div>
+      <div>
+        <strong>Rechtliches</strong>
+        Geschäftsführer: {{providerCeo}}<br>
+        Handelsregister: {{providerHrb}}<br>
+        Amtsgericht: {{providerCourt}}<br>
+        USt-IdNr.: {{providerVatId}}
+      </div>
+      <div>
+        <strong>Plattform</strong>
+        Generiert über klard.de<br>
+        Datum: {{createdDate}}<br>
+        Angebot: <span style="font-family:var(--mono);">{{offerNumber}}</span><br>
+        <a href="https://klard.de/offer/{{offerNumber}}">Online ansehen →</a>
+      </div>
+    </div>
+
+    <div class="page-num">Seite 1 von 1 · {{offerNumber}}</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- DEMO-PREVIEW SCRIPT — entfernen wenn Backend echte Daten injiziert       -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<script>
+/*
+  Diese Funktion füllt im Browser-Test alle {{Platzhalter}} mit Demo-Daten.
+  Im Produktivbetrieb wird das Template SERVER-SEITIG befüllt
+  (Handlebars/Mustache/Jinja2/React) — dieses Script dann ENTFERNEN.
+*/
+
+const DEMO_DATA = {
+  // Dokument-Metadaten
+  offerNumber:       "KLD-AO-2025-0247",
+  customerRef:       "REF-2025-MUE-018",
+  createdDate:       "13.05.2025",
+  validUntil:        "13.06.2025",
+
+  // Anbieter (aus DB: providers.* + branches.name)
+  providerName:      "Energy Impuls GmbH",
+  providerBranch:    "Qualifizierte Energieberatung",
+  providerStreet:    "Kurfürstendamm 218",
+  providerZip:       "10719",
+  providerCity:      "Berlin",
+  providerPhone:     "+49 30 12345678",
+  providerEmail:     "kontakt@energy-impuls.de",
+  providerVatId:     "DE321456789",
+  providerCeo:       "Mürsel Kareem",
+  providerHrb:       "HRB 234567 B",
+  providerCourt:     "Amtsgericht Berlin (Charlottenburg)",
+  providerProgrammeShort: "BAFA EBW, BEG WG, KfW KFN",
+  branchName:        "Energieberatung",
+
+  // Kunde (aus DB: customers.*)
+  customerName:      "Dr. Anna Schmidt",
+  customerCompany:   "Schmidt Immobilien GmbH",
+  customerStreet:    "Hauptstraße 47",
+  customerZip:       "10827",
+  customerCity:      "Berlin",
+  customerPhone:     "+49 30 98765432",
+  customerEmail:     "a.schmidt@schmidt-immo.de",
+  customerId:        "KD-2025-0418",
+
+  // Titel + Intro
+  offerTitle:        "Energieberatung &",
+  offerSubtitle:     "Sanierungsfahrplan",
+  offerIntro:        "Auf Basis Ihrer Anfrage zur energetischen Sanierung eines Mehrfamilienhauses (Baujahr 1965, 12 WE) in Berlin-Charlottenburg habe ich folgendes maßgeschneidertes Leistungspaket zusammengestellt — inklusive iSFP und allen relevanten BAFA/KfW-Förderprogrammen.",
+
+  // KI-Analyse
+  aiAnalysisTitle:   "Empfehlung: Komplettpaket Sanierungsfahrplan + BEG-WG-Antrag",
+  aiAnalysisText:    "Ihr Objekt qualifiziert sich aufgrund von Baujahr (1965) und Wohneinheiten-Anzahl (12 WE > 10) als förderwürdiges Mehrfamilienhaus nach BEG. Empfohlener Workflow: Zunächst Erstellung eines individuellen Sanierungsfahrplans (iSFP) mit 80%-Förderung durch BAFA — dieser senkt automatisch alle nachfolgenden Einzelmaßnahmen-Förderungen um zusätzliche 5 Prozentpunkte. Anschließend Antragstellung für BEG WG (zinsgünstiger Kredit + Tilgungszuschuss) oder BEG EM (Einzelmaßnahmen-Zuschuss), je nach gewählter Sanierungstiefe.\nVoraussetzung für die Antragstellung: meine Listung in der dena-Energieeffizienz-Expertenliste für die Kategorien WG und EEW — beide bei Energy Impuls GmbH vorhanden und gültig bis 2027.",
+  aiModel:           "claude-sonnet-4.5",
+  aiGeneratedAt:     "13.05.2025, 14:32 Uhr",
+  aiConfidence:      "94",
+
+  // Leistungen (in echten Anwendung: services-Array)
+  serviceCount:      "4",
+
+  // Beträge (alle als formatierte Strings: "1.450,00 €")
+  subtotalNet:       "2.829,00 €",
+  discountLabel:     "Klard-Bonus: 5% (Erstkunde)",
+  discountAmount:    "141,45 €",
+  netTotal:          "2.687,55 €",
+  vatRate:           "19",
+  vatAmount:         "510,63 €",
+  grandTotal:        "3.198,18 €",
+
+  // dena-Daten
+  denaListingDate:   "01.07.2023",
+  denaListingId:     "EE-2023-44218",
+};
+
+const DEMO_SERVICES = [
+  {
+    position: "01", quantity: "1", unitPrice: "1.450,00 €", lineTotal: "1.450,00 €",
+    name: "Individueller Sanierungsfahrplan (iSFP)",
+    description: "Vollständiger BAFA-geförderter Sanierungsfahrplan inkl. Vor-Ort-Begehung, Bestandsaufnahme, Maßnahmenkatalog und 30-seitigem Bericht. 80 % BAFA-Förderung (max. 1.700 €) direkt mit dem Kunden verrechnet.",
+    duration: "ca. 1 Tag", priceTypeLabel: "Festpreis", category: "BEG / KfW Fördermittel",
+  },
+  {
+    position: "02", quantity: "1", unitPrice: "299,00 €", lineTotal: "299,00 €",
+    name: "Energiebedarfsausweis Wohngebäude (nach GEG)",
+    description: "Vollständiger Bedarfsausweis nach Gebäudeenergiegesetz inkl. Energieeffizienz-Klasse, CO₂-Bilanz und Modernisierungsempfehlungen. Gültig 10 Jahre.",
+    duration: "ca. 2h", priceTypeLabel: "Festpreis", category: "Ingenieurleistungen",
+  },
+  {
+    position: "03", quantity: "1", unitPrice: "490,00 €", lineTotal: "490,00 €",
+    name: "Hydraulischer Abgleich Verfahren B",
+    description: "Berechnung und Nachweis des hydraulischen Abgleichs nach DIN EN 12831 (Verfahren B) — Pflicht für KfW-/BAFA-Heizungsförderung. Inkl. Voreinstellung der Thermostatventile.",
+    duration: "ca. 1 Tag", priceTypeLabel: "Festpreis", category: "Ingenieurleistungen",
+  },
+  {
+    position: "04", quantity: "1", unitPrice: "590,00 €", lineTotal: "590,00 €",
+    name: "BEG-Einzelmaßnahmen Förderantrag",
+    description: "Vollständige Antragstellung BEG EM bei BAFA inkl. Verwendungsnachweis und allen technischen Nachweisen. Förderhöhe je nach Maßnahme 15–70 %.",
+    duration: "ca. 3–4h", priceTypeLabel: "Festpreis", category: "BEG / KfW Fördermittel",
+  },
+];
+
+// Demo-Renderer
+function renderDemo() {
+  let html = document.documentElement.innerHTML;
+
+  // 1. Services-Loop
+  const tbody = document.querySelector('.svc-table tbody');
+  if (tbody) {
+    tbody.innerHTML = DEMO_SERVICES.map(s => `
+      <tr>
+        <td class="svc-pos">${s.position}</td>
+        <td>
+          <div class="svc-name">${s.name}</div>
+          <div class="svc-desc">${s.description}</div>
+          <div class="svc-meta-row">
+            <span>⏱ ${s.duration}</span>
+            <span>🏷 ${s.priceTypeLabel}</span>
+            <span>📁 ${s.category}</span>
+          </div>
+        </td>
+        <td class="svc-qty">${s.quantity}</td>
+        <td class="svc-unit-price">${s.unitPrice}</td>
+        <td class="svc-line-total">${s.lineTotal}</td>
+      </tr>
+    `).join('');
+  }
+
+  // 2. Replace all {{placeholders}}
+  html = document.body.innerHTML;
+  Object.entries(DEMO_DATA).forEach(([key, val]) => {
+    html = html.replaceAll(`{{${key}}}`, val);
+  });
+  // Remove {{#if}} / {{/if}} markers in demo mode (show all)
+  html = html.replace(/\{\{#if [^}]+\}\}/g, '').replace(/\{\{\/if\}\}/g, '');
+  // Remove {{#each services}} / {{/each}} markers (services already injected)
+  html = html.replace(/\{\{#each [^}]+\}\}/g, '').replace(/\{\{\/each\}\}/g, '');
+  // Remove any leftover {{...}} not in DEMO_DATA
+  html = html.replace(/\{\{[^}]+\}\}/g, '—');
+
+  document.body.innerHTML = html;
+
+  // Re-attach print button
+  const btn = document.querySelector('.print-bar button');
+  if (btn) btn.onclick = () => window.print();
+}
+
+document.addEventListener('DOMContentLoaded', renderDemo);
+</script>
+
+</body>
+</html>
