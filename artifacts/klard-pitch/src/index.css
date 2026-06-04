@@ -3,22 +3,31 @@
 @theme inline {
   --color-primary: var(--slide-primary);
   --color-accent: var(--slide-accent);
+  --color-deep: var(--slide-deep);
   --color-bg: var(--slide-bg);
+  --color-card: var(--slide-card);
   --color-text: var(--slide-text);
   --color-muted: var(--slide-muted);
+  --color-line: var(--slide-line);
+  --color-tealsoft: var(--slide-tealsoft);
   --font-display: var(--font-display-family);
   --font-body: var(--font-body-family);
+  --font-serif: var(--font-serif-family);
 }
 
 :root {
-  /* Replace these with brand colors */
-  --slide-primary: #4f46e5;
-  --slide-accent: #06b6d4;
-  --slide-bg: #f8fafc;
-  --slide-text: #0f172a;
-  --slide-muted: #64748b;
-  --font-display-family: "Inter", system-ui, sans-serif;
-  --font-body-family: "Inter", system-ui, sans-serif;
+  --slide-primary: #0891b2;
+  --slide-accent: #d97706;
+  --slide-deep: #0c3b47;
+  --slide-bg: #f4f8fa;
+  --slide-card: #ffffff;
+  --slide-text: #0d1117;
+  --slide-muted: #5b6b7a;
+  --slide-line: #dce6ec;
+  --slide-tealsoft: #e6f4f8;
+  --font-display-family: "Sora", system-ui, sans-serif;
+  --font-body-family: "Sora", system-ui, sans-serif;
+  --font-serif-family: "Lora", Georgia, serif;
   color-scheme: light;
 }
 
@@ -45,4 +54,18 @@ body {
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
+}
+
+.blueprint-grid {
+  background-image:
+    linear-gradient(to right, rgba(8, 145, 178, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(8, 145, 178, 0.06) 1px, transparent 1px);
+  background-size: 3.2vw 3.2vw;
+}
+
+.blueprint-grid-dark {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 3.2vw 3.2vw;
 }

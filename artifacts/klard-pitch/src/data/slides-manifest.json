@@ -1,1 +1,154 @@
-[]
+[
+  {
+    "id": "b1f2c3d4-0001-4a11-9c01-aa0000000001",
+    "position": 1,
+    "filepath": "src/pages/slides/Cover.tsx",
+    "title": "Klard",
+    "description": "Titelfolie – Marktplatz für Baufachberatung",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b1f2c3d4-0002-4a11-9c01-aa0000000002",
+    "position": 2,
+    "filepath": "src/pages/slides/Problem.tsx",
+    "title": "Das Problem",
+    "description": "Beratersuche ist mühsam und intransparent",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b1f2c3d4-0003-4a11-9c01-aa0000000003",
+    "position": 3,
+    "filepath": "src/pages/slides/Loesung.tsx",
+    "title": "Die Lösung",
+    "description": "Alle Berater auf einer Plattform",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b1f2c3d4-0004-4a11-9c01-aa0000000004",
+    "position": 4,
+    "filepath": "src/pages/slides/SoFunktioniert.tsx",
+    "title": "So funktioniert Klard",
+    "description": "Vier Schritte: Suchen, Vergleichen, Buchen, Bezahlen",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b1f2c3d4-0005-4a11-9c01-aa0000000005",
+    "position": 5,
+    "filepath": "src/pages/slides/Berufsgruppen.tsx",
+    "title": "Acht Berufsgruppen",
+    "description": "Die acht Kategorien der Baufachberatung",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b1f2c3d4-0006-4a11-9c01-aa0000000006",
+    "position": 6,
+    "filepath": "src/pages/slides/Leistungskatalog.tsx",
+    "title": "Der Leistungskatalog",
+    "description": "153 standardisierte Leistungen nach HOAI, BAFA, KfW",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b1f2c3d4-0007-4a11-9c01-aa0000000007",
+    "position": 7,
+    "filepath": "src/pages/slides/SucheVergleich.tsx",
+    "title": "Suche & Vergleich",
+    "description": "Filter und Anbietervergleich",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b1f2c3d4-0008-4a11-9c01-aa0000000008",
+    "position": 8,
+    "filepath": "src/pages/slides/AnbieterprofilBuchung.tsx",
+    "title": "Anbieterprofil & Buchung",
+    "description": "Profil, Live-Termine und Bewertungen",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b1f2c3d4-0009-4a11-9c01-aa0000000009",
+    "position": 9,
+    "filepath": "src/pages/slides/KiAngebote.tsx",
+    "title": "KI-Angebote",
+    "description": "Angebotsentwürfe mit Anthropic Claude (Premium)",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b1f2c3d4-0010-4a11-9c01-aa0000000010",
+    "position": 10,
+    "filepath": "src/pages/slides/GebaeudecheckSchnellcheck.tsx",
+    "title": "Gebäudecheck: Schnellcheck",
+    "description": "Kostenloser Schnellcheck als Lead-Magnet",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b1f2c3d4-0011-4a11-9c01-aa0000000011",
+    "position": 11,
+    "filepath": "src/pages/slides/GebaeudecheckVollanalyse.tsx",
+    "title": "Gebäudecheck: Vollanalyse",
+    "description": "Wert, Risiko, Energie plus Förderung",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b1f2c3d4-0012-4a11-9c01-aa0000000012",
+    "position": 12,
+    "filepath": "src/pages/slides/RechnungenZahlungen.tsx",
+    "title": "Rechnungen & Zahlungen",
+    "description": "Stripe-Abwicklung und §14-UStG-Rechnungen",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b1f2c3d4-0013-4a11-9c01-aa0000000013",
+    "position": 13,
+    "filepath": "src/pages/slides/KalenderBenachrichtigungen.tsx",
+    "title": "Kalender & Benachrichtigungen",
+    "description": "iCal-Sync und automatische E-Mails",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b1f2c3d4-0014-4a11-9c01-aa0000000014",
+    "position": 14,
+    "filepath": "src/pages/slides/BeraterDashboard.tsx",
+    "title": "Das Berater-Dashboard",
+    "description": "Profil, Leistungen, Verfügbarkeiten, Buchungen",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b1f2c3d4-0015-4a11-9c01-aa0000000015",
+    "position": 15,
+    "filepath": "src/pages/slides/Preise.tsx",
+    "title": "Preise",
+    "description": "Basic vs. Premium",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b1f2c3d4-0016-4a11-9c01-aa0000000016",
+    "position": 16,
+    "filepath": "src/pages/slides/Geschaeftsmodell.tsx",
+    "title": "Geschäftsmodell",
+    "description": "Provisionen und wiederkehrende Abos",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b1f2c3d4-0017-4a11-9c01-aa0000000017",
+    "position": 17,
+    "filepath": "src/pages/slides/PlattformAdmin.tsx",
+    "title": "Plattform-Administration",
+    "description": "Zentrales Admin-Dashboard",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b1f2c3d4-0018-4a11-9c01-aa0000000018",
+    "position": 18,
+    "filepath": "src/pages/slides/TechnologieSicherheit.tsx",
+    "title": "Technologie & Sicherheit",
+    "description": "Stack, Dienste und Compliance",
+    "speakerNotes": ""
+  },
+  {
+    "id": "b1f2c3d4-0019-4a11-9c01-aa0000000019",
+    "position": 19,
+    "filepath": "src/pages/slides/Abschluss.tsx",
+    "title": "Klard",
+    "description": "Abschlussfolie",
+    "speakerNotes": ""
+  }
+]

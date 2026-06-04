@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "fBxVa8NQ_i4iyWLFKcHhe"
+uri = "file://.local/outputs/Klard-Pitch-Deck.pdf"
+type = "pdf"
+title = "Klard Pitch Deck (PDF)"
