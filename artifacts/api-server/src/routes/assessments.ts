@@ -8,6 +8,7 @@ import {
 import { eq, desc, and } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import { sendProviderAssessmentSaved } from "../lib/email";
+import { consumeCredit } from "../lib/gebaeudecheck";
 
 const router: IRouter = Router();
 
@@ -45,6 +46,8 @@ router.post("/assessments", async (req, res): Promise<void> => {
     const d = parsed.data;
 
     // If providerId is set, the caller must own that provider profile.
+    // This is the provider Mandanten-Gebäudeanalyse (a Premium feature) and is
+    // covered by the Premium subscription — it does NOT consume report credits.
     if (d.providerId != null) {
       const [p] = await db
         .select()
@@ -58,6 +61,19 @@ router.post("/assessments", async (req, res): Promise<void> => {
       if (p.subscriptionTier !== "premium") {
         res.status(403).json({
           error: "Die Mandanten-Gebäudeanalyse ist eine Premium-Funktion.",
+        });
+        return;
+      }
+    } else {
+      // Regular consumer Vollanalyse-Report: paid for ALL users. Consuming one
+      // credit unlocks and permanently saves this report. The free Schnellcheck
+      // never reaches this endpoint.
+      const spent = await consumeCredit(userId);
+      if (!spent) {
+        res.status(402).json({
+          error:
+            "Kein Guthaben für den ausführlichen Report. Bitte erwerben Sie ein Report-Guthaben.",
+          code: "no_credits",
         });
         return;
       }

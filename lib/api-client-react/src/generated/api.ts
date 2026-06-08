@@ -36,6 +36,10 @@ import type {
   Category,
   CheckoutSession,
   DeleteTimeSlotParams,
+  GebaeudecheckCheckoutInput,
+  GebaeudecheckCredits,
+  GebaeudecheckReconcileInput,
+  GebaeudecheckReconcileResult,
   GetAdminTimeseriesParams,
   HealthStatus,
   Invoice,
@@ -3065,6 +3069,259 @@ export const useDeleteAssessment = <
   TContext
 > => {
   return useMutation(getDeleteAssessmentMutationOptions(options));
+};
+
+/**
+ * @summary Current user's Gebäudecheck report credit balance + package catalog
+ */
+export const getGetGebaeudecheckCreditsUrl = () => {
+  return `/api/gebaeudecheck/credits`;
+};
+
+export const getGebaeudecheckCredits = async (
+  options?: RequestInit,
+): Promise<GebaeudecheckCredits> => {
+  return customFetch<GebaeudecheckCredits>(getGetGebaeudecheckCreditsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetGebaeudecheckCreditsQueryKey = () => {
+  return [`/api/gebaeudecheck/credits`] as const;
+};
+
+export const getGetGebaeudecheckCreditsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getGebaeudecheckCredits>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getGebaeudecheckCredits>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetGebaeudecheckCreditsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getGebaeudecheckCredits>>
+  > = ({ signal }) => getGebaeudecheckCredits({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getGebaeudecheckCredits>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetGebaeudecheckCreditsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getGebaeudecheckCredits>>
+>;
+export type GetGebaeudecheckCreditsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Current user's Gebäudecheck report credit balance + package catalog
+ */
+
+export function useGetGebaeudecheckCredits<
+  TData = Awaited<ReturnType<typeof getGebaeudecheckCredits>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getGebaeudecheckCredits>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetGebaeudecheckCreditsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a Stripe Checkout Session to buy a Gebäudecheck credit package
+ */
+export const getCreateGebaeudecheckCheckoutUrl = () => {
+  return `/api/gebaeudecheck/checkout`;
+};
+
+export const createGebaeudecheckCheckout = async (
+  gebaeudecheckCheckoutInput: GebaeudecheckCheckoutInput,
+  options?: RequestInit,
+): Promise<CheckoutSession> => {
+  return customFetch<CheckoutSession>(getCreateGebaeudecheckCheckoutUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(gebaeudecheckCheckoutInput),
+  });
+};
+
+export const getCreateGebaeudecheckCheckoutMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createGebaeudecheckCheckout>>,
+    TError,
+    { data: BodyType<GebaeudecheckCheckoutInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createGebaeudecheckCheckout>>,
+  TError,
+  { data: BodyType<GebaeudecheckCheckoutInput> },
+  TContext
+> => {
+  const mutationKey = ["createGebaeudecheckCheckout"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createGebaeudecheckCheckout>>,
+    { data: BodyType<GebaeudecheckCheckoutInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createGebaeudecheckCheckout(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateGebaeudecheckCheckoutMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createGebaeudecheckCheckout>>
+>;
+export type CreateGebaeudecheckCheckoutMutationBody =
+  BodyType<GebaeudecheckCheckoutInput>;
+export type CreateGebaeudecheckCheckoutMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a Stripe Checkout Session to buy a Gebäudecheck credit package
+ */
+export const useCreateGebaeudecheckCheckout = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createGebaeudecheckCheckout>>,
+    TError,
+    { data: BodyType<GebaeudecheckCheckoutInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createGebaeudecheckCheckout>>,
+  TError,
+  { data: BodyType<GebaeudecheckCheckoutInput> },
+  TContext
+> => {
+  return useMutation(getCreateGebaeudecheckCheckoutMutationOptions(options));
+};
+
+/**
+ * @summary Grant credits after a successful Checkout redirect (idempotent)
+ */
+export const getReconcileGebaeudecheckOrderUrl = () => {
+  return `/api/gebaeudecheck/reconcile`;
+};
+
+export const reconcileGebaeudecheckOrder = async (
+  gebaeudecheckReconcileInput: GebaeudecheckReconcileInput,
+  options?: RequestInit,
+): Promise<GebaeudecheckReconcileResult> => {
+  return customFetch<GebaeudecheckReconcileResult>(
+    getReconcileGebaeudecheckOrderUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(gebaeudecheckReconcileInput),
+    },
+  );
+};
+
+export const getReconcileGebaeudecheckOrderMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reconcileGebaeudecheckOrder>>,
+    TError,
+    { data: BodyType<GebaeudecheckReconcileInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof reconcileGebaeudecheckOrder>>,
+  TError,
+  { data: BodyType<GebaeudecheckReconcileInput> },
+  TContext
+> => {
+  const mutationKey = ["reconcileGebaeudecheckOrder"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof reconcileGebaeudecheckOrder>>,
+    { data: BodyType<GebaeudecheckReconcileInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return reconcileGebaeudecheckOrder(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ReconcileGebaeudecheckOrderMutationResult = NonNullable<
+  Awaited<ReturnType<typeof reconcileGebaeudecheckOrder>>
+>;
+export type ReconcileGebaeudecheckOrderMutationBody =
+  BodyType<GebaeudecheckReconcileInput>;
+export type ReconcileGebaeudecheckOrderMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Grant credits after a successful Checkout redirect (idempotent)
+ */
+export const useReconcileGebaeudecheckOrder = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reconcileGebaeudecheckOrder>>,
+    TError,
+    { data: BodyType<GebaeudecheckReconcileInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof reconcileGebaeudecheckOrder>>,
+  TError,
+  { data: BodyType<GebaeudecheckReconcileInput> },
+  TContext
+> => {
+  return useMutation(getReconcileGebaeudecheckOrderMutationOptions(options));
 };
 
 /**

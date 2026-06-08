@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { getUncachableStripeClient } from "../lib/stripeClient";
 import { sendPaymentConfirmation } from "../lib/email";
 import { issueInvoiceForBooking, sendInvoiceEmail } from "../lib/invoiceService";
+import { fulfillOrder } from "../lib/gebaeudecheck";
 
 const router: IRouter = Router();
 
@@ -64,6 +65,10 @@ router.post(
                   premiumSince: new Date(),
                 })
                 .where(eq(providersTable.id, providerId));
+            }
+          } else if (kind === "gebaeudecheck") {
+            if (session.payment_status === "paid") {
+              await fulfillOrder(session.id);
             }
           } else if (kind === "booking") {
             const bookingId = Number(session.metadata?.["bookingId"]);

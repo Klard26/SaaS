@@ -982,6 +982,31 @@ export interface Assessment {
   updatedAt: string;
 }
 
+export interface GebaeudecheckPackage {
+  id: string;
+  credits: number;
+  amountCents: number;
+  label: string;
+}
+
+export interface GebaeudecheckCredits {
+  balance: number;
+  packages: GebaeudecheckPackage[];
+}
+
+export interface GebaeudecheckCheckoutInput {
+  packageId: string;
+}
+
+export interface GebaeudecheckReconcileInput {
+  sessionId: string;
+}
+
+export interface GebaeudecheckReconcileResult {
+  granted: boolean;
+  balance: number;
+}
+
 export interface InvoiceSettings {
   kleinunternehmer: boolean;
   /** Numeric percentage as string (e.g. '19.00') */

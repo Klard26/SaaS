@@ -707,6 +707,45 @@ export const DeleteAssessmentParams = zod.object({
 });
 
 /**
+ * @summary Current user's Gebäudecheck report credit balance + package catalog
+ */
+export const GetGebaeudecheckCreditsResponse = zod.object({
+  balance: zod.number(),
+  packages: zod.array(
+    zod.object({
+      id: zod.string(),
+      credits: zod.number(),
+      amountCents: zod.number(),
+      label: zod.string(),
+    }),
+  ),
+});
+
+/**
+ * @summary Create a Stripe Checkout Session to buy a Gebäudecheck credit package
+ */
+export const CreateGebaeudecheckCheckoutBody = zod.object({
+  packageId: zod.string(),
+});
+
+export const CreateGebaeudecheckCheckoutResponse = zod.object({
+  url: zod.string(),
+  sessionId: zod.string().optional(),
+});
+
+/**
+ * @summary Grant credits after a successful Checkout redirect (idempotent)
+ */
+export const ReconcileGebaeudecheckOrderBody = zod.object({
+  sessionId: zod.string(),
+});
+
+export const ReconcileGebaeudecheckOrderResponse = zod.object({
+  granted: zod.boolean(),
+  balance: zod.number(),
+});
+
+/**
  * @summary Get the authenticated provider's invoice settings
  */
 export const GetMyInvoiceSettingsResponse = zod.object({

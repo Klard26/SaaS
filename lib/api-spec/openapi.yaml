@@ -673,6 +673,57 @@ paths:
         "204":
           description: Deleted
 
+  /gebaeudecheck/credits:
+    get:
+      operationId: getGebaeudecheckCredits
+      tags: [gebaeudecheck]
+      summary: Current user's Gebäudecheck report credit balance + package catalog
+      responses:
+        "200":
+          description: Credit balance and available packages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GebaeudecheckCredits"
+
+  /gebaeudecheck/checkout:
+    post:
+      operationId: createGebaeudecheckCheckout
+      tags: [gebaeudecheck]
+      summary: Create a Stripe Checkout Session to buy a Gebäudecheck credit package
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GebaeudecheckCheckoutInput"
+      responses:
+        "200":
+          description: Checkout session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutSession"
+
+  /gebaeudecheck/reconcile:
+    post:
+      operationId: reconcileGebaeudecheckOrder
+      tags: [gebaeudecheck]
+      summary: Grant credits after a successful Checkout redirect (idempotent)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GebaeudecheckReconcileInput"
+      responses:
+        "200":
+          description: Reconcile result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GebaeudecheckReconcileResult"
+
   /providers/me/invoice-settings:
     get:
       operationId: getMyInvoiceSettings
@@ -1988,6 +2039,44 @@ components:
           additionalProperties: true
         createdAt:    { type: string, format: date-time }
         updatedAt:    { type: string, format: date-time }
+
+    GebaeudecheckPackage:
+      type: object
+      required: [id, credits, amountCents, label]
+      properties:
+        id:         { type: string }
+        credits:    { type: integer }
+        amountCents: { type: integer }
+        label:      { type: string }
+
+    GebaeudecheckCredits:
+      type: object
+      required: [balance, packages]
+      properties:
+        balance: { type: integer }
+        packages:
+          type: array
+          items:
+            $ref: "#/components/schemas/GebaeudecheckPackage"
+
+    GebaeudecheckCheckoutInput:
+      type: object
+      required: [packageId]
+      properties:
+        packageId: { type: string }
+
+    GebaeudecheckReconcileInput:
+      type: object
+      required: [sessionId]
+      properties:
+        sessionId: { type: string }
+
+    GebaeudecheckReconcileResult:
+      type: object
+      required: [granted, balance]
+      properties:
+        granted: { type: boolean }
+        balance: { type: integer }
 
     InvoiceSettings:
       type: object

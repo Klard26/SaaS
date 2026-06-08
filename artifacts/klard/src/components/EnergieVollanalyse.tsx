@@ -17,7 +17,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EnergyBar } from "@/components/EnergieSchnellcheck";
-import { AlertCircle, Save, Sun, TrendingUp, Zap, Shield, Banknote, Hammer, Printer } from "lucide-react";
+import { AlertCircle, Save, Sun, TrendingUp, Zap, Shield, Banknote, Hammer, Printer, Lock } from "lucide-react";
 
 const DEFAULT: BuildingInput = {
   plz: "",
@@ -46,9 +46,20 @@ interface Props {
   onSave?: (input: BuildingInput, label: string) => Promise<void> | void;
   saving?: boolean;
   showSave?: boolean;
+  /** When true, the detailed report is hidden behind a paywall until unlocked. */
+  gated?: boolean;
+  /** Whether the gated report has been unlocked (credit spent) in this view. */
+  unlocked?: boolean;
+  /** Current report-credit balance (for the paywall copy). */
+  balance?: number;
+  /** Opens the credit-package purchase flow. */
+  onBuy?: () => void;
 }
 
-export function EnergieVollanalyse({ initial, onSave, saving, showSave }: Props) {
+export function EnergieVollanalyse({
+  initial, onSave, saving, showSave,
+  gated = false, unlocked = false, balance = 0, onBuy,
+}: Props) {
   const [d, setD] = useState<BuildingInput>({ ...DEFAULT, ...initial });
   const [label, setLabel] = useState("");
 
@@ -311,15 +322,43 @@ export function EnergieVollanalyse({ initial, onSave, saving, showSave }: Props)
                   data-testid="input-analysis-label"
                 />
               </Field>
-              <Button
-                className="w-full"
-                disabled={!label.trim() || saving}
-                onClick={() => onSave(d, label.trim())}
-                data-testid="button-save-analysis"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                {saving ? "Speichert…" : "Analyse speichern"}
-              </Button>
+              {gated && !unlocked ? (
+                balance > 0 ? (
+                  <Button
+                    className="w-full"
+                    disabled={!label.trim() || saving}
+                    onClick={() => onSave(d, label.trim())}
+                    data-testid="button-unlock-report"
+                  >
+                    <Lock className="h-4 w-4 mr-2" />
+                    {saving ? "Wird freigeschaltet…" : "Report freischalten (1 Guthaben)"}
+                  </Button>
+                ) : (
+                  <Button
+                    className="w-full"
+                    onClick={onBuy}
+                    data-testid="button-buy-credits-inline"
+                  >
+                    <Lock className="h-4 w-4 mr-2" />
+                    Guthaben kaufen, um Report freizuschalten
+                  </Button>
+                )
+              ) : (
+                <Button
+                  className="w-full"
+                  disabled={!label.trim() || saving}
+                  onClick={() => onSave(d, label.trim())}
+                  data-testid="button-save-analysis"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {saving ? "Speichert…" : "Analyse speichern"}
+                </Button>
+              )}
+              {gated && !unlocked && balance > 0 && (
+                <p className="text-xs text-muted-foreground text-center">
+                  Verfügbares Guthaben: {balance} Report{balance === 1 ? "" : "s"}
+                </p>
+              )}
             </div>
           )}
         </CardContent>
@@ -331,6 +370,34 @@ export function EnergieVollanalyse({ initial, onSave, saving, showSave }: Props)
           <Card>
             <CardContent className="py-16 text-center text-sm text-muted-foreground">
               Bitte PLZ, Baujahr und Wohnfläche angeben, um die Vollanalyse zu sehen.
+            </CardContent>
+          </Card>
+        ) : gated && !unlocked ? (
+          <Card className="border-dashed">
+            <CardContent className="py-14 px-6 text-center space-y-4">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                <Lock className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-lg font-semibold">Ausführlicher Report gesperrt</h3>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                  Der Schnellcheck mit Energieklasse ist kostenlos. Der ausführliche
+                  Report mit Energiebilanz, Wert &amp; Steuer (AfA/Restnutzungsdauer),
+                  Risiko &amp; ESG, Sanierungsfahrplan und Solarpotenzial wird mit
+                  1 Guthaben freigeschaltet.
+                </p>
+              </div>
+              {balance > 0 ? (
+                <p className="text-sm">
+                  Verfügbares Guthaben: <span className="font-semibold">{balance}</span> Report{balance === 1 ? "" : "s"}.
+                  Vergeben Sie links eine Bezeichnung und schalten Sie den Report frei.
+                </p>
+              ) : (
+                <Button onClick={onBuy} data-testid="button-buy-credits-paywall">
+                  <Lock className="h-4 w-4 mr-2" />
+                  Guthaben kaufen
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
