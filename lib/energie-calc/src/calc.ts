@@ -66,7 +66,13 @@ export function calcEnergie(d: BuildingInput): EnergyResult {
   const Fx_DA = 1.0;   // gegen Außenluft
   const Fx_KE = 0.6;   // gegen Erdreich
   const Fx_FE = 1.0;
-  const dU_WB = 0.05;  // Wärmebrückenzuschlag pauschal
+  // Wärmebrückenzuschlag: in modernisierten Gebäuden ist die Anschlussdetaillierung
+  // besser, im Originalbestand schlechter (DIN V 18599-2, pauschale Annahme).
+  const dU_WB =
+    d.zustand === "saniert"     ? 0.03 :
+    d.zustand === "teilsaniert" ? 0.05 :
+    d.zustand === "unsaniert"   ? 0.10 :
+                                  0.05;
 
   const HT_sum =
       u_aw * A_AW * Fx_AW
@@ -80,7 +86,12 @@ export function calcEnergie(d: BuildingInput): EnergyResult {
   const HGT_kKh = cl.hgt * 24 / 1000;                             // kKh/a
   const Q_T = HT_sum * HGT_kKh;                                   // Transmissionsverlust
 
-  const n_LW = 0.5;                                               // Luftwechsel 0,5/h
+  // Luftwechsel: Wärmerückgewinnung senkt den effektiven Lüftungsverlust,
+  // eine reine Abluftanlage leicht (DIN V 18599-6, vereinfacht).
+  const n_LW =
+    d.lueftung === "wrg"    ? 0.30 :
+    d.lueftung === "abluft" ? 0.45 :
+                              0.5;                                 // Luftwechsel 1/h
   const Q_V = 0.34 * n_LW * V * HGT_kKh;                          // Lüftungsverlust
 
   // ── 4) Wärmegewinne ────────────────────────────────────────────
@@ -103,12 +114,20 @@ export function calcEnergie(d: BuildingInput): EnergyResult {
   const q_h = Q_h / A_N;                                          // kWh/(m²·a)
 
   // ── 6) Trinkwarmwasser pauschal ────────────────────────────────
-  const q_w = 12.5;                                               // kWh/(m²·a)
+  const q_w = d.warmwasser === "solar" ? 9.0 : 12.5;             // kWh/(m²·a)
 
   // ── 7) Endenergie je Energieträger ─────────────────────────────
-  const q_end = h.isJaz
+  const q_end_calc = h.isJaz
     ? (q_h + q_w) / Math.max(h.e, 0.5)
     : (q_h + q_w) / Math.max(h.e, 0.3);
+
+  // Liegt ein gültiger Energieausweis mit Endenergiekennwert vor, ist dieser
+  // belastbarer als das Tabellenverfahren und überschreibt die Schätzung.
+  const hatKennwert =
+    !!d.energieausweisVorhanden &&
+    typeof d.energiekennwert === "number" &&
+    d.energiekennwert > 0;
+  const q_end = hatKennwert ? d.energiekennwert! : q_end_calc;
 
   const pef  = PEF[h.f] ?? PEF["erdgas"]!;
   const q_pe = q_end * pef.fp;
@@ -137,6 +156,18 @@ export function calcEnergie(d: BuildingInput): EnergyResult {
   }
   if (klasse.c === "H") {
     pflichten.push("Energieklasse H: Sanierungsfahrplan dringend empfohlen — KfW-Förderung BEG WG/EM verfügbar.");
+  }
+  if (d.denkmalschutz) {
+    pflichten.push("Denkmalschutz: Energetische Maßnahmen sind genehmigungspflichtig; eine Außendämmung ist meist unzulässig (Innendämmung prüfen). Befreiung von GEG-Anforderungen nach § 105 möglich.");
+  }
+  if (d.ensembleschutz) {
+    pflichten.push("Ensemble-/Erhaltungssatzung: Änderungen an der Fassade bedürfen der Genehmigung der Denkmal- bzw. Bauaufsichtsbehörde.");
+  }
+  if (d.milieuschutz) {
+    pflichten.push("Milieuschutz (soziale Erhaltungssatzung): Modernisierungen sind genehmigungspflichtig; über das Erforderliche hinausgehende Luxussanierungen können untersagt werden.");
+  }
+  if (hatKennwert) {
+    pflichten.push(`Grundlage: Endenergiekennwert ${endenergie} kWh/(m²·a) aus vorhandenem ${d.energieausweisTyp === "verbrauch" ? "Verbrauchs" : "Bedarfs"}ausweis.`);
   }
 
   return {
@@ -283,29 +314,39 @@ export function calcSolar(d: BuildingInput): SolarResult {
 export function calcRenovation(d: BuildingInput, e: EnergyResult): RenovationSzenario[] {
   const aktKw = e.endenergie;
   const ziele = EC.filter((c) => c.m < aktKw).slice(0, 3);
+  const done = new Set(d.sanierungen ?? []);
+  const denkmal = !!d.denkmalschutz || !!d.ensembleschutz;
   return ziele.map((ziel) => {
     const massnahmen: RenovationMassnahme[] = [];
     let rest = aktKw - ziel.m;
     let kosten = 0;
-    if (rest > 5 && e.uW > 0.24) {
-      const sv = Math.min(rest * 0.30, 55);
-      const k  = d.wohnflaeche * 165;
-      massnahmen.push({ name: "Fassadendämmung (WDVS 16 cm)", kosten: k, einsparung: sv });
-      rest -= sv; kosten += k;
+    if (!done.has("fassade") && rest > 5 && e.uW > 0.24) {
+      if (denkmal) {
+        // Außendämmung am Denkmal i. d. R. unzulässig → Innendämmung: teurer, geringere Wirkung.
+        const sv = Math.min(rest * 0.18, 32);
+        const k  = d.wohnflaeche * 210;
+        massnahmen.push({ name: "Innendämmung (denkmalgerecht, diffusionsoffen)", kosten: k, einsparung: sv });
+        rest -= sv; kosten += k;
+      } else {
+        const sv = Math.min(rest * 0.30, 55);
+        const k  = d.wohnflaeche * 165;
+        massnahmen.push({ name: "Fassadendämmung (WDVS 16 cm)", kosten: k, einsparung: sv });
+        rest -= sv; kosten += k;
+      }
     }
-    if (rest > 5 && e.uWN > 1.3) {
+    if (!done.has("fenster") && rest > 5 && e.uWN > 1.3) {
       const sv = Math.min(rest * 0.18, 28);
       const k  = d.wohnflaeche * 95;
       massnahmen.push({ name: "Fenstertausch (3-fach Wärmeschutz)", kosten: k, einsparung: sv });
       rest -= sv; kosten += k;
     }
-    if (rest > 5 && (e.klasse.c === "G" || e.klasse.c === "H" || e.klasse.c === "F")) {
+    if (!done.has("heizung") && rest > 5 && (e.klasse.c === "G" || e.klasse.c === "H" || e.klasse.c === "F")) {
       const sv = Math.min(rest * 0.40, 50);
       const k  = d.wohnflaeche * 240;
       massnahmen.push({ name: "Heizungstausch auf Wärmepumpe (JAZ ≥ 3)", kosten: k, einsparung: sv });
       rest -= sv; kosten += k;
     }
-    if (rest > 5) {
+    if (!done.has("dach") && rest > 5) {
       const k = d.wohnflaeche * 85;
       massnahmen.push({ name: "Dach-/Geschossdeckendämmung", kosten: k, einsparung: rest });
       kosten += k;

@@ -194,6 +194,44 @@ export const SSP: SspSzenario[] = [
   { id: "ssp585", l: "SSP5-8.5 (Pessimistisch)", t30: 1.4, t50: 2.3, t80: 4.2, col: "#D32F2F" },
 ];
 
+/** Energetischer Gesamtzustand des Gebäudes. */
+export const ZUSTAND: { id: string; l: string }[] = [
+  { id: "unsaniert",   l: "Unsaniert (weitgehend Originalzustand)" },
+  { id: "teilsaniert", l: "Teilsaniert (einzelne Maßnahmen)" },
+  { id: "saniert",     l: "Vollsaniert / energetisch modernisiert" },
+];
+
+/** Bereits durchgeführte energetische Sanierungsmaßnahmen. */
+export const SANIERUNG_OPTIONS: { id: string; l: string }[] = [
+  { id: "fassade",  l: "Fassade / Außenwand gedämmt" },
+  { id: "dach",     l: "Dach / oberste Geschossdecke gedämmt" },
+  { id: "keller",   l: "Kellerdecke / Bodenplatte gedämmt" },
+  { id: "fenster",  l: "Fenster erneuert" },
+  { id: "heizung",  l: "Heizung erneuert" },
+  { id: "lueftung", l: "Lüftungsanlage eingebaut" },
+  { id: "pv",       l: "Photovoltaik / Solarthermie installiert" },
+];
+
+/** Art der Warmwasserbereitung. */
+export const WARMWASSER: { id: string; l: string }[] = [
+  { id: "zentral",   l: "Zentral über die Heizung" },
+  { id: "dezentral", l: "Dezentral (Durchlauferhitzer/Boiler)" },
+  { id: "solar",     l: "Mit Solarthermie-Unterstützung" },
+];
+
+/** Lüftungskonzept. */
+export const LUEFTUNG: { id: string; l: string }[] = [
+  { id: "fenster", l: "Fensterlüftung (manuell)" },
+  { id: "abluft",  l: "Abluftanlage" },
+  { id: "wrg",     l: "Lüftung mit Wärmerückgewinnung" },
+];
+
+/** Art des Energieausweises. */
+export const ENERGIEAUSWEIS_TYP: { id: string; l: string }[] = [
+  { id: "bedarf",    l: "Bedarfsausweis" },
+  { id: "verbrauch", l: "Verbrauchsausweis" },
+];
+
 export const BPI = 1.487; // Baupreisindex 2024 vs. NHK 2010
 
 const PI: Record<number, number> = {

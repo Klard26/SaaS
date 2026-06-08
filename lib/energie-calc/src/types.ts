@@ -1,5 +1,8 @@
 export type GebaeudeTyp = "efh" | "dhh" | "rh" | "mfh_s" | "mfh_m" | "mfh_l";
 
+export type Zustand = "unsaniert" | "teilsaniert" | "saniert";
+export type EnergieausweisTyp = "bedarf" | "verbrauch";
+
 export interface BuildingInput {
   plz: string;
   city?: string;
@@ -12,6 +15,29 @@ export interface BuildingInput {
   daemmung: string;
   fenster: string;
   heizungBaujahr?: number;
+
+  /** Energetischer Gesamtzustand des Gebäudes. */
+  zustand?: Zustand;
+  /** Liegt ein gültiger Energieausweis vor? */
+  energieausweisVorhanden?: boolean;
+  /** Art des vorhandenen Energieausweises. */
+  energieausweisTyp?: EnergieausweisTyp;
+  /** Endenergiekennwert aus dem vorhandenen Ausweis (kWh/(m²·a)) — überschreibt die Schätzung. */
+  energiekennwert?: number;
+  /** Einzeldenkmal. */
+  denkmalschutz?: boolean;
+  /** Ensemble-/Erhaltungssatzung. */
+  ensembleschutz?: boolean;
+  /** Soziale Erhaltungssatzung (Milieuschutz). */
+  milieuschutz?: boolean;
+  /** Bereits durchgeführte energetische Maßnahmen (IDs aus SANIERUNG_OPTIONS). */
+  sanierungen?: string[];
+  /** Art der Warmwasserbereitung (IDs aus WARMWASSER). */
+  warmwasser?: string;
+  /** Lüftungskonzept (IDs aus LUEFTUNG). */
+  lueftung?: string;
+  /** Photovoltaik-/Solaranlage bereits vorhanden. */
+  pvVorhanden?: boolean;
 }
 
 export interface EnergyClass {

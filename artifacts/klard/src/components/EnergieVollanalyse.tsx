@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import {
   BT, HT, INS, WI,
+  ZUSTAND, WARMWASSER, LUEFTUNG, ENERGIEAUSWEIS_TYP, SANIERUNG_OPTIONS,
   ageBand, plzKlima, plzBundesland,
   calcEnergie, calcWert, calcValue, calcRestnutzung, calcRisk, calcESG, calcSolar, calcRenovation,
   FOERDERUNG, FOERDER_KATEGORIEN,
@@ -29,6 +30,15 @@ const DEFAULT: BuildingInput = {
   daemmung: "none",
   fenster: "2f_a",
   heizungBaujahr: 2005,
+  zustand: "unsaniert",
+  warmwasser: "zentral",
+  lueftung: "fenster",
+  energieausweisVorhanden: false,
+  denkmalschutz: false,
+  ensembleschutz: false,
+  milieuschutz: false,
+  pvVorhanden: false,
+  sanierungen: [],
 };
 
 interface Props {
@@ -172,6 +182,117 @@ export function EnergieVollanalyse({ initial, onSave, saving, showSave }: Props)
               testId="select-fenster"
             />
           </Field>
+
+          <div className="border-t pt-3">
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mb-2">
+              Energetischer Zustand
+            </div>
+            <div className="space-y-3">
+              <Field label="Gesamtzustand">
+                <SelectField
+                  value={d.zustand ?? "unsaniert"}
+                  options={ZUSTAND.map((z) => ({ value: z.id, label: z.l }))}
+                  onChange={(v) => u("zustand", v as BuildingInput["zustand"])}
+                  testId="select-zustand"
+                />
+              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Warmwasser">
+                  <SelectField
+                    value={d.warmwasser ?? "zentral"}
+                    options={WARMWASSER.map((w) => ({ value: w.id, label: w.l }))}
+                    onChange={(v) => u("warmwasser", v)}
+                    testId="select-warmwasser"
+                  />
+                </Field>
+                <Field label="Lüftung">
+                  <SelectField
+                    value={d.lueftung ?? "fenster"}
+                    options={LUEFTUNG.map((l) => ({ value: l.id, label: l.l }))}
+                    onChange={(v) => u("lueftung", v)}
+                    testId="select-lueftung"
+                  />
+                </Field>
+              </div>
+              <div>
+                <Label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                  Bereits durchgeführte Sanierungen
+                </Label>
+                <div className="flex flex-wrap gap-1.5">
+                  {SANIERUNG_OPTIONS.map((s) => {
+                    const active = (d.sanierungen ?? []).includes(s.id);
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => {
+                          const cur = new Set(d.sanierungen ?? []);
+                          if (cur.has(s.id)) cur.delete(s.id);
+                          else cur.add(s.id);
+                          u("sanierungen", Array.from(cur));
+                        }}
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors ${
+                          active
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-white text-muted-foreground border-border hover:border-primary/40"
+                        }`}
+                        data-testid={`chip-sanierung-${s.id}`}
+                      >
+                        {s.l}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t pt-3">
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mb-2">
+              Energieausweis
+            </div>
+            <CheckRow
+              label="Gültiger Energieausweis vorhanden"
+              checked={!!d.energieausweisVorhanden}
+              onChange={(v) => u("energieausweisVorhanden", v)}
+              testId="check-energieausweis"
+            />
+            {d.energieausweisVorhanden && (
+              <div className="grid grid-cols-2 gap-3 mt-2">
+                <Field label="Art">
+                  <SelectField
+                    value={d.energieausweisTyp ?? "bedarf"}
+                    options={ENERGIEAUSWEIS_TYP.map((t) => ({ value: t.id, label: t.l }))}
+                    onChange={(v) => u("energieausweisTyp", v as BuildingInput["energieausweisTyp"])}
+                    testId="select-ausweis-typ"
+                  />
+                </Field>
+                <Field label="Endenergie kWh/(m²·a)">
+                  <Input
+                    type="number"
+                    value={d.energiekennwert ?? ""}
+                    onChange={(e) => u("energiekennwert", Number(e.target.value) || undefined)}
+                    placeholder="z. B. 145"
+                    min={10}
+                    max={600}
+                    data-testid="input-energiekennwert"
+                  />
+                </Field>
+              </div>
+            )}
+          </div>
+
+          <div className="border-t pt-3">
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mb-2">
+              Schutzstatus &amp; Anlagen
+            </div>
+            <div className="space-y-1.5">
+              <CheckRow label="Denkmalschutz (Einzeldenkmal)" checked={!!d.denkmalschutz} onChange={(v) => u("denkmalschutz", v)} testId="check-denkmalschutz" />
+              <CheckRow label="Ensemble-/Erhaltungssatzung" checked={!!d.ensembleschutz} onChange={(v) => u("ensembleschutz", v)} testId="check-ensembleschutz" />
+              <CheckRow label="Milieuschutz (soziale Erhaltungssatzung)" checked={!!d.milieuschutz} onChange={(v) => u("milieuschutz", v)} testId="check-milieuschutz" />
+              <CheckRow label="Photovoltaik/Solar bereits vorhanden" checked={!!d.pvVorhanden} onChange={(v) => u("pvVorhanden", v)} testId="check-pv" />
+            </div>
+          </div>
 
           {klima && (
             <div className="text-xs text-muted-foreground rounded-md bg-secondary/40 p-2.5 leading-relaxed">
@@ -485,6 +606,23 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
       {children}
       {hint && <span className="block mt-0.5 text-[10px] text-muted-foreground">{hint}</span>}
     </div>
+  );
+}
+
+function CheckRow({
+  label, checked, onChange, testId,
+}: { label: string; checked: boolean; onChange: (v: boolean) => void; testId?: string }) {
+  return (
+    <label className="flex items-center gap-2 cursor-pointer select-none">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+        data-testid={testId}
+      />
+      <span className="text-xs text-foreground">{label}</span>
+    </label>
   );
 }
 
