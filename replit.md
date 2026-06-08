@@ -5,7 +5,8 @@ Klard is a Doctolib-style booking marketplace for German consultants (Berater) �
 ## Run & Operate
 
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
-- `pnpm --filter @workspace/klard run dev` — run the frontend (port 26057)
+- `pnpm --filter @workspace/klard run dev` — run the Klard frontend (port 26057)
+- `pnpm --filter @workspace/wattwechsel run dev` — run the WattWechsel frontend (port 18607)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
@@ -112,7 +113,10 @@ Klard is a Doctolib-style booking marketplace for German consultants (Berater) �
 - **Shared lib**: `@workspace/energie-wechsel` — pure-TS state machines (`vollmachtUebergangErlaubt`, `wechselUebergangErlaubt`, `nachEmpfehlung`), tariff comparison helpers, label maps (SPARTE_LABELS, VOLLMACHT_*, WECHSEL_STATUS_LABELS, ZAEHLER_ART_LABELS), and types.
 - **DB**: `lib/db/src/schema/energie.ts` — verwalter, objekt, zaehlpunkt, vertrag, vollmacht, wechselvorgang, auditLog, tarifAngebot.
 - **API**: `artifacts/api-server/src/routes/energie.ts` — verwalter onboarding/me, portfolio KPI+tree, objekt/zaehlpunkt/vertrag CRUD, vollmacht CRUD+lifecycle, wechsel analyse (Claude recommendation + real calc, simulated completion)/freigeben/ablehnen/widersprechen, audit list, tarife list.
-- **Frontend**: `/energie` (public landing), `/energie/onboarding` + `/energie/portfolio` (behind AuthRoute). Cockpit tabs in `artifacts/klard/src/components/energie/`: Übersicht, Portfolio, Vollmachten, Wechsel, Audit, Tarife. Navbar links (desktop/mobile/user menu).
+- **Frontend**: WattWechsel is its OWN standalone frontend artifact `@workspace/wattwechsel` at `/wattwechsel/` (NOT part of Klard). Routes: `/` (public EnergieLanding), `/onboarding` + `/portfolio` (behind AuthRoute), `/sign-in` + `/sign-up`. Cockpit tabs in `artifacts/wattwechsel/src/components/energie/`: Übersicht, Portfolio, Vollmachten, Wechsel, Audit, Tarife. Own WattWechsel-branded Navbar/Footer (green accents); copies Klard's `index.css` theme verbatim.
+- **Shared login**: WattWechsel replicates Klard's Clerk block (same managed Clerk tenant via repl-level `VITE_CLERK_PUBLISHABLE_KEY` / `VITE_CLERK_PROXY_URL`) → same user accounts; sessions carry across both apps in the same browser.
+- **Shared backend**: energie routes STAY in `api-server` and energie schema STAYS in `lib/db`; codegen/clients unchanged. The generated API client calls root-relative `/api/...`, so requests from `/wattwechsel/*` reach the same backend via the shared proxy.
+- **Run**: `pnpm --filter @workspace/wattwechsel run dev` (port 18607).
 - **Demo portfolio** seeds only when `DEMO_CLERK_USER_ID` is set; tariffs always seed.
 
 ## User preferences

@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/wattwechsel/"
+title = "WattWechsel – Energiewechsel-Cockpit"
+version = "1.0.0"
+id = "artifacts/wattwechsel"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/wattwechsel/" ]
+localPort = 18607
+
+[services.development]
+run = "pnpm --filter @workspace/wattwechsel run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/wattwechsel", "run", "build" ]
+publicDir = "artifacts/wattwechsel/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18607"
+BASE_PATH = "/wattwechsel/"

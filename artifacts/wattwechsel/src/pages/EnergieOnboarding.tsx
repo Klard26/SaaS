@@ -75,7 +75,7 @@ export default function EnergieOnboarding() {
   });
 
   useEffect(() => {
-    if (verwalter) setLocation("/energie/portfolio");
+    if (verwalter) setLocation("/portfolio");
   }, [verwalter, setLocation]);
 
   async function onSubmit(values: FormData) {
@@ -88,7 +88,7 @@ export default function EnergieOnboarding() {
       });
       qc.invalidateQueries({ queryKey: getGetMyVerwalterQueryKey() });
       toast({ title: "Willkommen bei WattWechsel!", description: "Ihr Konto wurde angelegt." });
-      setLocation("/energie/portfolio");
+      setLocation("/portfolio");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Konto konnte nicht erstellt werden.";
       toast({ title: "Fehler", description: msg, variant: "destructive" });

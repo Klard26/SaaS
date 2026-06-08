@@ -1,1 +1,2 @@
 - [Klard product truth](klard-product-truth.md) — Klard is a marketplace for Bau-/Gebäudeberater (8 categories, 153 services, HOAI/BAFA/KfW), NOT legal/tax; replit.md's category list is outdated, trust seed data.
+- [WattWechsel app split](wattwechsel-architecture.md) — WattWechsel is its own frontend at /wattwechsel/ sharing Klard's single Clerk tenant + shared api-server; 2nd Clerk tenant / 2nd api-server infeasible on Replit.

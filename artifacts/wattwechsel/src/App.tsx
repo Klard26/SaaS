@@ -9,25 +9,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 
-import Home from "./pages/Home";
-import Search from "./pages/Search";
-import ProviderDetail from "./pages/ProviderDetail";
-import BookingConfirmation from "./pages/BookingConfirmation";
-import MyBookings from "./pages/MyBookings";
-import Dashboard from "./pages/Dashboard";
-import Admin from "./pages/Admin";
-import ProviderOnboarding from "./pages/ProviderOnboarding";
-import ProviderProfile from "./pages/ProviderProfile";
-import ProviderServices from "./pages/ProviderServices";
-import ProviderAvailability from "./pages/ProviderAvailability";
-import Pricing from "./pages/Pricing";
-import Gebaeudecheck from "./pages/Gebaeudecheck";
-import ImmobilienKundeOnboarding from "./pages/ImmobilienKundeOnboarding";
-import Impressum from "./pages/legal/Impressum";
-import AGB from "./pages/legal/AGB";
-import Datenschutz from "./pages/legal/Datenschutz";
-import Cookies from "./pages/legal/Cookies";
-import { CookieBanner } from "./components/CookieBanner";
+import EnergieLanding from "./pages/EnergieLanding";
+import EnergieOnboarding from "./pages/EnergieOnboarding";
+import EnergiePortfolio from "./pages/EnergiePortfolio";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -65,7 +49,7 @@ const clerkAppearance = {
     logoImageUrl: `${window.location.origin}${basePath}/favicon.svg`,
   },
   variables: {
-    colorPrimary: "hsl(210 25% 25%)",
+    colorPrimary: "hsl(160 84% 30%)",
     colorForeground: "hsl(220 30% 15%)",
     colorMutedForeground: "hsl(220 15% 45%)",
     colorDanger: "hsl(0 70% 50%)",
@@ -143,19 +127,6 @@ function ClerkQueryClientCacheInvalidator() {
   return null;
 }
 
-function HomeRedirect() {
-  return (
-    <>
-      <Show when="signed-in">
-        <Redirect to="/dashboard" />
-      </Show>
-      <Show when="signed-out">
-        <Home />
-      </Show>
-    </>
-  );
-}
-
 function AuthRoute({ component: Component }: { component: React.ComponentType }) {
   return (
     <>
@@ -186,46 +157,15 @@ function ClerkProviderWithRoutes() {
       <QueryClientProvider client={queryClient}>
         <ClerkQueryClientCacheInvalidator />
         <Switch>
-          <Route path="/" component={HomeRedirect} />
+          <Route path="/" component={EnergieLanding} />
           <Route path="/sign-in/*?" component={SignInPage} />
           <Route path="/sign-up/*?" component={SignUpPage} />
-          <Route path="/search" component={Search} />
-          <Route path="/pricing" component={Pricing} />
-          <Route path="/gebaeudecheck" component={Gebaeudecheck} />
-          <Route path="/impressum" component={Impressum} />
-          <Route path="/agb" component={AGB} />
-          <Route path="/datenschutz" component={Datenschutz} />
-          <Route path="/cookies" component={Cookies} />
-          <Route path="/providers/:id" component={ProviderDetail} />
-          
-          <Route path="/booking/:providerId/:serviceId/:slotId">
-            {() => <AuthRoute component={BookingConfirmation} />}
+          <Route path="/onboarding">
+            {() => <AuthRoute component={EnergieOnboarding} />}
           </Route>
-          <Route path="/bookings">
-            {() => <AuthRoute component={MyBookings} />}
+          <Route path="/portfolio">
+            {() => <AuthRoute component={EnergiePortfolio} />}
           </Route>
-          <Route path="/dashboard">
-            {() => <AuthRoute component={Dashboard} />}
-          </Route>
-          <Route path="/admin">
-            {() => <AuthRoute component={Admin} />}
-          </Route>
-          <Route path="/immobilien/onboarding">
-            {() => <AuthRoute component={ImmobilienKundeOnboarding} />}
-          </Route>
-          <Route path="/provider/onboarding">
-            {() => <AuthRoute component={ProviderOnboarding} />}
-          </Route>
-          <Route path="/provider/profile">
-            {() => <AuthRoute component={ProviderProfile} />}
-          </Route>
-          <Route path="/provider/services">
-            {() => <AuthRoute component={ProviderServices} />}
-          </Route>
-          <Route path="/provider/availability">
-            {() => <AuthRoute component={ProviderAvailability} />}
-          </Route>
-          
           <Route component={NotFound} />
         </Switch>
       </QueryClientProvider>
@@ -238,7 +178,6 @@ function App() {
     <WouterRouter base={basePath}>
       <TooltipProvider>
         <ClerkProviderWithRoutes />
-        <CookieBanner />
         <Toaster />
       </TooltipProvider>
     </WouterRouter>

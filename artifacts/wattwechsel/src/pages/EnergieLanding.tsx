@@ -47,7 +47,7 @@ export default function EnergieLanding() {
   const [, setLocation] = useLocation();
   const { isSignedIn } = useUser();
 
-  const startHref = isSignedIn ? "/energie/portfolio" : "/sign-up";
+  const startHref = isSignedIn ? "/portfolio" : "/sign-up";
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -81,7 +81,7 @@ export default function EnergieLanding() {
             <Button
               size="lg"
               variant="outline"
-              onClick={() => setLocation("/energie/portfolio")}
+              onClick={() => setLocation("/portfolio")}
               className="rounded-full border-[1.5px] px-7 h-12 text-sm font-semibold"
               data-testid="button-energie-cockpit"
             >

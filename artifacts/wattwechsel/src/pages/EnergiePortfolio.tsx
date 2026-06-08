@@ -34,7 +34,7 @@ export default function EnergiePortfolio() {
   });
 
   useEffect(() => {
-    if (!verwalterLoading && !verwalter) setLocation("/energie/onboarding");
+    if (!verwalterLoading && !verwalter) setLocation("/onboarding");
   }, [verwalterLoading, verwalter, setLocation]);
 
   if (verwalterLoading || !verwalter) {

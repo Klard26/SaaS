@@ -69,9 +69,6 @@ export function Navbar() {
           <Link href="/gebaeudecheck" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-gebaeudecheck">
             Gebäudecheck
           </Link>
-          <Link href="/energie" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-energie">
-            WattWechsel
-          </Link>
           <Link href="/pricing" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-pricing">
             Für Berater
           </Link>
@@ -97,7 +94,6 @@ export function Navbar() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => setLocation("/dashboard")} data-testid="menu-item-dashboard">Dashboard</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setLocation("/bookings")} data-testid="menu-item-bookings">Meine Buchungen</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setLocation("/energie/portfolio")} data-testid="menu-item-energie">WattWechsel Cockpit</DropdownMenuItem>
                 {isAdmin && (
                   <DropdownMenuItem onClick={() => setLocation("/admin")} data-testid="menu-item-admin">
                     <Shield className="h-4 w-4 mr-2" /> Plattform-Admin
@@ -156,13 +152,11 @@ export function Navbar() {
           <nav className="flex flex-col px-4 py-3 gap-1">
             <Link href="/search" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Berater finden</Link>
             <Link href="/gebaeudecheck" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Gebäudecheck</Link>
-            <Link href="/energie" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>WattWechsel</Link>
             <Link href="/pricing" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Für Berater</Link>
             {isSignedIn && (
               <>
                 <Link href="/bookings" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Meine Buchungen</Link>
                 <Link href="/dashboard" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Dashboard</Link>
-                <Link href="/energie/portfolio" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>WattWechsel Cockpit</Link>
               </>
             )}
           </nav>
