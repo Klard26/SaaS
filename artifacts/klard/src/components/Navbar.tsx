@@ -104,6 +104,7 @@ export function Navbar() {
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setLocation("/immobilien/onboarding")} data-testid="menu-item-immobilien">Hausverwalter / Bestandshalter</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setLocation("/provider/onboarding")} data-testid="menu-item-onboarding">Als Berater registrieren</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setLocation("/provider/profile")} data-testid="menu-item-profile">Berater-Profil</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setLocation("/provider/services")} data-testid="menu-item-services">Meine Leistungen</DropdownMenuItem>

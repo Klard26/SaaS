@@ -42,6 +42,8 @@ import type {
   GebaeudecheckReconcileResult,
   GetAdminTimeseriesParams,
   HealthStatus,
+  ImmobilienKunde,
+  ImmobilienKundeInput,
   Invoice,
   InvoiceSettings,
   InvoiceSettingsUpdate,
@@ -3322,6 +3324,168 @@ export const useReconcileGebaeudecheckOrder = <
   TContext
 > => {
   return useMutation(getReconcileGebaeudecheckOrderMutationOptions(options));
+};
+
+/**
+ * @summary Current user's Immobilien-Kundenprofil (Hausverwalter/Bestandshalter)
+ */
+export const getGetMyImmobilienKundeUrl = () => {
+  return `/api/immobilien-kunde/me`;
+};
+
+export const getMyImmobilienKunde = async (
+  options?: RequestInit,
+): Promise<ImmobilienKunde | null> => {
+  return customFetch<ImmobilienKunde | null>(getGetMyImmobilienKundeUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMyImmobilienKundeQueryKey = () => {
+  return [`/api/immobilien-kunde/me`] as const;
+};
+
+export const getGetMyImmobilienKundeQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMyImmobilienKunde>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMyImmobilienKunde>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMyImmobilienKundeQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getMyImmobilienKunde>>
+  > = ({ signal }) => getMyImmobilienKunde({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMyImmobilienKunde>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMyImmobilienKundeQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMyImmobilienKunde>>
+>;
+export type GetMyImmobilienKundeQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Current user's Immobilien-Kundenprofil (Hausverwalter/Bestandshalter)
+ */
+
+export function useGetMyImmobilienKunde<
+  TData = Awaited<ReturnType<typeof getMyImmobilienKunde>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMyImmobilienKunde>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMyImmobilienKundeQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create or update the current user's Immobilien-Kundenprofil
+ */
+export const getUpsertMyImmobilienKundeUrl = () => {
+  return `/api/immobilien-kunde/me`;
+};
+
+export const upsertMyImmobilienKunde = async (
+  immobilienKundeInput: ImmobilienKundeInput,
+  options?: RequestInit,
+): Promise<ImmobilienKunde> => {
+  return customFetch<ImmobilienKunde>(getUpsertMyImmobilienKundeUrl(), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(immobilienKundeInput),
+  });
+};
+
+export const getUpsertMyImmobilienKundeMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof upsertMyImmobilienKunde>>,
+    TError,
+    { data: BodyType<ImmobilienKundeInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof upsertMyImmobilienKunde>>,
+  TError,
+  { data: BodyType<ImmobilienKundeInput> },
+  TContext
+> => {
+  const mutationKey = ["upsertMyImmobilienKunde"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof upsertMyImmobilienKunde>>,
+    { data: BodyType<ImmobilienKundeInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return upsertMyImmobilienKunde(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpsertMyImmobilienKundeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof upsertMyImmobilienKunde>>
+>;
+export type UpsertMyImmobilienKundeMutationBody =
+  BodyType<ImmobilienKundeInput>;
+export type UpsertMyImmobilienKundeMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create or update the current user's Immobilien-Kundenprofil
+ */
+export const useUpsertMyImmobilienKunde = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof upsertMyImmobilienKunde>>,
+    TError,
+    { data: BodyType<ImmobilienKundeInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof upsertMyImmobilienKunde>>,
+  TError,
+  { data: BodyType<ImmobilienKundeInput> },
+  TContext
+> => {
+  return useMutation(getUpsertMyImmobilienKundeMutationOptions(options));
 };
 
 /**

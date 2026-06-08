@@ -17,6 +17,7 @@ import invoicesRouter from "./invoices";
 import adminRouter from "./admin";
 import energieRouter from "./energie";
 import gebaeudecheckRouter from "./gebaeudecheck";
+import immobilienKundeRouter from "./immobilienKunde";
 
 const router: IRouter = Router();
 
@@ -38,5 +39,6 @@ router.use(invoicesRouter);
 router.use(adminRouter);
 router.use(energieRouter);
 router.use(gebaeudecheckRouter);
+router.use(immobilienKundeRouter);
 
 export default router;

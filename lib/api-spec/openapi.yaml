@@ -724,6 +724,38 @@ paths:
               schema:
                 $ref: "#/components/schemas/GebaeudecheckReconcileResult"
 
+  /immobilien-kunde/me:
+    get:
+      operationId: getMyImmobilienKunde
+      tags: [immobilienKunde]
+      summary: Current user's Immobilien-Kundenprofil (Hausverwalter/Bestandshalter)
+      responses:
+        "200":
+          description: The profile, or null if none exists
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/ImmobilienKunde"
+                  - type: "null"
+    put:
+      operationId: upsertMyImmobilienKunde
+      tags: [immobilienKunde]
+      summary: Create or update the current user's Immobilien-Kundenprofil
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImmobilienKundeInput"
+      responses:
+        "200":
+          description: The saved profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImmobilienKunde"
+
   /providers/me/invoice-settings:
     get:
       operationId: getMyInvoiceSettings
@@ -2077,6 +2109,37 @@ components:
       properties:
         granted: { type: boolean }
         balance: { type: integer }
+
+    ImmobilienKundeInput:
+      type: object
+      required: [typ, firma]
+      properties:
+        typ:
+          type: string
+          enum: [hausverwaltung, bestandshalter]
+        firma:           { type: string, minLength: 1 }
+        ansprechpartner: { type: ["string", "null"] }
+        telefon:         { type: ["string", "null"] }
+        email:           { type: ["string", "null"] }
+        anzahlGebaeude:      { type: ["integer", "null"] }
+        wohneinheitenGesamt: { type: ["integer", "null"] }
+
+    ImmobilienKunde:
+      type: object
+      required: [userId, typ, firma, createdAt, updatedAt]
+      properties:
+        userId:          { type: string }
+        typ:
+          type: string
+          enum: [hausverwaltung, bestandshalter]
+        firma:           { type: string }
+        ansprechpartner: { type: ["string", "null"] }
+        telefon:         { type: ["string", "null"] }
+        email:           { type: ["string", "null"] }
+        anzahlGebaeude:      { type: ["integer", "null"] }
+        wohneinheitenGesamt: { type: ["integer", "null"] }
+        createdAt:       { type: string, format: date-time }
+        updatedAt:       { type: string, format: date-time }
 
     InvoiceSettings:
       type: object

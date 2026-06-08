@@ -9,3 +9,4 @@ export * from "./assessments";
 export * from "./invoices";
 export * from "./energie";
 export * from "./gebaeudecheck";
+export * from "./immobilienKunde";

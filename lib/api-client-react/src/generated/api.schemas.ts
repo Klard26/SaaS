@@ -1007,6 +1007,56 @@ export interface GebaeudecheckReconcileResult {
   balance: number;
 }
 
+export type ImmobilienKundeInputTyp =
+  (typeof ImmobilienKundeInputTyp)[keyof typeof ImmobilienKundeInputTyp];
+
+export const ImmobilienKundeInputTyp = {
+  hausverwaltung: "hausverwaltung",
+  bestandshalter: "bestandshalter",
+} as const;
+
+export interface ImmobilienKundeInput {
+  typ: ImmobilienKundeInputTyp;
+  /** @minLength 1 */
+  firma: string;
+  /** @nullable */
+  ansprechpartner?: string | null;
+  /** @nullable */
+  telefon?: string | null;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  anzahlGebaeude?: number | null;
+  /** @nullable */
+  wohneinheitenGesamt?: number | null;
+}
+
+export type ImmobilienKundeTyp =
+  (typeof ImmobilienKundeTyp)[keyof typeof ImmobilienKundeTyp];
+
+export const ImmobilienKundeTyp = {
+  hausverwaltung: "hausverwaltung",
+  bestandshalter: "bestandshalter",
+} as const;
+
+export interface ImmobilienKunde {
+  userId: string;
+  typ: ImmobilienKundeTyp;
+  firma: string;
+  /** @nullable */
+  ansprechpartner?: string | null;
+  /** @nullable */
+  telefon?: string | null;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  anzahlGebaeude?: number | null;
+  /** @nullable */
+  wohneinheitenGesamt?: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface InvoiceSettings {
   kleinunternehmer: boolean;
   /** Numeric percentage as string (e.g. '19.00') */

@@ -24,6 +24,7 @@ import Pricing from "./pages/Pricing";
 import Gebaeudecheck from "./pages/Gebaeudecheck";
 import EnergieLanding from "./pages/EnergieLanding";
 import EnergieOnboarding from "./pages/EnergieOnboarding";
+import ImmobilienKundeOnboarding from "./pages/ImmobilienKundeOnboarding";
 import EnergiePortfolio from "./pages/EnergiePortfolio";
 import Impressum from "./pages/legal/Impressum";
 import AGB from "./pages/legal/AGB";
@@ -212,6 +213,9 @@ function ClerkProviderWithRoutes() {
           </Route>
           <Route path="/admin">
             {() => <AuthRoute component={Admin} />}
+          </Route>
+          <Route path="/immobilien/onboarding">
+            {() => <AuthRoute component={ImmobilienKundeOnboarding} />}
           </Route>
           <Route path="/provider/onboarding">
             {() => <AuthRoute component={ProviderOnboarding} />}

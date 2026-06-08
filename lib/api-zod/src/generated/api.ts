@@ -746,6 +746,52 @@ export const ReconcileGebaeudecheckOrderResponse = zod.object({
 });
 
 /**
+ * @summary Current user's Immobilien-Kundenprofil (Hausverwalter/Bestandshalter)
+ */
+export const GetMyImmobilienKundeResponse = zod.union([
+  zod.object({
+    userId: zod.string(),
+    typ: zod.enum(["hausverwaltung", "bestandshalter"]),
+    firma: zod.string(),
+    ansprechpartner: zod.string().nullish(),
+    telefon: zod.string().nullish(),
+    email: zod.string().nullish(),
+    anzahlGebaeude: zod.number().nullish(),
+    wohneinheitenGesamt: zod.number().nullish(),
+    createdAt: zod.coerce.date(),
+    updatedAt: zod.coerce.date(),
+  }),
+  zod.null(),
+]);
+
+/**
+ * @summary Create or update the current user's Immobilien-Kundenprofil
+ */
+
+export const UpsertMyImmobilienKundeBody = zod.object({
+  typ: zod.enum(["hausverwaltung", "bestandshalter"]),
+  firma: zod.string().min(1),
+  ansprechpartner: zod.string().nullish(),
+  telefon: zod.string().nullish(),
+  email: zod.string().nullish(),
+  anzahlGebaeude: zod.number().nullish(),
+  wohneinheitenGesamt: zod.number().nullish(),
+});
+
+export const UpsertMyImmobilienKundeResponse = zod.object({
+  userId: zod.string(),
+  typ: zod.enum(["hausverwaltung", "bestandshalter"]),
+  firma: zod.string(),
+  ansprechpartner: zod.string().nullish(),
+  telefon: zod.string().nullish(),
+  email: zod.string().nullish(),
+  anzahlGebaeude: zod.number().nullish(),
+  wohneinheitenGesamt: zod.number().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
  * @summary Get the authenticated provider's invoice settings
  */
 export const GetMyInvoiceSettingsResponse = zod.object({
