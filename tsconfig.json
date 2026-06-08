@@ -14,6 +14,9 @@
     },
     {
       "path": "./lib/energie-calc"
+    },
+    {
+      "path": "./lib/energie-wechsel"
     }
   ]
 }

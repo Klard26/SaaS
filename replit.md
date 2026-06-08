@@ -105,6 +105,16 @@ Klard is a Doctolib-style booking marketplace for German consultants (Berater) �
   - `GET /admin/categories` — category breakdown.
 - **Frontend**: `/admin` page (`artifacts/klard/src/pages/Admin.tsx`) with tabs (Übersicht, Buchungen, Anbieter, Kunden, Kategorien). German status/payment labels via `STATUS_LABELS` / `PAYMENT_LABELS`.
 
+## WattWechsel (Energiewechsel)
+
+- **What**: AI-assisted neutral Energiewechsel cockpit for the Wohnungswirtschaft (Hausverwalter/Bestandshalter), integrated into Klard. German UI, no emojis, Klard light look + green energy accents (CSS vars `--klard-green` / `--klard-green-l`).
+- **Demo boundary**: External parts (live tariff feed for 300+ suppliers + actual supplier switch) are a realistic DEMO — seed data (`scripts/src/seedEnergie.ts`, `seed:energie`) plus simulated state-machine transitions. Everything else (portfolio, vollmacht lifecycle, analyse/freigabe, audit) is fully functional.
+- **Shared lib**: `@workspace/energie-wechsel` — pure-TS state machines (`vollmachtUebergangErlaubt`, `wechselUebergangErlaubt`, `nachEmpfehlung`), tariff comparison helpers, label maps (SPARTE_LABELS, VOLLMACHT_*, WECHSEL_STATUS_LABELS, ZAEHLER_ART_LABELS), and types.
+- **DB**: `lib/db/src/schema/energie.ts` — verwalter, objekt, zaehlpunkt, vertrag, vollmacht, wechselvorgang, auditLog, tarifAngebot.
+- **API**: `artifacts/api-server/src/routes/energie.ts` — verwalter onboarding/me, portfolio KPI+tree, objekt/zaehlpunkt/vertrag CRUD, vollmacht CRUD+lifecycle, wechsel analyse (Claude recommendation + real calc, simulated completion)/freigeben/ablehnen/widersprechen, audit list, tarife list.
+- **Frontend**: `/energie` (public landing), `/energie/onboarding` + `/energie/portfolio` (behind AuthRoute). Cockpit tabs in `artifacts/klard/src/components/energie/`: Übersicht, Portfolio, Vollmachten, Wechsel, Audit, Tarife. Navbar links (desktop/mobile/user menu).
+- **Demo portfolio** seeds only when `DEMO_CLERK_USER_ID` is set; tariffs always seed.
+
 ## User preferences
 
 _Populate as needed._

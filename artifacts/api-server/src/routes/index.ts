@@ -15,6 +15,7 @@ import storageRouter from "./storage";
 import assessmentsRouter from "./assessments";
 import invoicesRouter from "./invoices";
 import adminRouter from "./admin";
+import energieRouter from "./energie";
 
 const router: IRouter = Router();
 
@@ -34,5 +35,6 @@ router.use(storageRouter);
 router.use(assessmentsRouter);
 router.use(invoicesRouter);
 router.use(adminRouter);
+router.use(energieRouter);
 
 export default router;

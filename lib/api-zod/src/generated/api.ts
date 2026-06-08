@@ -1010,3 +1010,494 @@ export const ListAdminCategoriesResponseItem = zod.object({
 export const ListAdminCategoriesResponse = zod.array(
   ListAdminCategoriesResponseItem,
 );
+
+/**
+ * @summary Get the current user's Verwalter (energy portfolio) account, or null
+ */
+export const GetMyVerwalterResponse = zod.union([
+  zod.object({
+    id: zod.number(),
+    clerkUserId: zod.string(),
+    firma: zod.string(),
+    typ: zod.string(),
+    handelsregisterNr: zod.string().nullish(),
+    ustId: zod.string().nullish(),
+    erlaubnis34c: zod.boolean(),
+    strasse: zod.string().nullish(),
+    plz: zod.string().nullish(),
+    ort: zod.string().nullish(),
+    email: zod.string().nullish(),
+    telefon: zod.string().nullish(),
+    provisionsmodell: zod.string(),
+    aktiv: zod.boolean(),
+    createdAt: zod.coerce.date(),
+    updatedAt: zod.coerce.date().optional(),
+  }),
+  zod.null(),
+]);
+
+/**
+ * @summary Onboard the current user as a Verwalter
+ */
+export const createMyVerwalterBodyFirmaMax = 200;
+
+export const CreateMyVerwalterBody = zod.object({
+  firma: zod.string().min(1).max(createMyVerwalterBodyFirmaMax),
+  typ: zod.enum([
+    "hausverwaltung",
+    "weg_verwalter",
+    "bestandshalter",
+    "gewerbe",
+  ]),
+  handelsregisterNr: zod.string().nullish(),
+  ustId: zod.string().nullish(),
+  erlaubnis34c: zod.boolean().optional(),
+  strasse: zod.string().nullish(),
+  plz: zod.string().nullish(),
+  ort: zod.string().nullish(),
+  email: zod.string().nullish(),
+  telefon: zod.string().nullish(),
+  provisionsmodell: zod
+    .enum(["saas_flat", "erfolgsprovision", "hybrid"])
+    .optional(),
+});
+
+/**
+ * @summary Update the current user's Verwalter account
+ */
+export const updateMyVerwalterBodyFirmaMax = 200;
+
+export const UpdateMyVerwalterBody = zod.object({
+  firma: zod.string().min(1).max(updateMyVerwalterBodyFirmaMax),
+  typ: zod.enum([
+    "hausverwaltung",
+    "weg_verwalter",
+    "bestandshalter",
+    "gewerbe",
+  ]),
+  handelsregisterNr: zod.string().nullish(),
+  ustId: zod.string().nullish(),
+  erlaubnis34c: zod.boolean().optional(),
+  strasse: zod.string().nullish(),
+  plz: zod.string().nullish(),
+  ort: zod.string().nullish(),
+  email: zod.string().nullish(),
+  telefon: zod.string().nullish(),
+  provisionsmodell: zod
+    .enum(["saas_flat", "erfolgsprovision", "hybrid"])
+    .optional(),
+});
+
+export const UpdateMyVerwalterResponse = zod.object({
+  id: zod.number(),
+  clerkUserId: zod.string(),
+  firma: zod.string(),
+  typ: zod.string(),
+  handelsregisterNr: zod.string().nullish(),
+  ustId: zod.string().nullish(),
+  erlaubnis34c: zod.boolean(),
+  strasse: zod.string().nullish(),
+  plz: zod.string().nullish(),
+  ort: zod.string().nullish(),
+  email: zod.string().nullish(),
+  telefon: zod.string().nullish(),
+  provisionsmodell: zod.string(),
+  aktiv: zod.boolean(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date().optional(),
+});
+
+/**
+ * @summary Portfolio KPIs and full object/meter/contract tree
+ */
+export const GetEnergiePortfolioResponse = zod.object({
+  kpi: zod.object({
+    anzahlObjekte: zod.number(),
+    anzahlZaehlpunkte: zod.number(),
+    aktiveVertraege: zod.number(),
+    kuendigungen60Tage: zod.number(),
+    realisierteErsparnisEur: zod.number(),
+    potenzialErsparnisEur: zod.number(),
+  }),
+  objekte: zod.array(
+    zod.object({
+      objekt: zod.object({
+        id: zod.number(),
+        verwalterId: zod.number(),
+        bezeichnung: zod.string(),
+        strasse: zod.string(),
+        plz: zod.string(),
+        ort: zod.string(),
+        wegBeschluss: zod.boolean(),
+        wegBeschlussDatum: zod.string().nullish(),
+        notiz: zod.string().nullish(),
+        createdAt: zod.coerce.date(),
+      }),
+      zaehlpunkte: zod.array(
+        zod.object({
+          zaehlpunkt: zod.object({
+            id: zod.number(),
+            objektId: zod.number(),
+            sparte: zod.string(),
+            art: zod.string(),
+            maloId: zod.string().nullish(),
+            zaehlernummer: zod.string().nullish(),
+            jahresverbrauchKwh: zod.number().nullish(),
+            jahresverbrauchLiter: zod.number().nullish(),
+            netzbetreiber: zod.string().nullish(),
+            createdAt: zod.coerce.date(),
+          }),
+          vertrag: zod
+            .union([
+              zod.object({
+                id: zod.number(),
+                zaehlpunktId: zod.number(),
+                versorger: zod.string(),
+                tarifname: zod.string().nullish(),
+                arbeitspreisCtKwh: zod.number().nullish(),
+                grundpreisEurJahr: zod.number().nullish(),
+                vertragsbeginn: zod.string().nullish(),
+                erstlaufzeitEnde: zod.string().nullish(),
+                kuendigungsfristTage: zod.number(),
+                naechsterKuendigungstermin: zod.string().nullish(),
+                preisgarantieBis: zod.string().nullish(),
+                istAktiv: zod.boolean(),
+                quelle: zod.string(),
+                createdAt: zod.coerce.date(),
+              }),
+              zod.null(),
+            ])
+            .optional(),
+        }),
+      ),
+    }),
+  ),
+});
+
+/**
+ * @summary Add a building (Objekt) to the portfolio
+ */
+export const createObjektBodyBezeichnungMax = 200;
+
+export const createObjektBodyPlzMin = 4;
+export const createObjektBodyPlzMax = 5;
+
+export const CreateObjektBody = zod.object({
+  bezeichnung: zod.string().min(1).max(createObjektBodyBezeichnungMax),
+  strasse: zod.string().min(1),
+  plz: zod.string().min(createObjektBodyPlzMin).max(createObjektBodyPlzMax),
+  ort: zod.string().min(1),
+  wegBeschluss: zod.boolean().optional(),
+  wegBeschlussDatum: zod.string().nullish(),
+  notiz: zod.string().nullish(),
+});
+
+/**
+ * @summary Delete a building (owner only)
+ */
+export const DeleteObjektParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Add a metering point (Zählpunkt) to a building
+ */
+export const CreateZaehlpunktBody = zod.object({
+  objektId: zod.number(),
+  sparte: zod.enum(["strom", "gas", "heizoel", "fernwaerme"]),
+  art: zod
+    .enum([
+      "allgemeinstrom",
+      "mieterstrom",
+      "gewerbe",
+      "heizung",
+      "waermepumpe",
+      "sonstige",
+    ])
+    .optional(),
+  maloId: zod.string().nullish(),
+  zaehlernummer: zod.string().nullish(),
+  jahresverbrauchKwh: zod.number().nullish(),
+  jahresverbrauchLiter: zod.number().nullish(),
+  netzbetreiber: zod.string().nullish(),
+});
+
+/**
+ * @summary Delete a metering point (owner only)
+ */
+export const DeleteZaehlpunktParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Record the current supply contract for a metering point
+ */
+
+export const CreateVertragBody = zod.object({
+  zaehlpunktId: zod.number(),
+  versorger: zod.string().min(1),
+  tarifname: zod.string().nullish(),
+  arbeitspreisCtKwh: zod.number().nullish(),
+  grundpreisEurJahr: zod.number().nullish(),
+  vertragsbeginn: zod.string().nullish(),
+  erstlaufzeitEnde: zod.string().nullish(),
+  kuendigungsfristTage: zod.number().nullish(),
+  naechsterKuendigungstermin: zod.string().nullish(),
+  preisgarantieBis: zod.string().nullish(),
+});
+
+/**
+ * @summary List the Verwalter's powers of attorney
+ */
+export const ListVollmachtenResponseItem = zod.object({
+  id: zod.number(),
+  verwalterId: zod.number(),
+  objektId: zod.number().nullish(),
+  sparte: zod.string().nullish(),
+  status: zod.string(),
+  modus: zod.string(),
+  darfKuendigen: zod.boolean(),
+  darfAbschliessen: zod.boolean(),
+  darfSonderkuendigung: zod.boolean(),
+  darfDatenAbfragen: zod.boolean(),
+  darfBankdatenWeitergeben: zod.boolean(),
+  widerspruchsfristTage: zod.number(),
+  gueltigAb: zod.string().nullish(),
+  gueltigBis: zod.string().nullish(),
+  erteiltAm: zod.coerce.date().nullish(),
+  widerrufenAm: zod.coerce.date().nullish(),
+  widerrufGrund: zod.string().nullish(),
+  dokumentPfad: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const ListVollmachtenResponse = zod.array(ListVollmachtenResponseItem);
+
+/**
+ * @summary Grant a new power of attorney
+ */
+export const createVollmachtBodyWiderspruchsfristTageMax = 60;
+
+export const CreateVollmachtBody = zod.object({
+  objektId: zod.number().nullish(),
+  sparte: zod
+    .union([
+      zod.literal("strom"),
+      zod.literal("gas"),
+      zod.literal("heizoel"),
+      zod.literal("fernwaerme"),
+      zod.literal(null),
+    ])
+    .nullish(),
+  modus: zod.enum([
+    "nur_vorschlag",
+    "freigabe_erforderlich",
+    "vollautomatisch",
+  ]),
+  darfKuendigen: zod.boolean().optional(),
+  darfAbschliessen: zod.boolean().optional(),
+  darfSonderkuendigung: zod.boolean().optional(),
+  darfDatenAbfragen: zod.boolean().optional(),
+  darfBankdatenWeitergeben: zod.boolean().optional(),
+  widerspruchsfristTage: zod
+    .number()
+    .min(1)
+    .max(createVollmachtBodyWiderspruchsfristTageMax)
+    .optional(),
+  gueltigAb: zod.string().nullish(),
+  gueltigBis: zod.string().nullish(),
+});
+
+/**
+ * @summary Change a power of attorney's status (activate, pause, revoke)
+ */
+export const UpdateVollmachtStatusParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateVollmachtStatusBody = zod.object({
+  status: zod.enum(["aktiv", "pausiert", "widerrufen", "abgelaufen"]),
+  widerrufGrund: zod.string().nullish(),
+});
+
+export const UpdateVollmachtStatusResponse = zod.object({
+  id: zod.number(),
+  verwalterId: zod.number(),
+  objektId: zod.number().nullish(),
+  sparte: zod.string().nullish(),
+  status: zod.string(),
+  modus: zod.string(),
+  darfKuendigen: zod.boolean(),
+  darfAbschliessen: zod.boolean(),
+  darfSonderkuendigung: zod.boolean(),
+  darfDatenAbfragen: zod.boolean(),
+  darfBankdatenWeitergeben: zod.boolean(),
+  widerspruchsfristTage: zod.number(),
+  gueltigAb: zod.string().nullish(),
+  gueltigBis: zod.string().nullish(),
+  erteiltAm: zod.coerce.date().nullish(),
+  widerrufenAm: zod.coerce.date().nullish(),
+  widerrufGrund: zod.string().nullish(),
+  dokumentPfad: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary List switch processes across the portfolio
+ */
+export const ListWechselvorgaengeResponseItem = zod.object({
+  id: zod.number(),
+  zaehlpunktId: zod.number(),
+  vollmachtId: zod.number(),
+  altVertragId: zod.number().nullish(),
+  status: zod.string(),
+  empfVersorger: zod.string().nullish(),
+  empfTarif: zod.string().nullish(),
+  empfArbeitspreisCtKwh: zod.number().nullish(),
+  empfGrundpreisEurJahr: zod.number().nullish(),
+  ersparnisEurJahr: zod.number().nullish(),
+  ersparnisProzent: zod.number().nullish(),
+  anzahlVerglicheneAnbieter: zod.number().nullish(),
+  kiBegruendung: zod.string().nullish(),
+  freigegebenAm: zod.coerce.date().nullish(),
+  widerspruchBis: zod.coerce.date().nullish(),
+  neuVertragId: zod.number().nullish(),
+  abgeschlossenAm: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date().optional(),
+});
+export const ListWechselvorgaengeResponse = zod.array(
+  ListWechselvorgaengeResponseItem,
+);
+
+/**
+ * @summary Start an AI tariff analysis for a metering point
+ */
+export const StarteAnalyseBody = zod.object({
+  zaehlpunktId: zod.number(),
+  vollmachtId: zod.number().nullish(),
+});
+
+/**
+ * @summary Approve a switch (runs the simulated market execution)
+ */
+export const FreigebenWechselParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const FreigebenWechselResponse = zod.object({
+  id: zod.number(),
+  zaehlpunktId: zod.number(),
+  vollmachtId: zod.number(),
+  altVertragId: zod.number().nullish(),
+  status: zod.string(),
+  empfVersorger: zod.string().nullish(),
+  empfTarif: zod.string().nullish(),
+  empfArbeitspreisCtKwh: zod.number().nullish(),
+  empfGrundpreisEurJahr: zod.number().nullish(),
+  ersparnisEurJahr: zod.number().nullish(),
+  ersparnisProzent: zod.number().nullish(),
+  anzahlVerglicheneAnbieter: zod.number().nullish(),
+  kiBegruendung: zod.string().nullish(),
+  freigegebenAm: zod.coerce.date().nullish(),
+  widerspruchBis: zod.coerce.date().nullish(),
+  neuVertragId: zod.number().nullish(),
+  abgeschlossenAm: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date().optional(),
+});
+
+/**
+ * @summary Reject a recommended switch
+ */
+export const AblehnenWechselParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AblehnenWechselResponse = zod.object({
+  id: zod.number(),
+  zaehlpunktId: zod.number(),
+  vollmachtId: zod.number(),
+  altVertragId: zod.number().nullish(),
+  status: zod.string(),
+  empfVersorger: zod.string().nullish(),
+  empfTarif: zod.string().nullish(),
+  empfArbeitspreisCtKwh: zod.number().nullish(),
+  empfGrundpreisEurJahr: zod.number().nullish(),
+  ersparnisEurJahr: zod.number().nullish(),
+  ersparnisProzent: zod.number().nullish(),
+  anzahlVerglicheneAnbieter: zod.number().nullish(),
+  kiBegruendung: zod.string().nullish(),
+  freigegebenAm: zod.coerce.date().nullish(),
+  widerspruchBis: zod.coerce.date().nullish(),
+  neuVertragId: zod.number().nullish(),
+  abgeschlossenAm: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date().optional(),
+});
+
+/**
+ * @summary Object to a switch within the objection window
+ */
+export const WidersprechenWechselParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const WidersprechenWechselResponse = zod.object({
+  id: zod.number(),
+  zaehlpunktId: zod.number(),
+  vollmachtId: zod.number(),
+  altVertragId: zod.number().nullish(),
+  status: zod.string(),
+  empfVersorger: zod.string().nullish(),
+  empfTarif: zod.string().nullish(),
+  empfArbeitspreisCtKwh: zod.number().nullish(),
+  empfGrundpreisEurJahr: zod.number().nullish(),
+  ersparnisEurJahr: zod.number().nullish(),
+  ersparnisProzent: zod.number().nullish(),
+  anzahlVerglicheneAnbieter: zod.number().nullish(),
+  kiBegruendung: zod.string().nullish(),
+  freigegebenAm: zod.coerce.date().nullish(),
+  widerspruchBis: zod.coerce.date().nullish(),
+  neuVertragId: zod.number().nullish(),
+  abgeschlossenAm: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date().optional(),
+});
+
+/**
+ * @summary List the Verwalter's audit trail
+ */
+export const ListAuditLogResponseItem = zod.object({
+  id: zod.number(),
+  verwalterId: zod.number().nullish(),
+  vollmachtId: zod.number().nullish(),
+  wechselId: zod.number().nullish(),
+  akteur: zod.string(),
+  aktion: zod.string(),
+  details: zod.record(zod.string(), zod.unknown()).nullish(),
+  zeitpunkt: zod.coerce.date(),
+});
+export const ListAuditLogResponse = zod.array(ListAuditLogResponseItem);
+
+/**
+ * @summary List available tariff offers (transparency feed)
+ */
+export const ListTarifeQueryParams = zod.object({
+  sparte: zod.coerce.string().optional(),
+});
+
+export const ListTarifeResponseItem = zod.object({
+  id: zod.number(),
+  sparte: zod.string(),
+  versorger: zod.string(),
+  tarifname: zod.string(),
+  arbeitspreisCtKwh: zod.number(),
+  grundpreisEurJahr: zod.number(),
+  laufzeitMonate: zod.number().nullish(),
+  preisgarantieMonate: zod.number().nullish(),
+  oekostrom: zod.boolean(),
+  minVerbrauchKwh: zod.number().nullish(),
+  maxVerbrauchKwh: zod.number().nullish(),
+  plzGebiet: zod.string().nullish(),
+});
+export const ListTarifeResponse = zod.array(ListTarifeResponseItem);

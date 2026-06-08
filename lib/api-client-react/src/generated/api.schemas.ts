@@ -9,6 +9,411 @@ export interface AdminMe {
   isAdmin: boolean;
 }
 
+export interface Verwalter {
+  id: number;
+  clerkUserId: string;
+  firma: string;
+  typ: string;
+  /** @nullable */
+  handelsregisterNr?: string | null;
+  /** @nullable */
+  ustId?: string | null;
+  erlaubnis34c: boolean;
+  /** @nullable */
+  strasse?: string | null;
+  /** @nullable */
+  plz?: string | null;
+  /** @nullable */
+  ort?: string | null;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  telefon?: string | null;
+  provisionsmodell: string;
+  aktiv: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export type VerwalterInputTyp =
+  (typeof VerwalterInputTyp)[keyof typeof VerwalterInputTyp];
+
+export const VerwalterInputTyp = {
+  hausverwaltung: "hausverwaltung",
+  weg_verwalter: "weg_verwalter",
+  bestandshalter: "bestandshalter",
+  gewerbe: "gewerbe",
+} as const;
+
+export type VerwalterInputProvisionsmodell =
+  (typeof VerwalterInputProvisionsmodell)[keyof typeof VerwalterInputProvisionsmodell];
+
+export const VerwalterInputProvisionsmodell = {
+  saas_flat: "saas_flat",
+  erfolgsprovision: "erfolgsprovision",
+  hybrid: "hybrid",
+} as const;
+
+export interface VerwalterInput {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  firma: string;
+  typ: VerwalterInputTyp;
+  /** @nullable */
+  handelsregisterNr?: string | null;
+  /** @nullable */
+  ustId?: string | null;
+  erlaubnis34c?: boolean;
+  /** @nullable */
+  strasse?: string | null;
+  /** @nullable */
+  plz?: string | null;
+  /** @nullable */
+  ort?: string | null;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  telefon?: string | null;
+  provisionsmodell?: VerwalterInputProvisionsmodell;
+}
+
+export interface Objekt {
+  id: number;
+  verwalterId: number;
+  bezeichnung: string;
+  strasse: string;
+  plz: string;
+  ort: string;
+  wegBeschluss: boolean;
+  /** @nullable */
+  wegBeschlussDatum?: string | null;
+  /** @nullable */
+  notiz?: string | null;
+  createdAt: string;
+}
+
+export interface ObjektInput {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  bezeichnung: string;
+  /** @minLength 1 */
+  strasse: string;
+  /**
+   * @minLength 4
+   * @maxLength 5
+   */
+  plz: string;
+  /** @minLength 1 */
+  ort: string;
+  wegBeschluss?: boolean;
+  /** @nullable */
+  wegBeschlussDatum?: string | null;
+  /** @nullable */
+  notiz?: string | null;
+}
+
+export interface Zaehlpunkt {
+  id: number;
+  objektId: number;
+  sparte: string;
+  art: string;
+  /** @nullable */
+  maloId?: string | null;
+  /** @nullable */
+  zaehlernummer?: string | null;
+  /** @nullable */
+  jahresverbrauchKwh?: number | null;
+  /** @nullable */
+  jahresverbrauchLiter?: number | null;
+  /** @nullable */
+  netzbetreiber?: string | null;
+  createdAt: string;
+}
+
+export type ZaehlpunktInputSparte =
+  (typeof ZaehlpunktInputSparte)[keyof typeof ZaehlpunktInputSparte];
+
+export const ZaehlpunktInputSparte = {
+  strom: "strom",
+  gas: "gas",
+  heizoel: "heizoel",
+  fernwaerme: "fernwaerme",
+} as const;
+
+export type ZaehlpunktInputArt =
+  (typeof ZaehlpunktInputArt)[keyof typeof ZaehlpunktInputArt];
+
+export const ZaehlpunktInputArt = {
+  allgemeinstrom: "allgemeinstrom",
+  mieterstrom: "mieterstrom",
+  gewerbe: "gewerbe",
+  heizung: "heizung",
+  waermepumpe: "waermepumpe",
+  sonstige: "sonstige",
+} as const;
+
+export interface ZaehlpunktInput {
+  objektId: number;
+  sparte: ZaehlpunktInputSparte;
+  art?: ZaehlpunktInputArt;
+  /** @nullable */
+  maloId?: string | null;
+  /** @nullable */
+  zaehlernummer?: string | null;
+  /** @nullable */
+  jahresverbrauchKwh?: number | null;
+  /** @nullable */
+  jahresverbrauchLiter?: number | null;
+  /** @nullable */
+  netzbetreiber?: string | null;
+}
+
+export interface Vertrag {
+  id: number;
+  zaehlpunktId: number;
+  versorger: string;
+  /** @nullable */
+  tarifname?: string | null;
+  /** @nullable */
+  arbeitspreisCtKwh?: number | null;
+  /** @nullable */
+  grundpreisEurJahr?: number | null;
+  /** @nullable */
+  vertragsbeginn?: string | null;
+  /** @nullable */
+  erstlaufzeitEnde?: string | null;
+  kuendigungsfristTage: number;
+  /** @nullable */
+  naechsterKuendigungstermin?: string | null;
+  /** @nullable */
+  preisgarantieBis?: string | null;
+  istAktiv: boolean;
+  quelle: string;
+  createdAt: string;
+}
+
+export interface VertragInput {
+  zaehlpunktId: number;
+  /** @minLength 1 */
+  versorger: string;
+  /** @nullable */
+  tarifname?: string | null;
+  /** @nullable */
+  arbeitspreisCtKwh?: number | null;
+  /** @nullable */
+  grundpreisEurJahr?: number | null;
+  /** @nullable */
+  vertragsbeginn?: string | null;
+  /** @nullable */
+  erstlaufzeitEnde?: string | null;
+  /** @nullable */
+  kuendigungsfristTage?: number | null;
+  /** @nullable */
+  naechsterKuendigungstermin?: string | null;
+  /** @nullable */
+  preisgarantieBis?: string | null;
+}
+
+export interface Vollmacht {
+  id: number;
+  verwalterId: number;
+  /** @nullable */
+  objektId?: number | null;
+  /** @nullable */
+  sparte?: string | null;
+  status: string;
+  modus: string;
+  darfKuendigen: boolean;
+  darfAbschliessen: boolean;
+  darfSonderkuendigung: boolean;
+  darfDatenAbfragen: boolean;
+  darfBankdatenWeitergeben: boolean;
+  widerspruchsfristTage: number;
+  /** @nullable */
+  gueltigAb?: string | null;
+  /** @nullable */
+  gueltigBis?: string | null;
+  /** @nullable */
+  erteiltAm?: string | null;
+  /** @nullable */
+  widerrufenAm?: string | null;
+  /** @nullable */
+  widerrufGrund?: string | null;
+  /** @nullable */
+  dokumentPfad?: string | null;
+  createdAt: string;
+}
+
+/**
+ * @nullable
+ */
+export type VollmachtInputSparte =
+  | (typeof VollmachtInputSparte)[keyof typeof VollmachtInputSparte]
+  | null;
+
+export const VollmachtInputSparte = {
+  strom: "strom",
+  gas: "gas",
+  heizoel: "heizoel",
+  fernwaerme: "fernwaerme",
+} as const;
+
+export type VollmachtInputModus =
+  (typeof VollmachtInputModus)[keyof typeof VollmachtInputModus];
+
+export const VollmachtInputModus = {
+  nur_vorschlag: "nur_vorschlag",
+  freigabe_erforderlich: "freigabe_erforderlich",
+  vollautomatisch: "vollautomatisch",
+} as const;
+
+export interface VollmachtInput {
+  /** @nullable */
+  objektId?: number | null;
+  /** @nullable */
+  sparte?: VollmachtInputSparte;
+  modus: VollmachtInputModus;
+  darfKuendigen?: boolean;
+  darfAbschliessen?: boolean;
+  darfSonderkuendigung?: boolean;
+  darfDatenAbfragen?: boolean;
+  darfBankdatenWeitergeben?: boolean;
+  /**
+   * @minimum 1
+   * @maximum 60
+   */
+  widerspruchsfristTage?: number;
+  /** @nullable */
+  gueltigAb?: string | null;
+  /** @nullable */
+  gueltigBis?: string | null;
+}
+
+export type VollmachtStatusUpdateStatus =
+  (typeof VollmachtStatusUpdateStatus)[keyof typeof VollmachtStatusUpdateStatus];
+
+export const VollmachtStatusUpdateStatus = {
+  aktiv: "aktiv",
+  pausiert: "pausiert",
+  widerrufen: "widerrufen",
+  abgelaufen: "abgelaufen",
+} as const;
+
+export interface VollmachtStatusUpdate {
+  status: VollmachtStatusUpdateStatus;
+  /** @nullable */
+  widerrufGrund?: string | null;
+}
+
+export interface Wechselvorgang {
+  id: number;
+  zaehlpunktId: number;
+  vollmachtId: number;
+  /** @nullable */
+  altVertragId?: number | null;
+  status: string;
+  /** @nullable */
+  empfVersorger?: string | null;
+  /** @nullable */
+  empfTarif?: string | null;
+  /** @nullable */
+  empfArbeitspreisCtKwh?: number | null;
+  /** @nullable */
+  empfGrundpreisEurJahr?: number | null;
+  /** @nullable */
+  ersparnisEurJahr?: number | null;
+  /** @nullable */
+  ersparnisProzent?: number | null;
+  /** @nullable */
+  anzahlVerglicheneAnbieter?: number | null;
+  /** @nullable */
+  kiBegruendung?: string | null;
+  /** @nullable */
+  freigegebenAm?: string | null;
+  /** @nullable */
+  widerspruchBis?: string | null;
+  /** @nullable */
+  neuVertragId?: number | null;
+  /** @nullable */
+  abgeschlossenAm?: string | null;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface AnalyseInput {
+  zaehlpunktId: number;
+  /** @nullable */
+  vollmachtId?: number | null;
+}
+
+/**
+ * @nullable
+ */
+export type AuditEntryDetails = { [key: string]: unknown } | null;
+
+export interface AuditEntry {
+  id: number;
+  /** @nullable */
+  verwalterId?: number | null;
+  /** @nullable */
+  vollmachtId?: number | null;
+  /** @nullable */
+  wechselId?: number | null;
+  akteur: string;
+  aktion: string;
+  /** @nullable */
+  details?: AuditEntryDetails;
+  zeitpunkt: string;
+}
+
+export interface TarifAngebot {
+  id: number;
+  sparte: string;
+  versorger: string;
+  tarifname: string;
+  arbeitspreisCtKwh: number;
+  grundpreisEurJahr: number;
+  /** @nullable */
+  laufzeitMonate?: number | null;
+  /** @nullable */
+  preisgarantieMonate?: number | null;
+  oekostrom: boolean;
+  /** @nullable */
+  minVerbrauchKwh?: number | null;
+  /** @nullable */
+  maxVerbrauchKwh?: number | null;
+  /** @nullable */
+  plzGebiet?: string | null;
+}
+
+export interface PortfolioKpi {
+  anzahlObjekte: number;
+  anzahlZaehlpunkte: number;
+  aktiveVertraege: number;
+  kuendigungen60Tage: number;
+  realisierteErsparnisEur: number;
+  potenzialErsparnisEur: number;
+}
+
+export interface PortfolioZaehlpunkt {
+  zaehlpunkt: Zaehlpunkt;
+  vertrag?: Vertrag | null;
+}
+
+export interface PortfolioObjekt {
+  objekt: Objekt;
+  zaehlpunkte: PortfolioZaehlpunkt[];
+}
+
+export interface PortfolioOverview {
+  kpi: PortfolioKpi;
+  objekte: PortfolioObjekt[];
+}
+
 export type AdminStatsBookings = {
   total: number;
   pending: number;
@@ -698,3 +1103,7 @@ export const ListAdminBookingsStatus = {
   completed: "completed",
   cancelled: "cancelled",
 } as const;
+
+export type ListTarifeParams = {
+  sparte?: string;
+};

@@ -78,6 +78,7 @@
     "@clerk/localizations": "^4.6.2",
     "@clerk/react": "^6.6.2",
     "@clerk/themes": "^2.4.57",
-    "@workspace/energie-calc": "workspace:*"
+    "@workspace/energie-calc": "workspace:*",
+    "@workspace/energie-wechsel": "workspace:*"
   }
 }

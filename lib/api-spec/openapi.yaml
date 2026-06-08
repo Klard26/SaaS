@@ -38,6 +38,8 @@ tags:
     description: Provider invoices (§ 14 UStG)
   - name: admin
     description: Platform operator admin dashboard
+  - name: energie
+    description: WattWechsel energy-switching for property managers (Hausverwalter/Bestandshalter)
 
 paths:
   /healthz:
@@ -893,6 +895,332 @@ paths:
                 items:
                   $ref: "#/components/schemas/AdminCategoryRow"
 
+  /energie/verwalter/me:
+    get:
+      operationId: getMyVerwalter
+      tags: [energie]
+      summary: Get the current user's Verwalter (energy portfolio) account, or null
+      responses:
+        "200":
+          description: Verwalter account or null
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Verwalter"
+                  - type: "null"
+    post:
+      operationId: createMyVerwalter
+      tags: [energie]
+      summary: Onboard the current user as a Verwalter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerwalterInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Verwalter"
+    patch:
+      operationId: updateMyVerwalter
+      tags: [energie]
+      summary: Update the current user's Verwalter account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerwalterInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Verwalter"
+
+  /energie/portfolio:
+    get:
+      operationId: getEnergiePortfolio
+      tags: [energie]
+      summary: Portfolio KPIs and full object/meter/contract tree
+      responses:
+        "200":
+          description: Portfolio overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PortfolioOverview"
+
+  /energie/objekte:
+    post:
+      operationId: createObjekt
+      tags: [energie]
+      summary: Add a building (Objekt) to the portfolio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ObjektInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Objekt"
+
+  /energie/objekte/{id}:
+    delete:
+      operationId: deleteObjekt
+      tags: [energie]
+      summary: Delete a building (owner only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+
+  /energie/zaehlpunkte:
+    post:
+      operationId: createZaehlpunkt
+      tags: [energie]
+      summary: Add a metering point (Zählpunkt) to a building
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ZaehlpunktInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Zaehlpunkt"
+
+  /energie/zaehlpunkte/{id}:
+    delete:
+      operationId: deleteZaehlpunkt
+      tags: [energie]
+      summary: Delete a metering point (owner only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+
+  /energie/vertraege:
+    post:
+      operationId: createVertrag
+      tags: [energie]
+      summary: Record the current supply contract for a metering point
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VertragInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vertrag"
+
+  /energie/vollmachten:
+    get:
+      operationId: listVollmachten
+      tags: [energie]
+      summary: List the Verwalter's powers of attorney
+      responses:
+        "200":
+          description: List of Vollmachten
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Vollmacht"
+    post:
+      operationId: createVollmacht
+      tags: [energie]
+      summary: Grant a new power of attorney
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VollmachtInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vollmacht"
+
+  /energie/vollmachten/{id}/status:
+    patch:
+      operationId: updateVollmachtStatus
+      tags: [energie]
+      summary: Change a power of attorney's status (activate, pause, revoke)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VollmachtStatusUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vollmacht"
+
+  /energie/wechsel:
+    get:
+      operationId: listWechselvorgaenge
+      tags: [energie]
+      summary: List switch processes across the portfolio
+      responses:
+        "200":
+          description: List of switch processes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Wechselvorgang"
+
+  /energie/wechsel/analyse:
+    post:
+      operationId: starteAnalyse
+      tags: [energie]
+      summary: Start an AI tariff analysis for a metering point
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyseInput"
+      responses:
+        "201":
+          description: Switch process created with recommendation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wechselvorgang"
+
+  /energie/wechsel/{id}/freigeben:
+    post:
+      operationId: freigebenWechsel
+      tags: [energie]
+      summary: Approve a switch (runs the simulated market execution)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Updated switch process
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wechselvorgang"
+
+  /energie/wechsel/{id}/ablehnen:
+    post:
+      operationId: ablehnenWechsel
+      tags: [energie]
+      summary: Reject a recommended switch
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Updated switch process
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wechselvorgang"
+
+  /energie/wechsel/{id}/widersprechen:
+    post:
+      operationId: widersprechenWechsel
+      tags: [energie]
+      summary: Object to a switch within the objection window
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Updated switch process
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wechselvorgang"
+
+  /energie/audit:
+    get:
+      operationId: listAuditLog
+      tags: [energie]
+      summary: List the Verwalter's audit trail
+      responses:
+        "200":
+          description: Audit entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditEntry"
+
+  /energie/tarife:
+    get:
+      operationId: listTarife
+      tags: [energie]
+      summary: List available tariff offers (transparency feed)
+      parameters:
+        - name: sparte
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: Tariff offers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TarifAngebot"
+
 components:
   schemas:
     AdminMe:
@@ -900,6 +1228,283 @@ components:
       required: [isAdmin]
       properties:
         isAdmin: { type: boolean }
+
+    Verwalter:
+      type: object
+      required: [id, clerkUserId, firma, typ, erlaubnis34c, provisionsmodell, aktiv, createdAt]
+      properties:
+        id: { type: integer }
+        clerkUserId: { type: string }
+        firma: { type: string }
+        typ: { type: string }
+        handelsregisterNr: { type: ["string", "null"] }
+        ustId: { type: ["string", "null"] }
+        erlaubnis34c: { type: boolean }
+        strasse: { type: ["string", "null"] }
+        plz: { type: ["string", "null"] }
+        ort: { type: ["string", "null"] }
+        email: { type: ["string", "null"] }
+        telefon: { type: ["string", "null"] }
+        provisionsmodell: { type: string }
+        aktiv: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    VerwalterInput:
+      type: object
+      required: [firma, typ]
+      properties:
+        firma: { type: string, minLength: 1, maxLength: 200 }
+        typ: { type: string, enum: [hausverwaltung, weg_verwalter, bestandshalter, gewerbe] }
+        handelsregisterNr: { type: ["string", "null"] }
+        ustId: { type: ["string", "null"] }
+        erlaubnis34c: { type: boolean }
+        strasse: { type: ["string", "null"] }
+        plz: { type: ["string", "null"] }
+        ort: { type: ["string", "null"] }
+        email: { type: ["string", "null"] }
+        telefon: { type: ["string", "null"] }
+        provisionsmodell: { type: string, enum: [saas_flat, erfolgsprovision, hybrid] }
+
+    Objekt:
+      type: object
+      required: [id, verwalterId, bezeichnung, strasse, plz, ort, wegBeschluss, createdAt]
+      properties:
+        id: { type: integer }
+        verwalterId: { type: integer }
+        bezeichnung: { type: string }
+        strasse: { type: string }
+        plz: { type: string }
+        ort: { type: string }
+        wegBeschluss: { type: boolean }
+        wegBeschlussDatum: { type: ["string", "null"] }
+        notiz: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+
+    ObjektInput:
+      type: object
+      required: [bezeichnung, strasse, plz, ort]
+      properties:
+        bezeichnung: { type: string, minLength: 1, maxLength: 200 }
+        strasse: { type: string, minLength: 1 }
+        plz: { type: string, minLength: 4, maxLength: 5 }
+        ort: { type: string, minLength: 1 }
+        wegBeschluss: { type: boolean }
+        wegBeschlussDatum: { type: ["string", "null"] }
+        notiz: { type: ["string", "null"] }
+
+    Zaehlpunkt:
+      type: object
+      required: [id, objektId, sparte, art, createdAt]
+      properties:
+        id: { type: integer }
+        objektId: { type: integer }
+        sparte: { type: string }
+        art: { type: string }
+        maloId: { type: ["string", "null"] }
+        zaehlernummer: { type: ["string", "null"] }
+        jahresverbrauchKwh: { type: ["number", "null"] }
+        jahresverbrauchLiter: { type: ["number", "null"] }
+        netzbetreiber: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+
+    ZaehlpunktInput:
+      type: object
+      required: [objektId, sparte]
+      properties:
+        objektId: { type: integer }
+        sparte: { type: string, enum: [strom, gas, heizoel, fernwaerme] }
+        art: { type: string, enum: [allgemeinstrom, mieterstrom, gewerbe, heizung, waermepumpe, sonstige] }
+        maloId: { type: ["string", "null"] }
+        zaehlernummer: { type: ["string", "null"] }
+        jahresverbrauchKwh: { type: ["number", "null"] }
+        jahresverbrauchLiter: { type: ["number", "null"] }
+        netzbetreiber: { type: ["string", "null"] }
+
+    Vertrag:
+      type: object
+      required: [id, zaehlpunktId, versorger, kuendigungsfristTage, istAktiv, quelle, createdAt]
+      properties:
+        id: { type: integer }
+        zaehlpunktId: { type: integer }
+        versorger: { type: string }
+        tarifname: { type: ["string", "null"] }
+        arbeitspreisCtKwh: { type: ["number", "null"] }
+        grundpreisEurJahr: { type: ["number", "null"] }
+        vertragsbeginn: { type: ["string", "null"] }
+        erstlaufzeitEnde: { type: ["string", "null"] }
+        kuendigungsfristTage: { type: integer }
+        naechsterKuendigungstermin: { type: ["string", "null"] }
+        preisgarantieBis: { type: ["string", "null"] }
+        istAktiv: { type: boolean }
+        quelle: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    VertragInput:
+      type: object
+      required: [zaehlpunktId, versorger]
+      properties:
+        zaehlpunktId: { type: integer }
+        versorger: { type: string, minLength: 1 }
+        tarifname: { type: ["string", "null"] }
+        arbeitspreisCtKwh: { type: ["number", "null"] }
+        grundpreisEurJahr: { type: ["number", "null"] }
+        vertragsbeginn: { type: ["string", "null"] }
+        erstlaufzeitEnde: { type: ["string", "null"] }
+        kuendigungsfristTage: { type: ["integer", "null"] }
+        naechsterKuendigungstermin: { type: ["string", "null"] }
+        preisgarantieBis: { type: ["string", "null"] }
+
+    Vollmacht:
+      type: object
+      required: [id, verwalterId, status, modus, darfKuendigen, darfAbschliessen, darfSonderkuendigung, darfDatenAbfragen, darfBankdatenWeitergeben, widerspruchsfristTage, createdAt]
+      properties:
+        id: { type: integer }
+        verwalterId: { type: integer }
+        objektId: { type: ["integer", "null"] }
+        sparte: { type: ["string", "null"] }
+        status: { type: string }
+        modus: { type: string }
+        darfKuendigen: { type: boolean }
+        darfAbschliessen: { type: boolean }
+        darfSonderkuendigung: { type: boolean }
+        darfDatenAbfragen: { type: boolean }
+        darfBankdatenWeitergeben: { type: boolean }
+        widerspruchsfristTage: { type: integer }
+        gueltigAb: { type: ["string", "null"] }
+        gueltigBis: { type: ["string", "null"] }
+        erteiltAm: { type: ["string", "null"], format: date-time }
+        widerrufenAm: { type: ["string", "null"], format: date-time }
+        widerrufGrund: { type: ["string", "null"] }
+        dokumentPfad: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+
+    VollmachtInput:
+      type: object
+      required: [modus]
+      properties:
+        objektId: { type: ["integer", "null"] }
+        sparte: { type: ["string", "null"], enum: [strom, gas, heizoel, fernwaerme, null] }
+        modus: { type: string, enum: [nur_vorschlag, freigabe_erforderlich, vollautomatisch] }
+        darfKuendigen: { type: boolean }
+        darfAbschliessen: { type: boolean }
+        darfSonderkuendigung: { type: boolean }
+        darfDatenAbfragen: { type: boolean }
+        darfBankdatenWeitergeben: { type: boolean }
+        widerspruchsfristTage: { type: integer, minimum: 1, maximum: 60 }
+        gueltigAb: { type: ["string", "null"] }
+        gueltigBis: { type: ["string", "null"] }
+
+    VollmachtStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [aktiv, pausiert, widerrufen, abgelaufen] }
+        widerrufGrund: { type: ["string", "null"] }
+
+    Wechselvorgang:
+      type: object
+      required: [id, zaehlpunktId, vollmachtId, status, createdAt]
+      properties:
+        id: { type: integer }
+        zaehlpunktId: { type: integer }
+        vollmachtId: { type: integer }
+        altVertragId: { type: ["integer", "null"] }
+        status: { type: string }
+        empfVersorger: { type: ["string", "null"] }
+        empfTarif: { type: ["string", "null"] }
+        empfArbeitspreisCtKwh: { type: ["number", "null"] }
+        empfGrundpreisEurJahr: { type: ["number", "null"] }
+        ersparnisEurJahr: { type: ["number", "null"] }
+        ersparnisProzent: { type: ["number", "null"] }
+        anzahlVerglicheneAnbieter: { type: ["integer", "null"] }
+        kiBegruendung: { type: ["string", "null"] }
+        freigegebenAm: { type: ["string", "null"], format: date-time }
+        widerspruchBis: { type: ["string", "null"], format: date-time }
+        neuVertragId: { type: ["integer", "null"] }
+        abgeschlossenAm: { type: ["string", "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    AnalyseInput:
+      type: object
+      required: [zaehlpunktId]
+      properties:
+        zaehlpunktId: { type: integer }
+        vollmachtId: { type: ["integer", "null"] }
+
+    AuditEntry:
+      type: object
+      required: [id, akteur, aktion, zeitpunkt]
+      properties:
+        id: { type: integer }
+        verwalterId: { type: ["integer", "null"] }
+        vollmachtId: { type: ["integer", "null"] }
+        wechselId: { type: ["integer", "null"] }
+        akteur: { type: string }
+        aktion: { type: string }
+        details:
+          type: ["object", "null"]
+          additionalProperties: true
+        zeitpunkt: { type: string, format: date-time }
+
+    TarifAngebot:
+      type: object
+      required: [id, sparte, versorger, tarifname, arbeitspreisCtKwh, grundpreisEurJahr, oekostrom]
+      properties:
+        id: { type: integer }
+        sparte: { type: string }
+        versorger: { type: string }
+        tarifname: { type: string }
+        arbeitspreisCtKwh: { type: number }
+        grundpreisEurJahr: { type: number }
+        laufzeitMonate: { type: ["integer", "null"] }
+        preisgarantieMonate: { type: ["integer", "null"] }
+        oekostrom: { type: boolean }
+        minVerbrauchKwh: { type: ["number", "null"] }
+        maxVerbrauchKwh: { type: ["number", "null"] }
+        plzGebiet: { type: ["string", "null"] }
+
+    PortfolioKpi:
+      type: object
+      required: [anzahlObjekte, anzahlZaehlpunkte, aktiveVertraege, kuendigungen60Tage, realisierteErsparnisEur, potenzialErsparnisEur]
+      properties:
+        anzahlObjekte: { type: integer }
+        anzahlZaehlpunkte: { type: integer }
+        aktiveVertraege: { type: integer }
+        kuendigungen60Tage: { type: integer }
+        realisierteErsparnisEur: { type: number }
+        potenzialErsparnisEur: { type: number }
+
+    PortfolioZaehlpunkt:
+      type: object
+      required: [zaehlpunkt]
+      properties:
+        zaehlpunkt: { $ref: "#/components/schemas/Zaehlpunkt" }
+        vertrag:
+          oneOf:
+            - $ref: "#/components/schemas/Vertrag"
+            - type: "null"
+
+    PortfolioObjekt:
+      type: object
+      required: [objekt, zaehlpunkte]
+      properties:
+        objekt: { $ref: "#/components/schemas/Objekt" }
+        zaehlpunkte:
+          type: array
+          items:
+            $ref: "#/components/schemas/PortfolioZaehlpunkt"
+
+    PortfolioOverview:
+      type: object
+      required: [kpi, objekte]
+      properties:
+        kpi: { $ref: "#/components/schemas/PortfolioKpi" }
+        objekte:
+          type: array
+          items:
+            $ref: "#/components/schemas/PortfolioObjekt"
 
     AdminStats:
       type: object

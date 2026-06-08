@@ -22,6 +22,9 @@ import ProviderServices from "./pages/ProviderServices";
 import ProviderAvailability from "./pages/ProviderAvailability";
 import Pricing from "./pages/Pricing";
 import Gebaeudecheck from "./pages/Gebaeudecheck";
+import EnergieLanding from "./pages/EnergieLanding";
+import EnergieOnboarding from "./pages/EnergieOnboarding";
+import EnergiePortfolio from "./pages/EnergiePortfolio";
 import Impressum from "./pages/legal/Impressum";
 import AGB from "./pages/legal/AGB";
 import Datenschutz from "./pages/legal/Datenschutz";
@@ -191,6 +194,7 @@ function ClerkProviderWithRoutes() {
           <Route path="/search" component={Search} />
           <Route path="/pricing" component={Pricing} />
           <Route path="/gebaeudecheck" component={Gebaeudecheck} />
+          <Route path="/energie" component={EnergieLanding} />
           <Route path="/impressum" component={Impressum} />
           <Route path="/agb" component={AGB} />
           <Route path="/datenschutz" component={Datenschutz} />
@@ -220,6 +224,12 @@ function ClerkProviderWithRoutes() {
           </Route>
           <Route path="/provider/availability">
             {() => <AuthRoute component={ProviderAvailability} />}
+          </Route>
+          <Route path="/energie/onboarding">
+            {() => <AuthRoute component={EnergieOnboarding} />}
+          </Route>
+          <Route path="/energie/portfolio">
+            {() => <AuthRoute component={EnergiePortfolio} />}
           </Route>
           
           <Route component={NotFound} />

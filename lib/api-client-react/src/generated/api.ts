@@ -26,8 +26,10 @@ import type {
   AdminTimeseriesPoint,
   AiOfferRequest,
   AiOfferResponse,
+  AnalyseInput,
   Assessment,
   AssessmentInput,
+  AuditEntry,
   Booking,
   BookingInput,
   BookingStatusUpdate,
@@ -42,7 +44,11 @@ import type {
   ListAdminBookingsParams,
   ListProvidersParams,
   ListServiceTemplatesParams,
+  ListTarifeParams,
+  Objekt,
+  ObjektInput,
   PlatformStats,
+  PortfolioOverview,
   Provider,
   ProviderDashboard,
   ProviderInput,
@@ -55,10 +61,21 @@ import type {
   ServiceTemplate,
   ServiceUpdate,
   SubscriptionStatus,
+  TarifAngebot,
   TimeSlot,
   TimeSlotInput,
   UploadUrlRequest,
   UploadUrlResponse,
+  Vertrag,
+  VertragInput,
+  Verwalter,
+  VerwalterInput,
+  Vollmacht,
+  VollmachtInput,
+  VollmachtStatusUpdate,
+  Wechselvorgang,
+  Zaehlpunkt,
+  ZaehlpunktInput,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -4169,6 +4186,1584 @@ export function useListAdminCategories<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getListAdminCategoriesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get the current user's Verwalter (energy portfolio) account, or null
+ */
+export const getGetMyVerwalterUrl = () => {
+  return `/api/energie/verwalter/me`;
+};
+
+export const getMyVerwalter = async (
+  options?: RequestInit,
+): Promise<Verwalter | null> => {
+  return customFetch<Verwalter | null>(getGetMyVerwalterUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMyVerwalterQueryKey = () => {
+  return [`/api/energie/verwalter/me`] as const;
+};
+
+export const getGetMyVerwalterQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMyVerwalter>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMyVerwalter>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMyVerwalterQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyVerwalter>>> = ({
+    signal,
+  }) => getMyVerwalter({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMyVerwalter>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMyVerwalterQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMyVerwalter>>
+>;
+export type GetMyVerwalterQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get the current user's Verwalter (energy portfolio) account, or null
+ */
+
+export function useGetMyVerwalter<
+  TData = Awaited<ReturnType<typeof getMyVerwalter>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMyVerwalter>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMyVerwalterQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Onboard the current user as a Verwalter
+ */
+export const getCreateMyVerwalterUrl = () => {
+  return `/api/energie/verwalter/me`;
+};
+
+export const createMyVerwalter = async (
+  verwalterInput: VerwalterInput,
+  options?: RequestInit,
+): Promise<Verwalter> => {
+  return customFetch<Verwalter>(getCreateMyVerwalterUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(verwalterInput),
+  });
+};
+
+export const getCreateMyVerwalterMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createMyVerwalter>>,
+    TError,
+    { data: BodyType<VerwalterInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createMyVerwalter>>,
+  TError,
+  { data: BodyType<VerwalterInput> },
+  TContext
+> => {
+  const mutationKey = ["createMyVerwalter"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createMyVerwalter>>,
+    { data: BodyType<VerwalterInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createMyVerwalter(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateMyVerwalterMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createMyVerwalter>>
+>;
+export type CreateMyVerwalterMutationBody = BodyType<VerwalterInput>;
+export type CreateMyVerwalterMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Onboard the current user as a Verwalter
+ */
+export const useCreateMyVerwalter = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createMyVerwalter>>,
+    TError,
+    { data: BodyType<VerwalterInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createMyVerwalter>>,
+  TError,
+  { data: BodyType<VerwalterInput> },
+  TContext
+> => {
+  return useMutation(getCreateMyVerwalterMutationOptions(options));
+};
+
+/**
+ * @summary Update the current user's Verwalter account
+ */
+export const getUpdateMyVerwalterUrl = () => {
+  return `/api/energie/verwalter/me`;
+};
+
+export const updateMyVerwalter = async (
+  verwalterInput: VerwalterInput,
+  options?: RequestInit,
+): Promise<Verwalter> => {
+  return customFetch<Verwalter>(getUpdateMyVerwalterUrl(), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(verwalterInput),
+  });
+};
+
+export const getUpdateMyVerwalterMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateMyVerwalter>>,
+    TError,
+    { data: BodyType<VerwalterInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateMyVerwalter>>,
+  TError,
+  { data: BodyType<VerwalterInput> },
+  TContext
+> => {
+  const mutationKey = ["updateMyVerwalter"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateMyVerwalter>>,
+    { data: BodyType<VerwalterInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return updateMyVerwalter(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateMyVerwalterMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateMyVerwalter>>
+>;
+export type UpdateMyVerwalterMutationBody = BodyType<VerwalterInput>;
+export type UpdateMyVerwalterMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update the current user's Verwalter account
+ */
+export const useUpdateMyVerwalter = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateMyVerwalter>>,
+    TError,
+    { data: BodyType<VerwalterInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateMyVerwalter>>,
+  TError,
+  { data: BodyType<VerwalterInput> },
+  TContext
+> => {
+  return useMutation(getUpdateMyVerwalterMutationOptions(options));
+};
+
+/**
+ * @summary Portfolio KPIs and full object/meter/contract tree
+ */
+export const getGetEnergiePortfolioUrl = () => {
+  return `/api/energie/portfolio`;
+};
+
+export const getEnergiePortfolio = async (
+  options?: RequestInit,
+): Promise<PortfolioOverview> => {
+  return customFetch<PortfolioOverview>(getGetEnergiePortfolioUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetEnergiePortfolioQueryKey = () => {
+  return [`/api/energie/portfolio`] as const;
+};
+
+export const getGetEnergiePortfolioQueryOptions = <
+  TData = Awaited<ReturnType<typeof getEnergiePortfolio>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getEnergiePortfolio>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetEnergiePortfolioQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getEnergiePortfolio>>
+  > = ({ signal }) => getEnergiePortfolio({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getEnergiePortfolio>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetEnergiePortfolioQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getEnergiePortfolio>>
+>;
+export type GetEnergiePortfolioQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Portfolio KPIs and full object/meter/contract tree
+ */
+
+export function useGetEnergiePortfolio<
+  TData = Awaited<ReturnType<typeof getEnergiePortfolio>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getEnergiePortfolio>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetEnergiePortfolioQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Add a building (Objekt) to the portfolio
+ */
+export const getCreateObjektUrl = () => {
+  return `/api/energie/objekte`;
+};
+
+export const createObjekt = async (
+  objektInput: ObjektInput,
+  options?: RequestInit,
+): Promise<Objekt> => {
+  return customFetch<Objekt>(getCreateObjektUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(objektInput),
+  });
+};
+
+export const getCreateObjektMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createObjekt>>,
+    TError,
+    { data: BodyType<ObjektInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createObjekt>>,
+  TError,
+  { data: BodyType<ObjektInput> },
+  TContext
+> => {
+  const mutationKey = ["createObjekt"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createObjekt>>,
+    { data: BodyType<ObjektInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createObjekt(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateObjektMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createObjekt>>
+>;
+export type CreateObjektMutationBody = BodyType<ObjektInput>;
+export type CreateObjektMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Add a building (Objekt) to the portfolio
+ */
+export const useCreateObjekt = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createObjekt>>,
+    TError,
+    { data: BodyType<ObjektInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createObjekt>>,
+  TError,
+  { data: BodyType<ObjektInput> },
+  TContext
+> => {
+  return useMutation(getCreateObjektMutationOptions(options));
+};
+
+/**
+ * @summary Delete a building (owner only)
+ */
+export const getDeleteObjektUrl = (id: number) => {
+  return `/api/energie/objekte/${id}`;
+};
+
+export const deleteObjekt = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteObjektUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteObjektMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteObjekt>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteObjekt>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteObjekt"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteObjekt>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteObjekt(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteObjektMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteObjekt>>
+>;
+
+export type DeleteObjektMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a building (owner only)
+ */
+export const useDeleteObjekt = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteObjekt>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteObjekt>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteObjektMutationOptions(options));
+};
+
+/**
+ * @summary Add a metering point (Zählpunkt) to a building
+ */
+export const getCreateZaehlpunktUrl = () => {
+  return `/api/energie/zaehlpunkte`;
+};
+
+export const createZaehlpunkt = async (
+  zaehlpunktInput: ZaehlpunktInput,
+  options?: RequestInit,
+): Promise<Zaehlpunkt> => {
+  return customFetch<Zaehlpunkt>(getCreateZaehlpunktUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(zaehlpunktInput),
+  });
+};
+
+export const getCreateZaehlpunktMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createZaehlpunkt>>,
+    TError,
+    { data: BodyType<ZaehlpunktInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createZaehlpunkt>>,
+  TError,
+  { data: BodyType<ZaehlpunktInput> },
+  TContext
+> => {
+  const mutationKey = ["createZaehlpunkt"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createZaehlpunkt>>,
+    { data: BodyType<ZaehlpunktInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createZaehlpunkt(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateZaehlpunktMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createZaehlpunkt>>
+>;
+export type CreateZaehlpunktMutationBody = BodyType<ZaehlpunktInput>;
+export type CreateZaehlpunktMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Add a metering point (Zählpunkt) to a building
+ */
+export const useCreateZaehlpunkt = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createZaehlpunkt>>,
+    TError,
+    { data: BodyType<ZaehlpunktInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createZaehlpunkt>>,
+  TError,
+  { data: BodyType<ZaehlpunktInput> },
+  TContext
+> => {
+  return useMutation(getCreateZaehlpunktMutationOptions(options));
+};
+
+/**
+ * @summary Delete a metering point (owner only)
+ */
+export const getDeleteZaehlpunktUrl = (id: number) => {
+  return `/api/energie/zaehlpunkte/${id}`;
+};
+
+export const deleteZaehlpunkt = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteZaehlpunktUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteZaehlpunktMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteZaehlpunkt>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteZaehlpunkt>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteZaehlpunkt"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteZaehlpunkt>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteZaehlpunkt(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteZaehlpunktMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteZaehlpunkt>>
+>;
+
+export type DeleteZaehlpunktMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a metering point (owner only)
+ */
+export const useDeleteZaehlpunkt = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteZaehlpunkt>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteZaehlpunkt>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteZaehlpunktMutationOptions(options));
+};
+
+/**
+ * @summary Record the current supply contract for a metering point
+ */
+export const getCreateVertragUrl = () => {
+  return `/api/energie/vertraege`;
+};
+
+export const createVertrag = async (
+  vertragInput: VertragInput,
+  options?: RequestInit,
+): Promise<Vertrag> => {
+  return customFetch<Vertrag>(getCreateVertragUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(vertragInput),
+  });
+};
+
+export const getCreateVertragMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createVertrag>>,
+    TError,
+    { data: BodyType<VertragInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createVertrag>>,
+  TError,
+  { data: BodyType<VertragInput> },
+  TContext
+> => {
+  const mutationKey = ["createVertrag"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createVertrag>>,
+    { data: BodyType<VertragInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createVertrag(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateVertragMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createVertrag>>
+>;
+export type CreateVertragMutationBody = BodyType<VertragInput>;
+export type CreateVertragMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Record the current supply contract for a metering point
+ */
+export const useCreateVertrag = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createVertrag>>,
+    TError,
+    { data: BodyType<VertragInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createVertrag>>,
+  TError,
+  { data: BodyType<VertragInput> },
+  TContext
+> => {
+  return useMutation(getCreateVertragMutationOptions(options));
+};
+
+/**
+ * @summary List the Verwalter's powers of attorney
+ */
+export const getListVollmachtenUrl = () => {
+  return `/api/energie/vollmachten`;
+};
+
+export const listVollmachten = async (
+  options?: RequestInit,
+): Promise<Vollmacht[]> => {
+  return customFetch<Vollmacht[]>(getListVollmachtenUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListVollmachtenQueryKey = () => {
+  return [`/api/energie/vollmachten`] as const;
+};
+
+export const getListVollmachtenQueryOptions = <
+  TData = Awaited<ReturnType<typeof listVollmachten>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listVollmachten>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListVollmachtenQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listVollmachten>>> = ({
+    signal,
+  }) => listVollmachten({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listVollmachten>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListVollmachtenQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listVollmachten>>
+>;
+export type ListVollmachtenQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List the Verwalter's powers of attorney
+ */
+
+export function useListVollmachten<
+  TData = Awaited<ReturnType<typeof listVollmachten>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listVollmachten>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListVollmachtenQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Grant a new power of attorney
+ */
+export const getCreateVollmachtUrl = () => {
+  return `/api/energie/vollmachten`;
+};
+
+export const createVollmacht = async (
+  vollmachtInput: VollmachtInput,
+  options?: RequestInit,
+): Promise<Vollmacht> => {
+  return customFetch<Vollmacht>(getCreateVollmachtUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(vollmachtInput),
+  });
+};
+
+export const getCreateVollmachtMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createVollmacht>>,
+    TError,
+    { data: BodyType<VollmachtInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createVollmacht>>,
+  TError,
+  { data: BodyType<VollmachtInput> },
+  TContext
+> => {
+  const mutationKey = ["createVollmacht"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createVollmacht>>,
+    { data: BodyType<VollmachtInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createVollmacht(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateVollmachtMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createVollmacht>>
+>;
+export type CreateVollmachtMutationBody = BodyType<VollmachtInput>;
+export type CreateVollmachtMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Grant a new power of attorney
+ */
+export const useCreateVollmacht = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createVollmacht>>,
+    TError,
+    { data: BodyType<VollmachtInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createVollmacht>>,
+  TError,
+  { data: BodyType<VollmachtInput> },
+  TContext
+> => {
+  return useMutation(getCreateVollmachtMutationOptions(options));
+};
+
+/**
+ * @summary Change a power of attorney's status (activate, pause, revoke)
+ */
+export const getUpdateVollmachtStatusUrl = (id: number) => {
+  return `/api/energie/vollmachten/${id}/status`;
+};
+
+export const updateVollmachtStatus = async (
+  id: number,
+  vollmachtStatusUpdate: VollmachtStatusUpdate,
+  options?: RequestInit,
+): Promise<Vollmacht> => {
+  return customFetch<Vollmacht>(getUpdateVollmachtStatusUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(vollmachtStatusUpdate),
+  });
+};
+
+export const getUpdateVollmachtStatusMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateVollmachtStatus>>,
+    TError,
+    { id: number; data: BodyType<VollmachtStatusUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateVollmachtStatus>>,
+  TError,
+  { id: number; data: BodyType<VollmachtStatusUpdate> },
+  TContext
+> => {
+  const mutationKey = ["updateVollmachtStatus"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateVollmachtStatus>>,
+    { id: number; data: BodyType<VollmachtStatusUpdate> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateVollmachtStatus(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateVollmachtStatusMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateVollmachtStatus>>
+>;
+export type UpdateVollmachtStatusMutationBody = BodyType<VollmachtStatusUpdate>;
+export type UpdateVollmachtStatusMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Change a power of attorney's status (activate, pause, revoke)
+ */
+export const useUpdateVollmachtStatus = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateVollmachtStatus>>,
+    TError,
+    { id: number; data: BodyType<VollmachtStatusUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateVollmachtStatus>>,
+  TError,
+  { id: number; data: BodyType<VollmachtStatusUpdate> },
+  TContext
+> => {
+  return useMutation(getUpdateVollmachtStatusMutationOptions(options));
+};
+
+/**
+ * @summary List switch processes across the portfolio
+ */
+export const getListWechselvorgaengeUrl = () => {
+  return `/api/energie/wechsel`;
+};
+
+export const listWechselvorgaenge = async (
+  options?: RequestInit,
+): Promise<Wechselvorgang[]> => {
+  return customFetch<Wechselvorgang[]>(getListWechselvorgaengeUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListWechselvorgaengeQueryKey = () => {
+  return [`/api/energie/wechsel`] as const;
+};
+
+export const getListWechselvorgaengeQueryOptions = <
+  TData = Awaited<ReturnType<typeof listWechselvorgaenge>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listWechselvorgaenge>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListWechselvorgaengeQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listWechselvorgaenge>>
+  > = ({ signal }) => listWechselvorgaenge({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listWechselvorgaenge>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListWechselvorgaengeQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listWechselvorgaenge>>
+>;
+export type ListWechselvorgaengeQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List switch processes across the portfolio
+ */
+
+export function useListWechselvorgaenge<
+  TData = Awaited<ReturnType<typeof listWechselvorgaenge>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listWechselvorgaenge>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListWechselvorgaengeQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Start an AI tariff analysis for a metering point
+ */
+export const getStarteAnalyseUrl = () => {
+  return `/api/energie/wechsel/analyse`;
+};
+
+export const starteAnalyse = async (
+  analyseInput: AnalyseInput,
+  options?: RequestInit,
+): Promise<Wechselvorgang> => {
+  return customFetch<Wechselvorgang>(getStarteAnalyseUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(analyseInput),
+  });
+};
+
+export const getStarteAnalyseMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof starteAnalyse>>,
+    TError,
+    { data: BodyType<AnalyseInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof starteAnalyse>>,
+  TError,
+  { data: BodyType<AnalyseInput> },
+  TContext
+> => {
+  const mutationKey = ["starteAnalyse"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof starteAnalyse>>,
+    { data: BodyType<AnalyseInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return starteAnalyse(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type StarteAnalyseMutationResult = NonNullable<
+  Awaited<ReturnType<typeof starteAnalyse>>
+>;
+export type StarteAnalyseMutationBody = BodyType<AnalyseInput>;
+export type StarteAnalyseMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Start an AI tariff analysis for a metering point
+ */
+export const useStarteAnalyse = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof starteAnalyse>>,
+    TError,
+    { data: BodyType<AnalyseInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof starteAnalyse>>,
+  TError,
+  { data: BodyType<AnalyseInput> },
+  TContext
+> => {
+  return useMutation(getStarteAnalyseMutationOptions(options));
+};
+
+/**
+ * @summary Approve a switch (runs the simulated market execution)
+ */
+export const getFreigebenWechselUrl = (id: number) => {
+  return `/api/energie/wechsel/${id}/freigeben`;
+};
+
+export const freigebenWechsel = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Wechselvorgang> => {
+  return customFetch<Wechselvorgang>(getFreigebenWechselUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getFreigebenWechselMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof freigebenWechsel>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof freigebenWechsel>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["freigebenWechsel"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof freigebenWechsel>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return freigebenWechsel(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type FreigebenWechselMutationResult = NonNullable<
+  Awaited<ReturnType<typeof freigebenWechsel>>
+>;
+
+export type FreigebenWechselMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Approve a switch (runs the simulated market execution)
+ */
+export const useFreigebenWechsel = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof freigebenWechsel>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof freigebenWechsel>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getFreigebenWechselMutationOptions(options));
+};
+
+/**
+ * @summary Reject a recommended switch
+ */
+export const getAblehnenWechselUrl = (id: number) => {
+  return `/api/energie/wechsel/${id}/ablehnen`;
+};
+
+export const ablehnenWechsel = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Wechselvorgang> => {
+  return customFetch<Wechselvorgang>(getAblehnenWechselUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getAblehnenWechselMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof ablehnenWechsel>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof ablehnenWechsel>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["ablehnenWechsel"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof ablehnenWechsel>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return ablehnenWechsel(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AblehnenWechselMutationResult = NonNullable<
+  Awaited<ReturnType<typeof ablehnenWechsel>>
+>;
+
+export type AblehnenWechselMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Reject a recommended switch
+ */
+export const useAblehnenWechsel = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof ablehnenWechsel>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof ablehnenWechsel>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getAblehnenWechselMutationOptions(options));
+};
+
+/**
+ * @summary Object to a switch within the objection window
+ */
+export const getWidersprechenWechselUrl = (id: number) => {
+  return `/api/energie/wechsel/${id}/widersprechen`;
+};
+
+export const widersprechenWechsel = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Wechselvorgang> => {
+  return customFetch<Wechselvorgang>(getWidersprechenWechselUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getWidersprechenWechselMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof widersprechenWechsel>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof widersprechenWechsel>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["widersprechenWechsel"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof widersprechenWechsel>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return widersprechenWechsel(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type WidersprechenWechselMutationResult = NonNullable<
+  Awaited<ReturnType<typeof widersprechenWechsel>>
+>;
+
+export type WidersprechenWechselMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Object to a switch within the objection window
+ */
+export const useWidersprechenWechsel = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof widersprechenWechsel>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof widersprechenWechsel>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getWidersprechenWechselMutationOptions(options));
+};
+
+/**
+ * @summary List the Verwalter's audit trail
+ */
+export const getListAuditLogUrl = () => {
+  return `/api/energie/audit`;
+};
+
+export const listAuditLog = async (
+  options?: RequestInit,
+): Promise<AuditEntry[]> => {
+  return customFetch<AuditEntry[]>(getListAuditLogUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListAuditLogQueryKey = () => {
+  return [`/api/energie/audit`] as const;
+};
+
+export const getListAuditLogQueryOptions = <
+  TData = Awaited<ReturnType<typeof listAuditLog>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listAuditLog>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListAuditLogQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listAuditLog>>> = ({
+    signal,
+  }) => listAuditLog({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listAuditLog>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListAuditLogQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listAuditLog>>
+>;
+export type ListAuditLogQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List the Verwalter's audit trail
+ */
+
+export function useListAuditLog<
+  TData = Awaited<ReturnType<typeof listAuditLog>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listAuditLog>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListAuditLogQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List available tariff offers (transparency feed)
+ */
+export const getListTarifeUrl = (params?: ListTarifeParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/energie/tarife?${stringifiedParams}`
+    : `/api/energie/tarife`;
+};
+
+export const listTarife = async (
+  params?: ListTarifeParams,
+  options?: RequestInit,
+): Promise<TarifAngebot[]> => {
+  return customFetch<TarifAngebot[]>(getListTarifeUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListTarifeQueryKey = (params?: ListTarifeParams) => {
+  return [`/api/energie/tarife`, ...(params ? [params] : [])] as const;
+};
+
+export const getListTarifeQueryOptions = <
+  TData = Awaited<ReturnType<typeof listTarife>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListTarifeParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listTarife>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListTarifeQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listTarife>>> = ({
+    signal,
+  }) => listTarife(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listTarife>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListTarifeQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listTarife>>
+>;
+export type ListTarifeQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List available tariff offers (transparency feed)
+ */
+
+export function useListTarife<
+  TData = Awaited<ReturnType<typeof listTarife>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListTarifeParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listTarife>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListTarifeQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

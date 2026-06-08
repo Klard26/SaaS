@@ -193,6 +193,9 @@ importers:
       '@workspace/energie-calc':
         specifier: workspace:*
         version: link:../../lib/energie-calc
+      '@workspace/energie-wechsel':
+        specifier: workspace:*
+        version: link:../../lib/energie-wechsel
       cookie-parser:
         specifier: ^1.4.7
         version: 1.4.7
@@ -272,6 +275,9 @@ importers:
       '@workspace/energie-calc':
         specifier: workspace:*
         version: link:../../lib/energie-calc
+      '@workspace/energie-wechsel':
+        specifier: workspace:*
+        version: link:../../lib/energie-wechsel
     devDependencies:
       '@hookform/resolvers':
         specifier: ^3.10.0
@@ -738,6 +744,8 @@ importers:
         version: 0.31.9
 
   lib/energie-calc: {}
+
+  lib/energie-wechsel: {}
 
   scripts:
     dependencies:
