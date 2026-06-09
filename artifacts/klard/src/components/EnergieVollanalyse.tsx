@@ -17,7 +17,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EnergyBar } from "@/components/EnergieSchnellcheck";
-import { AlertCircle, Save, Sun, TrendingUp, Zap, Shield, Banknote, Hammer, Printer, Lock } from "lucide-react";
+import { AddressAutocomplete, type AddressResult } from "@/components/AddressAutocomplete";
+import { StandortMap } from "@/components/StandortMap";
+import { AlertCircle, Save, Sun, TrendingUp, Zap, Shield, Banknote, Hammer, Printer, Lock, MapPin } from "lucide-react";
 
 const DEFAULT: BuildingInput = {
   plz: "",
@@ -62,13 +64,33 @@ export function EnergieVollanalyse({
 }: Props) {
   const [d, setD] = useState<BuildingInput>({ ...DEFAULT, ...initial });
   const [label, setLabel] = useState("");
+  const [addressText, setAddressText] = useState(() => {
+    const s = [initial?.strasse, initial?.hausnummer].filter(Boolean).join(" ");
+    return s;
+  });
 
   useEffect(() => {
-    if (initial) setD((p) => ({ ...p, ...initial }));
+    if (initial) {
+      setD((p) => ({ ...p, ...initial }));
+      const s = [initial.strasse, initial.hausnummer].filter(Boolean).join(" ");
+      if (s) setAddressText(s);
+    }
   }, [initial]);
 
   const u = <K extends keyof BuildingInput>(k: K, v: BuildingInput[K]) =>
     setD((p) => ({ ...p, [k]: v }));
+
+  const applyAddress = (r: AddressResult) => {
+    setD((p) => ({
+      ...p,
+      strasse: r.strasse ?? p.strasse,
+      hausnummer: r.hausnummer ?? p.hausnummer,
+      plz: r.plz ?? p.plz,
+      city: r.city ?? p.city,
+      lat: r.lat,
+      lng: r.lng,
+    }));
+  };
 
   const valid = d.plz.length >= 5 && d.baujahr >= 1850 && d.wohnflaeche >= 20;
 
@@ -92,6 +114,33 @@ export function EnergieVollanalyse({
           <CardTitle className="text-base">Gebäudedaten</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          <Field label="Adresse (mit Autovervollständigung)">
+            <AddressAutocomplete
+              value={addressText}
+              onChange={setAddressText}
+              onSelect={applyAddress}
+              placeholder="z. B. Hauptstraße 12, Berlin"
+              testId="input-address-autocomplete"
+            />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Straße (optional)">
+              <Input
+                value={d.strasse ?? ""}
+                onChange={(e) => u("strasse", e.target.value)}
+                placeholder="Hauptstraße"
+                data-testid="input-strasse"
+              />
+            </Field>
+            <Field label="Hausnummer (optional)">
+              <Input
+                value={d.hausnummer ?? ""}
+                onChange={(e) => u("hausnummer", e.target.value)}
+                placeholder="12"
+                data-testid="input-hausnummer"
+              />
+            </Field>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <Field label="PLZ">
               <Input
@@ -402,7 +451,7 @@ export function EnergieVollanalyse({
           </Card>
         ) : (
           <Tabs defaultValue="energie">
-            <TabsList className="grid grid-cols-3 w-full">
+            <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full">
               <TabsTrigger value="energie" data-testid="tab-energie">
                 <Zap className="h-4 w-4 mr-1.5" />
                 Energie
@@ -414,6 +463,10 @@ export function EnergieVollanalyse({
               <TabsTrigger value="risiko" data-testid="tab-risiko">
                 <Shield className="h-4 w-4 mr-1.5" />
                 Risiko &amp; ESG
+              </TabsTrigger>
+              <TabsTrigger value="standort" data-testid="tab-standort">
+                <MapPin className="h-4 w-4 mr-1.5" />
+                Standort
               </TabsTrigger>
             </TabsList>
 
@@ -587,6 +640,52 @@ export function EnergieVollanalyse({
                   </CardContent>
                 </Card>
               )}
+            </TabsContent>
+
+            <TabsContent value="standort" className="space-y-4 mt-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Standortanalyse
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {d.lat != null && d.lng != null ? (
+                    <>
+                      <StandortMap
+                        lat={d.lat}
+                        lng={d.lng}
+                        label={
+                          [d.strasse, d.hausnummer].filter(Boolean).join(" ") ||
+                          [d.plz, d.city].filter(Boolean).join(" ") ||
+                          undefined
+                        }
+                      />
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <Stat
+                          label="Adresse"
+                          v={[d.strasse, d.hausnummer].filter(Boolean).join(" ") || "—"}
+                        />
+                        <Stat label="Ort" v={[d.plz, d.city].filter(Boolean).join(" ") || "—"} />
+                        <Stat label="Breitengrad" v={d.lat.toFixed(5)} />
+                        <Stat label="Längengrad" v={d.lng.toFixed(5)} />
+                      </div>
+                      {klima && (
+                        <div className="text-xs text-muted-foreground rounded-md bg-secondary/40 p-2.5 leading-relaxed">
+                          <div><strong>Region:</strong> {land || klima.l}</div>
+                          <div>{klima.hgt} Kd Heizgradtage · ⌀ {klima.t} °C</div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="rounded-lg border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
+                      Geben Sie oben eine Adresse mit Autovervollständigung ein, um den
+                      Standort auf der interaktiven Karte anzuzeigen.
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         )}

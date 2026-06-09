@@ -17,6 +17,7 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  AcceptOfferInput,
   AdminBookingRow,
   AdminCategoryRow,
   AdminCustomerRow,
@@ -53,6 +54,7 @@ import type {
   ListTarifeParams,
   Objekt,
   ObjektInput,
+  OfferAcceptance,
   PlatformStats,
   PortfolioOverview,
   Provider,
@@ -3325,6 +3327,167 @@ export const useReconcileGebaeudecheckOrder = <
 > => {
   return useMutation(getReconcileGebaeudecheckOrderMutationOptions(options));
 };
+
+/**
+ * @summary Customer legally accepts an offer (selected services) from a provider
+ */
+export const getAcceptOfferUrl = () => {
+  return `/api/offers/accept`;
+};
+
+export const acceptOffer = async (
+  acceptOfferInput: AcceptOfferInput,
+  options?: RequestInit,
+): Promise<OfferAcceptance> => {
+  return customFetch<OfferAcceptance>(getAcceptOfferUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(acceptOfferInput),
+  });
+};
+
+export const getAcceptOfferMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof acceptOffer>>,
+    TError,
+    { data: BodyType<AcceptOfferInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof acceptOffer>>,
+  TError,
+  { data: BodyType<AcceptOfferInput> },
+  TContext
+> => {
+  const mutationKey = ["acceptOffer"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof acceptOffer>>,
+    { data: BodyType<AcceptOfferInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return acceptOffer(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AcceptOfferMutationResult = NonNullable<
+  Awaited<ReturnType<typeof acceptOffer>>
+>;
+export type AcceptOfferMutationBody = BodyType<AcceptOfferInput>;
+export type AcceptOfferMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Customer legally accepts an offer (selected services) from a provider
+ */
+export const useAcceptOffer = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof acceptOffer>>,
+    TError,
+    { data: BodyType<AcceptOfferInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof acceptOffer>>,
+  TError,
+  { data: BodyType<AcceptOfferInput> },
+  TContext
+> => {
+  return useMutation(getAcceptOfferMutationOptions(options));
+};
+
+/**
+ * @summary List offers the current user has accepted
+ */
+export const getListMyOffersUrl = () => {
+  return `/api/offers/mine`;
+};
+
+export const listMyOffers = async (
+  options?: RequestInit,
+): Promise<OfferAcceptance[]> => {
+  return customFetch<OfferAcceptance[]>(getListMyOffersUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListMyOffersQueryKey = () => {
+  return [`/api/offers/mine`] as const;
+};
+
+export const getListMyOffersQueryOptions = <
+  TData = Awaited<ReturnType<typeof listMyOffers>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listMyOffers>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListMyOffersQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyOffers>>> = ({
+    signal,
+  }) => listMyOffers({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listMyOffers>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListMyOffersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listMyOffers>>
+>;
+export type ListMyOffersQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List offers the current user has accepted
+ */
+
+export function useListMyOffers<
+  TData = Awaited<ReturnType<typeof listMyOffers>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listMyOffers>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListMyOffersQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Current user's Immobilien-Kundenprofil (Hausverwalter/Bestandshalter)

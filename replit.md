@@ -67,6 +67,19 @@ Klard is a Doctolib-style booking marketplace for German consultants (Berater) �
 - **Stripe client**: `artifacts/api-server/src/lib/stripeClient.ts` reads OAuth credentials from the Replit Stripe connector. All billing endpoints return `503 Stripe nicht konfiguriert` until the user authorizes the integration in the Replit dashboard.
 - **Webhook**: `POST /api/billing/webhook` mounted with raw body BEFORE `express.json()`. Verifies signature with `STRIPE_WEBHOOK_SECRET` (returns 503 if unset, 400 if signature missing/invalid — never accepts unverified events). Handles `checkout.session.completed` (subscription + booking metadata) and `customer.subscription.deleted`.
 
+## Binding Offers (KI-Angebot)
+
+- **What**: On ProviderDetail, customers build a branded offer by selecting services (live net/USt/brutto totals), optionally generate an AI Bedarfsanalyse, accept the AGB, and bind the offer rechtsverbindlich. Persisted via `offer_acceptances` table.
+- **Endpoints**: `POST /offers/accept` (auth) and `GET /offers/mine` (auth) in `artifacts/api-server/src/routes/offers.ts`. Both return 401 unauthenticated.
+- **Server-authoritative pricing**: client-supplied prices are IGNORED. The accept route requires each item to carry a `serviceId` belonging to the provider, fetches services from the catalog, and recomputes net/USt/brutto + totals server-side (net derived from gross via `vatRate` when `netPrice` is null). Rejects (400) on missing/foreign serviceIds.
+- **AGB version**: `AGB_VERSION` constant (currently `2026-06`) is sent from ProviderDetail and stored on each acceptance for proof; the AGB page shows the same version.
+
+## Gebäudecheck address + map + report
+
+- **Address autocomplete**: `AddressAutocomplete.tsx` uses Photon (photon.komoot.io), debounced 300ms, DE-filtered; autofills strasse/hausnummer/plz/city/lat/lng into EnergieVollanalyse. `BuildingInput` (lib/energie-calc) carries optional strasse/hausnummer/lat/lng.
+- **Standort map**: `StandortMap.tsx` uses plain Leaflet + OSM tiles (not react-leaflet, to avoid React 19 peer friction). Shown in a "Standort" tab.
+- **Report**: `ReportPreviewDemo.tsx` is an A4-styled sample report shown on `/gebaeudecheck` to all users; the real unlocked report exports via `window.print()` with `@media print` rules in index.css (`.print-area`, `.no-print`).
+
 ## Authorization
 
 - `GET /bookings/:id` — customer who booked OR provider receiving the booking; otherwise 403.

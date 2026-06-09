@@ -746,6 +746,56 @@ export const ReconcileGebaeudecheckOrderResponse = zod.object({
 });
 
 /**
+ * @summary Customer legally accepts an offer (selected services) from a provider
+ */
+
+export const AcceptOfferBody = zod.object({
+  providerId: zod.number(),
+  inquiry: zod.string().nullish(),
+  offerText: zod.string().nullish(),
+  agbVersion: zod.string(),
+  items: zod
+    .array(
+      zod.object({
+        serviceId: zod.number().nullish(),
+        name: zod.string(),
+        durationMinutes: zod.number(),
+        netPrice: zod.number(),
+        vatRate: zod.number(),
+        grossPrice: zod.number(),
+      }),
+    )
+    .min(1),
+});
+
+/**
+ * @summary List offers the current user has accepted
+ */
+export const ListMyOffersResponseItem = zod.object({
+  id: zod.number(),
+  userId: zod.string(),
+  providerId: zod.number().nullable(),
+  inquiry: zod.string().nullish(),
+  offerText: zod.string().nullish(),
+  items: zod.array(
+    zod.object({
+      serviceId: zod.number().nullish(),
+      name: zod.string(),
+      durationMinutes: zod.number(),
+      netPrice: zod.number(),
+      vatRate: zod.number(),
+      grossPrice: zod.number(),
+    }),
+  ),
+  totalNet: zod.number(),
+  totalGross: zod.number(),
+  agbVersion: zod.string(),
+  status: zod.string(),
+  createdAt: zod.coerce.date(),
+});
+export const ListMyOffersResponse = zod.array(ListMyOffersResponseItem);
+
+/**
  * @summary Current user's Immobilien-Kundenprofil (Hausverwalter/Bestandshalter)
  */
 export const GetMyImmobilienKundeResponse = zod.union([

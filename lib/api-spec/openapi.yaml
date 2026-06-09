@@ -724,6 +724,40 @@ paths:
               schema:
                 $ref: "#/components/schemas/GebaeudecheckReconcileResult"
 
+  /offers/accept:
+    post:
+      operationId: acceptOffer
+      tags: [offers]
+      summary: Customer legally accepts an offer (selected services) from a provider
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcceptOfferInput"
+      responses:
+        "201":
+          description: Offer accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OfferAcceptance"
+
+  /offers/mine:
+    get:
+      operationId: listMyOffers
+      tags: [offers]
+      summary: List offers the current user has accepted
+      responses:
+        "200":
+          description: List of accepted offers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OfferAcceptance"
+
   /immobilien-kunde/me:
     get:
       operationId: getMyImmobilienKunde
@@ -2109,6 +2143,50 @@ components:
       properties:
         granted: { type: boolean }
         balance: { type: integer }
+
+    OfferItem:
+      type: object
+      required: [name, durationMinutes, netPrice, vatRate, grossPrice]
+      properties:
+        serviceId:       { type: ["integer", "null"] }
+        name:            { type: string }
+        durationMinutes: { type: integer }
+        netPrice:        { type: number }
+        vatRate:         { type: number }
+        grossPrice:      { type: number }
+
+    AcceptOfferInput:
+      type: object
+      required: [providerId, items, agbVersion]
+      properties:
+        providerId: { type: integer }
+        inquiry:    { type: ["string", "null"] }
+        offerText:  { type: ["string", "null"] }
+        agbVersion: { type: string }
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/OfferItem"
+
+    OfferAcceptance:
+      type: object
+      required: [id, userId, providerId, items, totalNet, totalGross, agbVersion, status, createdAt]
+      properties:
+        id:         { type: integer }
+        userId:     { type: string }
+        providerId: { type: ["integer", "null"] }
+        inquiry:    { type: ["string", "null"] }
+        offerText:  { type: ["string", "null"] }
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OfferItem"
+        totalNet:   { type: number }
+        totalGross: { type: number }
+        agbVersion: { type: string }
+        status:     { type: string }
+        createdAt:  { type: string, format: date-time }
 
     ImmobilienKundeInput:
       type: object

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useLocation } from "wouter";
+import { useParams, useLocation, Link } from "wouter";
 import { useUser } from "@clerk/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,11 +14,39 @@ import {
   useListAvailability, getListAvailabilityQueryKey,
   useListProviderReviews, getListProviderReviewsQueryKey,
   useGenerateAiOffer,
+  useAcceptOffer,
 } from "@workspace/api-client-react";
-import { Star, MapPin, Clock, CheckCircle, Globe, Phone, Sparkles, ChevronRight, Crown, Info, Briefcase } from "lucide-react";
+import type { Service } from "@workspace/api-client-react";
+import { Star, MapPin, Clock, CheckCircle, Globe, Phone, Sparkles, ChevronRight, Crown, Info, Briefcase, Plus, Check, FileSignature, Loader2, ShieldCheck } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { publicUrlForObjectPath } from "@/lib/upload";
 import { formatPriceEUR, formatTimeBerlin, formatDateBerlin } from "@/lib/dateFmt";
+
+const AGB_VERSION = "2026-06";
+
+interface OfferLineItem {
+  serviceId: number;
+  name: string;
+  durationMinutes: number;
+  netPrice: number;
+  vatRate: number;
+  grossPrice: number;
+}
+
+function buildOfferItem(s: Service): OfferLineItem {
+  const vatRate = s.vatRate ?? 19;
+  const grossPrice = s.price;
+  const netPrice =
+    s.netPrice != null ? s.netPrice : Math.round((grossPrice / (1 + vatRate / 100)) * 100) / 100;
+  return {
+    serviceId: s.id,
+    name: s.name,
+    durationMinutes: s.durationMinutes,
+    netPrice,
+    vatRate,
+    grossPrice,
+  };
+}
 
 export default function ProviderDetail() {
   const { id } = useParams<{ id: string }>();
@@ -30,6 +58,9 @@ export default function ProviderDetail() {
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [aiInquiry, setAiInquiry] = useState("");
   const [aiResult, setAiResult] = useState<{ offer: string; estimatedPrice?: number | null; estimatedDuration?: string | null } | null>(null);
+  const [selectedOffer, setSelectedOffer] = useState<Set<number>>(new Set());
+  const [agbAccepted, setAgbAccepted] = useState(false);
+  const [offerAccepted, setOfferAccepted] = useState(false);
 
   const { data: provider, isLoading: providerLoading } = useGetProvider(providerId, {
     query: { enabled: !!providerId, queryKey: getGetProviderQueryKey(providerId) },
@@ -45,6 +76,7 @@ export default function ProviderDetail() {
   });
 
   const generateOffer = useGenerateAiOffer();
+  const acceptOffer = useAcceptOffer();
 
   const availableSlots = slots.filter(s => s.isAvailable);
   const groupedSlots = availableSlots.reduce<Record<string, typeof availableSlots>>((acc, slot) => {
@@ -91,6 +123,37 @@ export default function ProviderDetail() {
     if (!aiInquiry.trim()) return;
     const result = await generateOffer.mutateAsync({ data: { providerId, inquiry: aiInquiry } });
     setAiResult(result);
+  }
+
+  function toggleOfferService(id: number) {
+    setOfferAccepted(false);
+    setSelectedOffer((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  const offerItems = services
+    .filter((s) => selectedOffer.has(s.id))
+    .map((s) => buildOfferItem(s));
+  const offerTotalNet = offerItems.reduce((a, i) => a + i.netPrice, 0);
+  const offerTotalGross = offerItems.reduce((a, i) => a + i.grossPrice, 0);
+
+  async function handleAcceptOffer() {
+    if (!isSignedIn) { setLocation("/sign-in"); return; }
+    if (offerItems.length === 0 || !agbAccepted) return;
+    await acceptOffer.mutateAsync({
+      data: {
+        providerId,
+        inquiry: aiInquiry.trim() || null,
+        offerText: aiResult?.offer ?? null,
+        agbVersion: AGB_VERSION,
+        items: offerItems,
+      },
+    });
+    setOfferAccepted(true);
   }
 
   if (providerLoading) {
@@ -277,58 +340,177 @@ export default function ProviderDetail() {
               </CardContent>
             </Card>
 
-            {/* AI Offer */}
-            <div
-              className="rounded-[20px] p-6 border border-[#3B0764] text-white shadow-md"
-              style={{ background: "linear-gradient(135deg,#1E1B4B 0%,#2E1065 100%)" }}
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <Sparkles className="h-5 w-5 text-[#C4B5FD]" />
-                <h3 className="font-serif text-lg font-semibold">KI-Angebot in 30 Sekunden</h3>
-              </div>
-              <p className="text-sm text-[#C4B5FD] mb-4">
-                Beschreiben Sie Ihr Anliegen — unsere KI erstellt sofort ein individuelles Angebot.
-              </p>
-              <Textarea
-                placeholder="z.B. Ich bin Selbstständiger und benötige Hilfe bei meiner Steuererklärung für 2024 ..."
-                value={aiInquiry}
-                onChange={e => setAiInquiry(e.target.value)}
-                rows={3}
-                data-testid="textarea-ai-inquiry"
-                className="bg-[#312E81]/50 border-[#4C1D95] text-white placeholder:text-[#A78BFA] focus-visible:ring-[#C4B5FD]"
-              />
-              <Button
-                onClick={handleAiOffer}
-                disabled={!aiInquiry.trim() || generateOffer.isPending}
-                className="mt-3 gap-2 bg-white text-[#2E1065] hover:bg-[#EDE9FE] font-bold"
-                data-testid="button-generate-offer"
+            {/* Branded binding offer */}
+            <div className="overflow-hidden rounded-[20px] border border-[#3B0764] text-white shadow-md">
+              {/* Header */}
+              <div
+                className="px-6 py-5"
+                style={{ background: "linear-gradient(135deg,#1E1B4B 0%,#2E1065 100%)" }}
               >
-                <Sparkles className="h-4 w-4" />
-                {generateOffer.isPending ? "Wird erstellt …" : "Angebot generieren"}
-              </Button>
+                <div className="flex items-center gap-2 mb-1">
+                  <Sparkles className="h-5 w-5 text-[#C4B5FD]" />
+                  <h3 className="font-serif text-lg font-semibold">Ihr Angebot von {provider.displayName}</h3>
+                </div>
+                <p className="text-sm text-[#C4B5FD]">
+                  Wählen Sie die gewünschten Leistungen aus — der Preis wird sofort berechnet.
+                  Optional erstellt unsere KI eine passende Bedarfsanalyse.
+                </p>
+              </div>
 
-              {aiResult && (
-                <div className="mt-4 p-4 rounded-xl bg-[#312E81]/60 border border-[#4C1D95]">
-                  <p className="text-sm font-semibold text-white mb-2">Ihr persönliches Angebot</p>
-                  <p className="text-sm text-[#DDD6FE] whitespace-pre-wrap leading-relaxed">{aiResult.offer}</p>
-                  {(aiResult.estimatedPrice || aiResult.estimatedDuration) && (
-                    <div className="flex gap-6 mt-4 pt-3 border-t border-[#4C1D95]">
-                      {aiResult.estimatedPrice && (
-                        <div>
-                          <p className="text-xs text-[#A78BFA]">Geschätzter Preis</p>
-                          <p className="font-serif text-lg font-semibold text-white">{aiResult.estimatedPrice} €</p>
-                        </div>
-                      )}
-                      {aiResult.estimatedDuration && (
-                        <div>
-                          <p className="text-xs text-[#A78BFA]">Geschätzte Dauer</p>
-                          <p className="font-serif text-lg font-semibold text-white">{aiResult.estimatedDuration}</p>
-                        </div>
-                      )}
+              <div className="bg-[#1E1B4B] px-6 py-5 space-y-4">
+                {/* AI inquiry (optional) */}
+                <div>
+                  <Textarea
+                    placeholder="Optional: Anliegen beschreiben für eine KI-Bedarfsanalyse …"
+                    value={aiInquiry}
+                    onChange={e => setAiInquiry(e.target.value)}
+                    rows={2}
+                    data-testid="textarea-ai-inquiry"
+                    className="bg-[#312E81]/50 border-[#4C1D95] text-white placeholder:text-[#A78BFA] focus-visible:ring-[#C4B5FD]"
+                  />
+                  <Button
+                    onClick={handleAiOffer}
+                    disabled={!aiInquiry.trim() || generateOffer.isPending}
+                    variant="outline"
+                    size="sm"
+                    className="mt-2 gap-2 bg-transparent border-[#6D28D9] text-[#DDD6FE] hover:bg-[#312E81] hover:text-white"
+                    data-testid="button-generate-offer"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    {generateOffer.isPending ? "Wird erstellt …" : "KI-Bedarfsanalyse erstellen"}
+                  </Button>
+                  {aiResult && (
+                    <div className="mt-3 p-3 rounded-xl bg-[#312E81]/60 border border-[#4C1D95]">
+                      <p className="text-xs font-semibold text-[#C4B5FD] mb-1">KI-Bedarfsanalyse</p>
+                      <p className="text-sm text-[#DDD6FE] whitespace-pre-wrap leading-relaxed">{aiResult.offer}</p>
                     </div>
                   )}
                 </div>
-              )}
+
+                {/* Selectable services */}
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[#A78BFA] mb-2">
+                    Leistungen auswählen
+                  </p>
+                  {services.length === 0 ? (
+                    <p className="text-sm text-[#A78BFA]">Dieser Berater hat noch keine Leistungen hinterlegt.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {services.map((s) => {
+                        const active = selectedOffer.has(s.id);
+                        return (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => toggleOfferService(s.id)}
+                            className={`w-full flex items-center gap-3 rounded-xl border p-3 text-left transition-colors ${
+                              active
+                                ? "border-[#C4B5FD] bg-[#312E81]"
+                                : "border-[#4C1D95] bg-[#312E81]/30 hover:bg-[#312E81]/60"
+                            }`}
+                            data-testid={`offer-service-${s.id}`}
+                          >
+                            <span
+                              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
+                                active ? "bg-[#C4B5FD] border-[#C4B5FD] text-[#2E1065]" : "border-[#6D28D9]"
+                              }`}
+                            >
+                              {active ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5 text-[#A78BFA]" />}
+                            </span>
+                            <span className="flex-1 min-w-0">
+                              <span className="block text-sm font-medium text-white truncate">{s.name}</span>
+                              <span className="block text-xs text-[#A78BFA] flex items-center gap-1">
+                                <Clock className="h-3 w-3" /> {s.durationMinutes} Min.
+                              </span>
+                            </span>
+                            <span className="shrink-0 text-right font-semibold text-white">
+                              {s.price === 0 ? "Kostenlos" : formatPriceEUR(s.price)}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Running total */}
+                {offerItems.length > 0 && (
+                  <div className="rounded-xl bg-white text-foreground p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                      Ihr verbindliches Angebot
+                    </p>
+                    <ul className="space-y-1.5 mb-3">
+                      {offerItems.map((it) => (
+                        <li key={it.serviceId} className="flex items-center justify-between text-sm">
+                          <span className="text-foreground">{it.name}</span>
+                          <span className="font-medium">{formatPriceEUR(it.grossPrice)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="border-t border-border pt-2 space-y-0.5">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>Netto</span>
+                        <span>{formatPriceEUR(offerTotalNet)}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>zzgl. USt.</span>
+                        <span>{formatPriceEUR(offerTotalGross - offerTotalNet)}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-base font-semibold text-foreground pt-1">
+                        <span>Gesamt (brutto)</span>
+                        <span data-testid="offer-total">{formatPriceEUR(offerTotalGross)}</span>
+                      </div>
+                    </div>
+
+                    {offerAccepted ? (
+                      <div className="mt-4 rounded-lg bg-emerald-50 border border-emerald-200 p-3 text-sm text-emerald-900 flex items-start gap-2" data-testid="offer-accepted-confirmation">
+                        <CheckCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                        <span>
+                          Angebot verbindlich angenommen. {provider.displayName} wurde
+                          informiert und meldet sich zur Terminvereinbarung. Eine Übersicht
+                          finden Sie unter „Meine Angebote".
+                        </span>
+                      </div>
+                    ) : (
+                      <>
+                        <label className="mt-4 flex items-start gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={agbAccepted}
+                            onChange={(e) => setAgbAccepted(e.target.checked)}
+                            className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                            data-testid="checkbox-agb"
+                          />
+                          <span className="text-xs text-muted-foreground leading-relaxed">
+                            Ich nehme das Angebot verbindlich an und akzeptiere die{" "}
+                            <Link href="/agb" className="underline font-medium text-foreground">
+                              Allgemeinen Geschäftsbedingungen
+                            </Link>
+                            . Es kommt ein kostenpflichtiger Vertrag zustande.
+                          </span>
+                        </label>
+                        <Button
+                          onClick={handleAcceptOffer}
+                          disabled={!agbAccepted || acceptOffer.isPending}
+                          className="mt-3 w-full gap-2 font-bold"
+                          data-testid="button-accept-offer"
+                        >
+                          {acceptOffer.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <FileSignature className="h-4 w-4" />
+                          )}
+                          {isSignedIn ? "Angebot verbindlich annehmen" : "Anmelden & annehmen"}
+                        </Button>
+                        <p className="mt-2 flex items-center justify-center gap-1 text-[11px] text-muted-foreground">
+                          <ShieldCheck className="h-3 w-3" />
+                          Rechtsverbindliche Annahme · Festpreise inkl. gesetzlicher USt.
+                        </p>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Reviews */}

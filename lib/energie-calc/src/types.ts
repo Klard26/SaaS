@@ -6,6 +6,14 @@ export type EnergieausweisTyp = "bedarf" | "verbrauch";
 export interface BuildingInput {
   plz: string;
   city?: string;
+  /** Straße (ohne Hausnummer) — optional, für Standortanalyse & Report. */
+  strasse?: string;
+  /** Hausnummer — optional. */
+  hausnummer?: string;
+  /** Geokoordinate Breitengrad (aus Adress-Autocomplete). */
+  lat?: number;
+  /** Geokoordinate Längengrad (aus Adress-Autocomplete). */
+  lng?: number;
   baujahr: number;
   wohnflaeche: number;
   geschosse: number;

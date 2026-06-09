@@ -5,6 +5,7 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { EnergieVollanalyse } from "@/components/EnergieVollanalyse";
 import { EnergieSchnellcheck } from "@/components/EnergieSchnellcheck";
+import { ReportPreviewDemo } from "@/components/ReportPreviewDemo";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -62,6 +63,21 @@ export default function Gebaeudecheck() {
             Kostenloser Schnellcheck
           </div>
           <EnergieSchnellcheck variant="card" showCta={false} />
+        </div>
+
+        {/* Report preview / demo — shown to everyone to demonstrate the paid report */}
+        <div>
+          <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-3">
+            So sieht Ihr ausführlicher Report aus
+          </div>
+          <div className="rounded-xl border border-border bg-[var(--klard-bg)]/40 p-4 sm:p-8">
+            <ReportPreviewDemo />
+            <p className="mx-auto mt-5 max-w-xl text-center text-sm text-muted-foreground leading-relaxed">
+              Energiebilanz, Marktwert &amp; Steuer, Risiko &amp; ESG, Sanierungsfahrplan und
+              Solarpotenzial — kompakt auf einen Blick und als PDF speicherbar. Schalten Sie
+              den Report unten für Ihr Objekt frei.
+            </p>
+          </div>
         </div>
 
         {/* Detailed report */}

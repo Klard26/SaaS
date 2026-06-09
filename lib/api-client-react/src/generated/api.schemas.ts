@@ -1007,6 +1007,44 @@ export interface GebaeudecheckReconcileResult {
   balance: number;
 }
 
+export interface OfferItem {
+  /** @nullable */
+  serviceId?: number | null;
+  name: string;
+  durationMinutes: number;
+  netPrice: number;
+  vatRate: number;
+  grossPrice: number;
+}
+
+export interface AcceptOfferInput {
+  providerId: number;
+  /** @nullable */
+  inquiry?: string | null;
+  /** @nullable */
+  offerText?: string | null;
+  agbVersion: string;
+  /** @minItems 1 */
+  items: OfferItem[];
+}
+
+export interface OfferAcceptance {
+  id: number;
+  userId: string;
+  /** @nullable */
+  providerId: number | null;
+  /** @nullable */
+  inquiry?: string | null;
+  /** @nullable */
+  offerText?: string | null;
+  items: OfferItem[];
+  totalNet: number;
+  totalGross: number;
+  agbVersion: string;
+  status: string;
+  createdAt: string;
+}
+
 export type ImmobilienKundeInputTyp =
   (typeof ImmobilienKundeInputTyp)[keyof typeof ImmobilienKundeInputTyp];
 

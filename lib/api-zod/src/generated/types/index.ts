@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./acceptOfferInput";
 export * from "./adminBookingRow";
 export * from "./adminCategoryRow";
 export * from "./adminCustomerRow";
@@ -64,6 +65,8 @@ export * from "./listServiceTemplatesParams";
 export * from "./listTarifeParams";
 export * from "./objekt";
 export * from "./objektInput";
+export * from "./offerAcceptance";
+export * from "./offerItem";
 export * from "./platformStats";
 export * from "./portfolioKpi";
 export * from "./portfolioObjekt";
