@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ClerkProvider, SignIn, SignUp, Show, useClerk } from '@clerk/react';
 import { deDE } from '@clerk/localizations';
 import { publishableKeyFromHost } from '@clerk/react/internal';
@@ -23,6 +23,8 @@ import ProviderAvailability from "./pages/ProviderAvailability";
 import Pricing from "./pages/Pricing";
 import Gebaeudecheck from "./pages/Gebaeudecheck";
 import ImmobilienKundeOnboarding from "./pages/ImmobilienKundeOnboarding";
+import KontoTypWahl from "./pages/KontoTypWahl";
+import BeraterWerden from "./pages/BeraterWerden";
 import Impressum from "./pages/legal/Impressum";
 import AGB from "./pages/legal/AGB";
 import Datenschutz from "./pages/legal/Datenschutz";
@@ -114,9 +116,24 @@ function SignInPage() {
 }
 
 function SignUpPage() {
+  // Berater come from the dedicated "Berater werden" area (?intent=berater) and
+  // continue to provider onboarding; everyone else is a customer and picks an
+  // account type after signing up.
+  const [redirectUrl] = useState(() => {
+    const intent = new URLSearchParams(window.location.search).get("intent");
+    return intent === "berater"
+      ? `${basePath}/provider/onboarding`
+      : `${basePath}/konto/willkommen`;
+  });
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4 py-12">
-      <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
+      <SignUp
+        routing="path"
+        path={`${basePath}/sign-up`}
+        signInUrl={`${basePath}/sign-in`}
+        forceRedirectUrl={redirectUrl}
+        fallbackRedirectUrl={redirectUrl}
+      />
     </div>
   );
 }
@@ -191,6 +208,7 @@ function ClerkProviderWithRoutes() {
           <Route path="/sign-up/*?" component={SignUpPage} />
           <Route path="/search" component={Search} />
           <Route path="/pricing" component={Pricing} />
+          <Route path="/berater-werden" component={BeraterWerden} />
           <Route path="/gebaeudecheck" component={Gebaeudecheck} />
           <Route path="/impressum" component={Impressum} />
           <Route path="/agb" component={AGB} />
@@ -209,6 +227,9 @@ function ClerkProviderWithRoutes() {
           </Route>
           <Route path="/admin">
             {() => <AuthRoute component={Admin} />}
+          </Route>
+          <Route path="/konto/willkommen">
+            {() => <AuthRoute component={KontoTypWahl} />}
           </Route>
           <Route path="/immobilien/onboarding">
             {() => <AuthRoute component={ImmobilienKundeOnboarding} />}

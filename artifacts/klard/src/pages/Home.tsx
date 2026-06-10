@@ -308,7 +308,7 @@ export default function Home() {
                 Kostenlos starten – nur 9 % Vermittlungsgebühr.{" "}
                 <button
                   type="button"
-                  onClick={() => setLocation("/provider/onboarding")}
+                  onClick={() => setLocation("/berater-werden")}
                   className="text-primary font-semibold hover:underline"
                   data-testid="link-become-provider"
                 >

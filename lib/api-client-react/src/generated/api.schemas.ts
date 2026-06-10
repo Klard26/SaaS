@@ -1049,8 +1049,13 @@ export type ImmobilienKundeInputTyp =
   (typeof ImmobilienKundeInputTyp)[keyof typeof ImmobilienKundeInputTyp];
 
 export const ImmobilienKundeInputTyp = {
+  privat: "privat",
   hausverwaltung: "hausverwaltung",
+  makler: "makler",
   bestandshalter: "bestandshalter",
+  bautraeger: "bautraeger",
+  genossenschaft: "genossenschaft",
+  gewerbe: "gewerbe",
 } as const;
 
 export interface ImmobilienKundeInput {
@@ -1073,8 +1078,13 @@ export type ImmobilienKundeTyp =
   (typeof ImmobilienKundeTyp)[keyof typeof ImmobilienKundeTyp];
 
 export const ImmobilienKundeTyp = {
+  privat: "privat",
   hausverwaltung: "hausverwaltung",
+  makler: "makler",
   bestandshalter: "bestandshalter",
+  bautraeger: "bautraeger",
+  genossenschaft: "genossenschaft",
+  gewerbe: "gewerbe",
 } as const;
 
 export interface ImmobilienKunde {

@@ -9,7 +9,7 @@ import { z } from "zod/v4";
  */
 export const immobilienKundeTable = pgTable("immobilien_kunde", {
   userId: text("user_id").primaryKey(),
-  typ: text("typ").notNull(), // "hausverwaltung" | "bestandshalter"
+  typ: text("typ").notNull(), // "privat" | "hausverwaltung" | "makler" | "bestandshalter" | "bautraeger" | "genossenschaft" | "gewerbe"
   firma: text("firma").notNull(),
   ansprechpartner: text("ansprechpartner"),
   telefon: text("telefon"),
@@ -21,7 +21,7 @@ export const immobilienKundeTable = pgTable("immobilien_kunde", {
 });
 
 export const insertImmobilienKundeSchema = createInsertSchema(immobilienKundeTable, {
-  typ: z.enum(["hausverwaltung", "bestandshalter"]),
+  typ: z.enum(["privat", "hausverwaltung", "makler", "bestandshalter", "bautraeger", "genossenschaft", "gewerbe"]),
   firma: z.string().min(1),
   anzahlGebaeude: z.number().int().min(0).nullable().optional(),
   wohneinheitenGesamt: z.number().int().min(0).nullable().optional(),

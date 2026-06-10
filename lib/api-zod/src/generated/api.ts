@@ -801,7 +801,15 @@ export const ListMyOffersResponse = zod.array(ListMyOffersResponseItem);
 export const GetMyImmobilienKundeResponse = zod.union([
   zod.object({
     userId: zod.string(),
-    typ: zod.enum(["hausverwaltung", "bestandshalter"]),
+    typ: zod.enum([
+      "privat",
+      "hausverwaltung",
+      "makler",
+      "bestandshalter",
+      "bautraeger",
+      "genossenschaft",
+      "gewerbe",
+    ]),
     firma: zod.string(),
     ansprechpartner: zod.string().nullish(),
     telefon: zod.string().nullish(),
@@ -819,7 +827,15 @@ export const GetMyImmobilienKundeResponse = zod.union([
  */
 
 export const UpsertMyImmobilienKundeBody = zod.object({
-  typ: zod.enum(["hausverwaltung", "bestandshalter"]),
+  typ: zod.enum([
+    "privat",
+    "hausverwaltung",
+    "makler",
+    "bestandshalter",
+    "bautraeger",
+    "genossenschaft",
+    "gewerbe",
+  ]),
   firma: zod.string().min(1),
   ansprechpartner: zod.string().nullish(),
   telefon: zod.string().nullish(),
@@ -830,7 +846,15 @@ export const UpsertMyImmobilienKundeBody = zod.object({
 
 export const UpsertMyImmobilienKundeResponse = zod.object({
   userId: zod.string(),
-  typ: zod.enum(["hausverwaltung", "bestandshalter"]),
+  typ: zod.enum([
+    "privat",
+    "hausverwaltung",
+    "makler",
+    "bestandshalter",
+    "bautraeger",
+    "genossenschaft",
+    "gewerbe",
+  ]),
   firma: zod.string(),
   ansprechpartner: zod.string().nullish(),
   telefon: zod.string().nullish(),

@@ -1,7 +1,7 @@
 import { useClerk, useUser } from "@clerk/react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { useGetAdminMe, getGetAdminMeQueryKey } from "@workspace/api-client-react";
+import { useGetAdminMe, getGetAdminMeQueryKey, useGetMyProviderProfile, getGetMyProviderProfileQueryKey } from "@workspace/api-client-react";
 import { Shield } from "lucide-react";
 import {
   DropdownMenu,
@@ -26,6 +26,10 @@ export function Navbar() {
     query: { queryKey: getGetAdminMeQueryKey(), enabled: !!isSignedIn },
   });
   const isAdmin = !!adminMe?.isAdmin;
+  const { data: providerProfile } = useGetMyProviderProfile({
+    query: { queryKey: getGetMyProviderProfileQueryKey(), enabled: !!isSignedIn, retry: false },
+  });
+  const hasProvider = !!providerProfile?.id;
 
   const initials = user?.firstName
     ? `${user.firstName[0]}${user.lastName?.[0] ?? ""}`.toUpperCase()
@@ -69,7 +73,7 @@ export function Navbar() {
           <Link href="/gebaeudecheck" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-gebaeudecheck">
             Gebäudecheck
           </Link>
-          <Link href="/pricing" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-pricing">
+          <Link href="/berater-werden" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-berater-werden">
             Für Berater
           </Link>
         </nav>
@@ -92,19 +96,24 @@ export function Navbar() {
                   <p className="text-xs text-muted-foreground truncate">{user?.primaryEmailAddress?.emailAddress}</p>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setLocation("/dashboard")} data-testid="menu-item-dashboard">Dashboard</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setLocation("/bookings")} data-testid="menu-item-bookings">Meine Buchungen</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLocation("/immobilien/onboarding")} data-testid="menu-item-immobilien">Mein Kundenkonto</DropdownMenuItem>
                 {isAdmin && (
                   <DropdownMenuItem onClick={() => setLocation("/admin")} data-testid="menu-item-admin">
                     <Shield className="h-4 w-4 mr-2" /> Plattform-Admin
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setLocation("/immobilien/onboarding")} data-testid="menu-item-immobilien">Hausverwalter / Bestandshalter</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setLocation("/provider/onboarding")} data-testid="menu-item-onboarding">Als Berater registrieren</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setLocation("/provider/profile")} data-testid="menu-item-profile">Berater-Profil</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setLocation("/provider/services")} data-testid="menu-item-services">Meine Leistungen</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setLocation("/provider/availability")} data-testid="menu-item-availability">Verfügbarkeit</DropdownMenuItem>
+                {hasProvider ? (
+                  <>
+                    <DropdownMenuItem onClick={() => setLocation("/dashboard")} data-testid="menu-item-dashboard">Berater-Dashboard</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setLocation("/provider/profile")} data-testid="menu-item-profile">Berater-Profil</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setLocation("/provider/services")} data-testid="menu-item-services">Meine Leistungen</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setLocation("/provider/availability")} data-testid="menu-item-availability">Verfügbarkeit</DropdownMenuItem>
+                  </>
+                ) : (
+                  <DropdownMenuItem onClick={() => setLocation("/berater-werden")} data-testid="menu-item-become-berater">Berater werden</DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
@@ -152,11 +161,14 @@ export function Navbar() {
           <nav className="flex flex-col px-4 py-3 gap-1">
             <Link href="/search" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Berater finden</Link>
             <Link href="/gebaeudecheck" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Gebäudecheck</Link>
-            <Link href="/pricing" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Für Berater</Link>
+            <Link href="/berater-werden" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Für Berater</Link>
             {isSignedIn && (
               <>
                 <Link href="/bookings" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Meine Buchungen</Link>
-                <Link href="/dashboard" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Dashboard</Link>
+                <Link href="/immobilien/onboarding" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Mein Kundenkonto</Link>
+                {hasProvider && (
+                  <Link href="/dashboard" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Berater-Dashboard</Link>
+                )}
               </>
             )}
           </nav>

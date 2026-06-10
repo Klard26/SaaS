@@ -10,6 +10,11 @@ export type ImmobilienKundeInputTyp =
   (typeof ImmobilienKundeInputTyp)[keyof typeof ImmobilienKundeInputTyp];
 
 export const ImmobilienKundeInputTyp = {
+  privat: "privat",
   hausverwaltung: "hausverwaltung",
+  makler: "makler",
   bestandshalter: "bestandshalter",
+  bautraeger: "bautraeger",
+  genossenschaft: "genossenschaft",
+  gewerbe: "gewerbe",
 } as const;

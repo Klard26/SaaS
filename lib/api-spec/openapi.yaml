@@ -2194,7 +2194,7 @@ components:
       properties:
         typ:
           type: string
-          enum: [hausverwaltung, bestandshalter]
+          enum: [privat, hausverwaltung, makler, bestandshalter, bautraeger, genossenschaft, gewerbe]
         firma:           { type: string, minLength: 1 }
         ansprechpartner: { type: ["string", "null"] }
         telefon:         { type: ["string", "null"] }
@@ -2209,7 +2209,7 @@ components:
         userId:          { type: string }
         typ:
           type: string
-          enum: [hausverwaltung, bestandshalter]
+          enum: [privat, hausverwaltung, makler, bestandshalter, bautraeger, genossenschaft, gewerbe]
         firma:           { type: string }
         ansprechpartner: { type: ["string", "null"] }
         telefon:         { type: ["string", "null"] }
