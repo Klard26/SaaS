@@ -13,6 +13,7 @@ import {
   UserPlus,
   ListChecks,
   CalendarClock,
+  Check,
 } from "lucide-react";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -30,8 +31,8 @@ export default function BeraterWerden() {
   }
 
   const vorteile = [
-    { icon: Users, title: "Neue Mandanten", desc: "Werden Sie von Kunden gefunden, die aktiv nach Beratung in Ihrem Fachbereich suchen." },
-    { icon: CalendarCheck, title: "Online-Terminbuchung", desc: "Mandanten buchen verfügbare Termine in Echtzeit – ganz ohne Telefon und E-Mail-Pingpong." },
+    { icon: Users, title: "Neue Kunden", desc: "Werden Sie von Kunden gefunden, die aktiv nach Beratung in Ihrem Fachbereich suchen." },
+    { icon: CalendarCheck, title: "Online-Terminbuchung", desc: "Kunden buchen verfügbare Termine in Echtzeit – ganz ohne Telefon und E-Mail-Pingpong." },
     { icon: Sparkles, title: "KI-Angebote", desc: "Erstellen Sie in Sekunden rechtsverbindliche, gebrandete Angebote mit automatischer Bedarfsanalyse." },
     { icon: TrendingUp, title: "Mehr Sichtbarkeit", desc: "Mit Premium erscheinen Sie priorisiert in der Suche und auf der Startseite." },
     { icon: ShieldCheck, title: "Verifiziertes Profil", desc: "Zeigen Sie Qualifikationen, Kammer-Mitgliedschaften und Bewertungen vertrauensvoll." },
@@ -41,7 +42,30 @@ export default function BeraterWerden() {
   const schritte = [
     { icon: UserPlus, title: "Konto erstellen", desc: "Registrieren Sie sich kostenlos mit Name und E-Mail." },
     { icon: ListChecks, title: "Profil & Leistungen anlegen", desc: "Fachbereich, Über-mich, Preise und Leistungen hinterlegen." },
-    { icon: CalendarClock, title: "Termine freigeben", desc: "Verfügbarkeiten eintragen – und Mandanten buchen direkt." },
+    { icon: CalendarClock, title: "Termine freigeben", desc: "Verfügbarkeiten eintragen – und Kunden buchen direkt." },
+  ];
+
+  const faqs = [
+    {
+      q: "Was kostet die Nutzung von Klard?",
+      a: "Der Basis-Tarif ist kostenlos – es fällt lediglich eine Vermittlungsgebühr von 9 % pro vermittelter Buchung an. Premium kostet 89 € pro Monat und reduziert die Gebühr auf 4 %.",
+    },
+    {
+      q: "Für welche Fachbereiche ist Klard geeignet?",
+      a: "Für Bau- und Gebäudeberater: Energieberatung, Architektur, Statik/Tragwerksplanung, Bauberatung, Gebäudesachverständige, Vermessung, TGA-Fachplanung und Bauphysik.",
+    },
+    {
+      q: "Wie schnell bin ich startklar?",
+      a: "In wenigen Minuten: Konto erstellen, Profil und Leistungen anlegen, Verfügbarkeiten eintragen – danach können Kunden direkt Termine buchen.",
+    },
+    {
+      q: "Kann ich meinen bestehenden Kalender anbinden?",
+      a: "Ja. Mit Premium synchronisieren Sie Ihre Buchungen per iCal-Feed mit Ihrem bestehenden Kalender (z. B. Google, Outlook, Apple).",
+    },
+    {
+      q: "Bin ich an einen Vertrag gebunden?",
+      a: "Nein. Der Basis-Tarif ist dauerhaft kostenlos und Premium ist monatlich kündbar.",
+    },
   ];
 
   return (
@@ -52,14 +76,15 @@ export default function BeraterWerden() {
       <section className="bg-gradient-to-b from-[var(--klard-teal-p)] to-background border-b border-border">
         <div className="max-w-[1100px] mx-auto px-4 sm:px-8 py-16 sm:py-20 text-center">
           <span className="inline-block text-xs font-semibold uppercase tracking-wide text-primary bg-primary/10 rounded-full px-3 py-1 mb-5">
-            Für Berater & Kanzleien
+            Für Berater & Planungsbüros
           </span>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground max-w-3xl mx-auto leading-tight">
-            Gewinnen Sie neue Mandanten – planbar und digital
+            Gewinnen Sie neue Aufträge – planbar und digital
           </h1>
           <p className="text-base sm:text-lg text-muted-foreground mt-5 max-w-2xl mx-auto">
-            Klard ist der separate Profi-Bereich für Steuerberater, Rechtsanwälte, Energieberater
-            und weitere Fachleute. Profil erstellen, Termine freigeben, Mandanten empfangen.
+            Klard ist der separate Profi-Bereich für Energieberater, Architekten, Statiker,
+            Gebäudesachverständige und weitere Bau- und Gebäudeexperten. Profil erstellen,
+            Termine freigeben, Aufträge empfangen.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-8">
             <Button
@@ -135,10 +160,109 @@ export default function BeraterWerden() {
         </div>
       </section>
 
+      {/* Preise */}
+      <section className="max-w-[1100px] mx-auto px-4 sm:px-8 py-16 w-full">
+        <div className="text-center mb-10">
+          <h2 className="text-2xl sm:text-3xl font-bold text-foreground">Transparente Preise</h2>
+          <p className="text-muted-foreground mt-2">Kostenlos starten, jederzeit auf Premium upgraden.</p>
+        </div>
+        <div className="grid sm:grid-cols-2 gap-5 max-w-3xl mx-auto">
+          <div className="rounded-2xl border border-border bg-white p-7 flex flex-col">
+            <h3 className="font-semibold text-foreground">Basis</h3>
+            <div className="mt-2 flex items-baseline gap-1">
+              <span className="text-3xl font-bold text-foreground">0 €</span>
+              <span className="text-sm text-muted-foreground">/ Monat</span>
+            </div>
+            <p className="text-sm text-muted-foreground mt-1">9 % Vermittlungsgebühr pro Buchung</p>
+            <ul className="mt-5 space-y-2.5 text-sm text-foreground flex-1">
+              {["Öffentliches Berater-Profil", "Online-Terminbuchung", "Bewertungen sammeln", "Per-Buchung Kalender-Export"].map((f) => (
+                <li key={f} className="flex items-start gap-2">
+                  <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" aria-hidden="true" />
+                  <span>{f}</span>
+                </li>
+              ))}
+            </ul>
+            <Button
+              variant="outline"
+              onClick={startRegistration}
+              className="mt-6 rounded-full h-11 text-sm font-semibold"
+              data-testid="button-berater-basis"
+            >
+              Kostenlos starten
+            </Button>
+          </div>
+
+          <div className="rounded-2xl border-2 border-primary bg-white p-7 flex flex-col relative">
+            <span className="absolute -top-3 left-7 text-xs font-semibold uppercase tracking-wide text-white bg-primary rounded-full px-3 py-1">
+              Empfohlen
+            </span>
+            <h3 className="font-semibold text-foreground">Premium</h3>
+            <div className="mt-2 flex items-baseline gap-1">
+              <span className="text-3xl font-bold text-foreground">89 €</span>
+              <span className="text-sm text-muted-foreground">/ Monat</span>
+            </div>
+            <p className="text-sm text-muted-foreground mt-1">nur 4 % Vermittlungsgebühr pro Buchung</p>
+            <ul className="mt-5 space-y-2.5 text-sm text-foreground flex-1">
+              {["Alles aus Basis", "Priorisiert in Suche & Startseite", "KI-Angebote & Bedarfsanalyse", "Kalender-Sync (iCal-Abo)"].map((f) => (
+                <li key={f} className="flex items-start gap-2">
+                  <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" aria-hidden="true" />
+                  <span>{f}</span>
+                </li>
+              ))}
+            </ul>
+            <Button
+              onClick={startRegistration}
+              className="mt-6 rounded-full h-11 text-sm font-semibold bg-primary hover:bg-[var(--klard-teal-d)] text-white"
+              data-testid="button-berater-premium"
+            >
+              Mit Premium starten
+            </Button>
+          </div>
+        </div>
+        <p className="text-center text-xs text-muted-foreground mt-5">
+          Premium ist monatlich kündbar. Details auf der{" "}
+          <button
+            type="button"
+            onClick={() => setLocation("/pricing")}
+            className="text-primary font-medium hover:underline"
+            data-testid="link-berater-pricing-details"
+          >
+            Preisübersicht
+          </button>
+          .
+        </p>
+      </section>
+
+      {/* FAQ */}
+      <section className="bg-secondary/40 border-y border-border">
+        <div className="max-w-[760px] mx-auto px-4 sm:px-8 py-16 w-full">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl sm:text-3xl font-bold text-foreground">Häufige Fragen</h2>
+          </div>
+          <div className="space-y-3">
+            {faqs.map((f) => (
+              <details
+                key={f.q}
+                className="group rounded-xl border border-border bg-white px-5 py-4"
+                data-testid="faq-item"
+              >
+                <summary className="flex cursor-pointer items-center justify-between gap-4 font-semibold text-foreground list-none">
+                  {f.q}
+                  <span className="text-primary text-xl leading-none transition-transform group-open:rotate-45" aria-hidden="true">
+                    +
+                  </span>
+                </summary>
+                <p className="text-sm text-muted-foreground mt-3 leading-relaxed">{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="max-w-[1100px] mx-auto px-4 sm:px-8 py-16 w-full">
         <div className="rounded-2xl bg-primary text-primary-foreground px-6 sm:px-12 py-12 text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold">Bereit, neue Mandanten zu gewinnen?</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold">Bereit, neue Aufträge zu gewinnen?</h2>
           <p className="text-primary-foreground/80 mt-3 max-w-xl mx-auto">
             Erstellen Sie Ihr Berater-Profil – kostenlos und in wenigen Minuten.
           </p>
