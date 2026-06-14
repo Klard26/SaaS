@@ -21,7 +21,13 @@ interface CatalogService {
   name: string;
   price_type: "fix" | "hr" | "pa" | "hoai" | "on";
   duration: string;
-  reference_price: string;
+  p_min?: number | null;
+  p_avg?: number | null;
+  p_max?: number | null;
+  unit?: string | null;
+  inputs?: string[];
+  fundable?: string | null;
+  notes?: string | null;
 }
 interface CatalogServiceCategory {
   name: string;
@@ -76,34 +82,52 @@ const NAME_BY_BRANCH: Record<string, string> = {
   bps: "Bauphysik & Spezialberatung",
 };
 
-/** Parse a reference_price like "ab 1.450 €" or "auf Anfrage" → numeric netto fallback. */
-function parsePrice(ref: string): number | null {
-  if (!ref) return null;
-  const m = ref.match(/(\d[\d.]*)/);
-  if (!m) return null;
-  const num = Number(m[1].replace(/\./g, ""));
-  return Number.isFinite(num) ? num : null;
+/** Build a human-readable reference price string from v2 min/avg/max recommendations. */
+function buildReferencePrice(svc: CatalogService): string {
+  const fmt = (n: number) => `${n.toLocaleString("de-DE")} €`;
+  const suffix = svc.price_type === "hr" ? "/h" : svc.price_type === "hoai" ? " (HOAI)" : "";
+  const { p_min, p_avg, p_max } = svc;
+  if (p_min != null && p_max != null && p_min !== p_max) {
+    return `${fmt(p_min)}–${fmt(p_max)}${suffix}`;
+  }
+  if (p_avg != null) return `ø ${fmt(p_avg)}${suffix}`;
+  if (p_min != null) return `ab ${fmt(p_min)}${suffix}`;
+  return "auf Anfrage";
 }
 
-/** Parse a duration string like "ca. 1 Tag" → minutes. Best-effort default 60. */
+/**
+ * Best-effort booking-slot length in minutes from a v2 duration string.
+ * The full human-readable label is preserved separately in `durationLabel`;
+ * this value is only the default appointment length a provider gets when
+ * importing the template. Appointment-scale formats (minutes/hours/half-day/
+ * days) are parsed precisely; project-scale lead-times (weeks/months/years,
+ * "projektbegleitend", "individuell", "Bauzeit" …) cannot be a single slot and
+ * are clamped to a standard 2h consultation.
+ */
+const PROJECT_SLOT_MINUTES = 120;
+function num(x: string): number {
+  return Number(x.replace(",", "."));
+}
+function avg(lo: string, hi: string | undefined): number {
+  const a = num(lo);
+  const b = hi != null ? num(hi) : a;
+  return (a + b) / 2;
+}
 function parseDuration(d: string): number {
   if (!d) return 60;
   const s = d.toLowerCase();
-  if (/halbtag/.test(s)) return 240;
-  if (/\btag\b/.test(s)) {
-    const m = s.match(/(\d+)\s*tag/);
-    return m ? Number(m[1]) * 480 : 480;
-  }
-  // "ca. 3–4h", "ca. 2h", "ca. 6 h"
-  const hMatch = s.match(/(\d+)(?:\s*[–-]\s*(\d+))?\s*h\b/);
-  if (hMatch) {
-    const lo = Number(hMatch[1]);
-    const hi = hMatch[2] ? Number(hMatch[2]) : lo;
-    return Math.round(((lo + hi) / 2) * 60);
-  }
+  // Minutes: "ca. 30 Min."
   const minMatch = s.match(/(\d+)\s*min/);
   if (minMatch) return Number(minMatch[1]);
-  return 60;
+  // Hours (with decimals + ranges): "ca. 4–6h", "ca. 1,5h", "2–3h inkl. Anfahrt"
+  const hMatch = s.match(/(\d+(?:[.,]\d+)?)\s*(?:[–-]\s*(\d+(?:[.,]\d+)?))?\s*h\b/);
+  if (hMatch) return Math.round(avg(hMatch[1]!, hMatch[2]) * 60);
+  if (/halbtag/.test(s)) return 240;
+  // Days (singular + plural + ranges): "1 Tag", "1–2 Tage", "ca. 1–3 Tage pro View"
+  const dayMatch = s.match(/(\d+)\s*(?:[–-]\s*(\d+))?\s*tage?\b/);
+  if (dayMatch) return Math.min(960, Math.round(avg(dayMatch[1]!, dayMatch[2]) * 480));
+  // Weeks/months/years and open-ended project descriptors → standard consult slot.
+  return PROJECT_SLOT_MINUTES;
 }
 
 async function main() {
@@ -194,10 +218,17 @@ async function main() {
             groupName: sc.name,
             name: svc.name,
             priceType: svc.price_type,
-            referencePrice: svc.reference_price,
+            referencePrice: buildReferencePrice(svc),
             durationLabel: svc.duration,
             defaultDurationMinutes: parseDuration(svc.duration),
-            defaultPrice: parsePrice(svc.reference_price),
+            defaultPrice: svc.p_avg ?? svc.p_min ?? null,
+            priceMin: svc.p_min ?? null,
+            priceAvg: svc.p_avg ?? null,
+            priceMax: svc.p_max ?? null,
+            unit: svc.unit ?? null,
+            inputs: svc.inputs ?? [],
+            fundable: svc.fundable ?? null,
+            notes: svc.notes ?? null,
             sortOrder: sortCounter++,
           });
           total++;

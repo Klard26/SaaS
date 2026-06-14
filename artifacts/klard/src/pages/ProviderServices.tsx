@@ -36,6 +36,21 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
+const UNIT_LABELS: Record<string, string> = {
+  objekt: "pro Objekt",
+  stunde: "pro Stunde",
+  tag: "pro Tag",
+  termin: "pro Termin",
+  antrag: "pro Antrag",
+  position: "pro Position",
+  view: "pro Visualisierung",
+  schnitt: "pro Schnitt",
+  messreihe: "pro Messreihe",
+  lv: "pro Leistungsverzeichnis",
+  vertrag: "pro Vertrag",
+  bausumme_prozent: "% der Bausumme",
+};
+
 export default function ProviderServices() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -358,8 +373,19 @@ export default function ProviderServices() {
                         )}
                         <p className="text-xs text-muted-foreground mt-1">
                           {t.defaultDurationMinutes} Min.
-                          {t.defaultPrice != null ? ` · ab ${formatPriceEUR(t.defaultPrice)} netto` : ""}
+                          {t.priceMin != null && t.priceMax != null && t.priceMin !== t.priceMax
+                            ? ` · ${formatPriceEUR(t.priceMin)}–${formatPriceEUR(t.priceMax)} netto`
+                            : t.defaultPrice != null
+                              ? ` · ø ${formatPriceEUR(t.defaultPrice)} netto`
+                              : ""}
+                          {t.unit ? ` · ${UNIT_LABELS[t.unit] ?? `pro ${t.unit}`}` : ""}
                         </p>
+                        {t.fundable && (
+                          <p className="text-xs text-emerald-700 mt-1">Förderfähig: {t.fundable}</p>
+                        )}
+                        {t.notes && (
+                          <p className="text-xs text-muted-foreground/80 mt-1 italic">{t.notes}</p>
+                        )}
                       </div>
                     </label>
                   </li>

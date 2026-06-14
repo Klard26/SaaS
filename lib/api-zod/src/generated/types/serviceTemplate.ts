@@ -24,5 +24,19 @@ export interface ServiceTemplate {
   defaultDurationMinutes: number;
   /** @nullable */
   defaultPrice?: number | null;
+  /** @nullable */
+  priceMin?: number | null;
+  /** @nullable */
+  priceAvg?: number | null;
+  /** @nullable */
+  priceMax?: number | null;
+  /** @nullable */
+  unit?: string | null;
+  /** @nullable */
+  inputs?: string[] | null;
+  /** @nullable */
+  fundable?: string | null;
+  /** @nullable */
+  notes?: string | null;
   sortOrder?: number;
 }

@@ -59,6 +59,13 @@ export const ListServiceTemplatesResponseItem = zod.object({
   durationLabel: zod.string().nullish(),
   defaultDurationMinutes: zod.number(),
   defaultPrice: zod.number().nullish(),
+  priceMin: zod.number().nullish(),
+  priceAvg: zod.number().nullish(),
+  priceMax: zod.number().nullish(),
+  unit: zod.string().nullish(),
+  inputs: zod.array(zod.string()).nullish(),
+  fundable: zod.string().nullish(),
+  notes: zod.string().nullish(),
   sortOrder: zod.number().optional(),
 });
 export const ListServiceTemplatesResponse = zod.array(

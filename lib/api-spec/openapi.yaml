@@ -1915,6 +1915,13 @@ components:
         durationLabel:          { type: ["string", "null"] }
         defaultDurationMinutes: { type: integer }
         defaultPrice:           { type: ["number", "null"] }
+        priceMin:               { type: ["number", "null"] }
+        priceAvg:               { type: ["number", "null"] }
+        priceMax:               { type: ["number", "null"] }
+        unit:                   { type: ["string", "null"] }
+        inputs:                 { type: ["array", "null"], items: { type: string } }
+        fundable:               { type: ["string", "null"] }
+        notes:                  { type: ["string", "null"] }
         sortOrder:              { type: integer }
 
     UploadUrlRequest:
