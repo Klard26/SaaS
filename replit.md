@@ -87,7 +87,7 @@ Klard is a Doctolib-style booking marketplace for German consultants (Berater) â
 
 - **Address autocomplete**: `AddressAutocomplete.tsx` uses Photon (photon.komoot.io), debounced 300ms, DE-filtered; autofills strasse/hausnummer/plz/city/lat/lng into EnergieVollanalyse. `BuildingInput` (lib/energie-calc) carries optional strasse/hausnummer/lat/lng.
 - **Standort map**: `StandortMap.tsx` uses plain Leaflet + OSM tiles (not react-leaflet, to avoid React 19 peer friction). Shown in a "Standort" tab.
-- **Report**: `ReportPreviewDemo.tsx` is an A4-styled sample report shown on `/gebaeudecheck` to all users; the real unlocked report exports via `window.print()` with `@media print` rules in index.css (`.print-area`, `.no-print`).
+- **Report**: `ReportPreviewDemo.tsx` is an A4-styled sample report shown on `/gebaeudecheck` to all users; the real unlocked report exports as PDF via `printReport()` (`artifacts/klard/src/lib/printReport.ts`). It opens a new top-level window, copies the page's stylesheets (`<style>` dev + `<link rel=stylesheet>` prod) plus a `<base href>`, reveals hidden tab panels, hides interactive chrome, and prints from there. **Why not direct `window.print()`:** Replit's sandboxed preview iframe silently ignores `window.print()` (no `allow-modals`); the new-window approach is a top-level context so it works in preview and production. Falls back to `window.print()` + a "Pop-up blockiert" toast when the popup is blocked. The `@media print` rules in index.css (`.print-area`, `.no-print`) still apply.
 
 ## Authorization
 

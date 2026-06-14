@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import {
   BT, HT, INS, WI,
   ZUSTAND, WARMWASSER, LUEFTUNG, ENERGIEAUSWEIS_TYP, SANIERUNG_OPTIONS,
@@ -20,6 +20,8 @@ import { EnergyBar } from "@/components/EnergieSchnellcheck";
 import { AddressAutocomplete, type AddressResult } from "@/components/AddressAutocomplete";
 import { StandortMap } from "@/components/StandortMap";
 import { AlertCircle, Save, Sun, TrendingUp, Zap, Shield, Banknote, Hammer, Printer, Lock, MapPin } from "lucide-react";
+import { printReport } from "@/lib/printReport";
+import { useToast } from "@/hooks/use-toast";
 
 const DEFAULT: BuildingInput = {
   plz: "",
@@ -106,8 +108,23 @@ export function EnergieVollanalyse({
   const klima = valid ? plzKlima(d.plz) : null;
   const land = valid ? plzBundesland(d.plz) : "";
 
+  const reportRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+
+  const handlePrint = () => {
+    const ok = printReport(reportRef.current);
+    if (!ok) {
+      toast({
+        title: "Pop-up blockiert",
+        description:
+          "Bitte erlauben Sie Pop-ups für diese Seite, um den Report als PDF zu speichern.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
-    <div className="grid lg:grid-cols-[380px_1fr] gap-6 print-area">
+    <div ref={reportRef} className="grid lg:grid-cols-[380px_1fr] gap-6 print-area">
       {/* INPUTS */}
       <Card>
         <CardHeader>
@@ -704,7 +721,7 @@ export function EnergieVollanalyse({
               variant="outline"
               size="sm"
               className="rounded-full border-[1.5px] gap-1.5 shrink-0"
-              onClick={() => window.print()}
+              onClick={handlePrint}
               data-testid="button-export-pdf"
             >
               <Printer className="h-3.5 w-3.5" />
