@@ -577,6 +577,32 @@ paths:
               schema:
                 $ref: "#/components/schemas/CheckoutSession"
 
+  /providers/me/connect:
+    get:
+      operationId: getMyConnectStatus
+      tags: [billing]
+      summary: Get the signed-in provider's Stripe Connect (payout) status
+      responses:
+        "200":
+          description: Connect status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectStatus"
+
+  /providers/me/connect/onboard:
+    post:
+      operationId: createConnectOnboarding
+      tags: [billing]
+      summary: Create a Stripe Connect Express account (if needed) and return an onboarding link
+      responses:
+        "200":
+          description: Onboarding link created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectOnboardingLink"
+
   /providers/{id}/calendar.ics:
     get:
       operationId: getProviderCalendarFeed
@@ -1815,6 +1841,9 @@ components:
         responseTime:    { type: ["string", "null"] }
         consultationMode: { type: string, enum: [online, in-person, both] }
         certificates:    { type: array, items: { type: string } }
+        externalIcalUrl: { type: ["string", "null"] }
+        stripeAccountId: { type: ["string", "null"] }
+        stripeOnboarded: { type: boolean }
         qualifications:
           type: ["object", "null"]
           additionalProperties: true
@@ -1839,6 +1868,7 @@ components:
         responseTime: { type: string }
         consultationMode: { type: string, enum: [online, in-person, both] }
         certificates: { type: array, items: { type: string } }
+        externalIcalUrl: { type: string }
         qualifications:
           type: object
           additionalProperties: true
@@ -1862,6 +1892,7 @@ components:
         responseTime: { type: string }
         consultationMode: { type: string, enum: [online, in-person, both] }
         certificates: { type: array, items: { type: string } }
+        externalIcalUrl: { type: ["string", "null"] }
         qualifications:
           type: object
           additionalProperties: true
@@ -2053,6 +2084,22 @@ components:
       properties:
         url:       { type: string }
         sessionId: { type: string }
+
+    ConnectStatus:
+      type: object
+      required: [hasAccount, onboarded, chargesEnabled, payoutsEnabled, detailsSubmitted]
+      properties:
+        hasAccount:       { type: boolean }
+        onboarded:        { type: boolean }
+        chargesEnabled:   { type: boolean }
+        payoutsEnabled:   { type: boolean }
+        detailsSubmitted: { type: boolean }
+
+    ConnectOnboardingLink:
+      type: object
+      required: [url]
+      properties:
+        url: { type: string }
 
     SubscriptionStatus:
       type: object

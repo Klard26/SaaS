@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { timeSlotsTable } from "@workspace/db";
+import { timeSlotsTable, blockedSlotsTable } from "@workspace/db";
 import {
   ListAvailabilityParams,
   CreateTimeSlotBody,
@@ -17,17 +17,36 @@ router.get("/providers/:id/availability", async (req, res): Promise<void> => {
       res.status(400).json({ error: "Invalid id" });
       return;
     }
-    const slots = await db
-      .select()
-      .from(timeSlotsTable)
-      .where(
-        and(
-          eq(timeSlotsTable.providerId, parsed.data.id),
-          eq(timeSlotsTable.isAvailable, true),
+    const providerId = parsed.data.id;
+    const [slots, blocked] = await Promise.all([
+      db
+        .select()
+        .from(timeSlotsTable)
+        .where(
+          and(
+            eq(timeSlotsTable.providerId, providerId),
+            eq(timeSlotsTable.isAvailable, true),
+          ),
+        )
+        .orderBy(timeSlotsTable.startTime),
+      db
+        .select({
+          startTime: blockedSlotsTable.startTime,
+          endTime: blockedSlotsTable.endTime,
+        })
+        .from(blockedSlotsTable)
+        .where(eq(blockedSlotsTable.providerId, providerId)),
+    ]);
+
+    // Hide any open slot that overlaps an external-calendar busy interval.
+    // Overlap: slot.start < blocked.end && slot.end > blocked.start.
+    const visible = slots.filter(
+      (s) =>
+        !blocked.some(
+          (b) => s.startTime < b.endTime && s.endTime > b.startTime,
         ),
-      )
-      .orderBy(timeSlotsTable.startTime);
-    res.json(slots);
+    );
+    res.json(visible);
   } catch (err) {
     req.log.error({ err }, "Failed to fetch availability");
     res.status(500).json({ error: "Internal server error" });

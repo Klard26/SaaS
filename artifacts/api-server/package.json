@@ -26,6 +26,7 @@
     "express-rate-limit": "^8.5.1",
     "google-auth-library": "^10.6.2",
     "http-proxy-middleware": "^4.0.0",
+    "node-ical": "^0.26.1",
     "pdfkit": "^0.18.0",
     "pino": "^9",
     "pino-http": "^10",

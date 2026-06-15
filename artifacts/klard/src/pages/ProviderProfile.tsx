@@ -31,6 +31,7 @@ const schema = z.object({
   consultationMode: z.enum(["both", "online", "in-person"]).default("both"),
   responseTime: z.string().optional(),
   certificatesText: z.string().optional(),
+  externalIcalUrl: z.string().url("Bitte eine gültige URL angeben").optional().or(z.literal("")),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -51,6 +52,7 @@ export default function ProviderProfile() {
     defaultValues: {
       displayName: "", bio: "", city: "", zip: "", address: "", phone: "", website: "",
       companyLegalName: "", taxId: "", consultationMode: "both", responseTime: "", certificatesText: "",
+      externalIcalUrl: "",
     },
   });
 
@@ -69,6 +71,7 @@ export default function ProviderProfile() {
         consultationMode: (profile.consultationMode as "both" | "online" | "in-person") ?? "both",
         responseTime: profile.responseTime ?? "",
         certificatesText: (profile.certificates ?? []).join(", "),
+        externalIcalUrl: profile.externalIcalUrl ?? "",
       });
     }
   }, [profile, form]);
@@ -237,6 +240,16 @@ export default function ProviderProfile() {
                           <FormLabel>Zertifikate / Mitgliedschaften</FormLabel>
                           <FormControl><Input placeholder="z.B. StB-Kammer Berlin, DATEV-Mitglied" {...field} data-testid="input-certificates" /></FormControl>
                           <p className="text-xs text-muted-foreground mt-1">Mehrere Einträge mit Komma trennen.</p>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
+                    <div className="mt-4">
+                      <FormField control={form.control} name="externalIcalUrl" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Externer Kalender (iCal-URL)</FormLabel>
+                          <FormControl><Input placeholder="https://...ics" {...field} data-testid="input-externalIcalUrl" /></FormControl>
+                          <p className="text-xs text-muted-foreground mt-1">Termine aus diesem Kalender (z.B. Google, Outlook) blockieren automatisch Ihre Verfügbarkeit. Aktualisierung alle 15 Minuten.</p>
                           <FormMessage />
                         </FormItem>
                       )} />

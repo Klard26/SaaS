@@ -8,6 +8,7 @@ import {
   isStripeConfigured,
   STRIPE_CONFIG,
 } from "../lib/stripeClient";
+import { effectiveCommissionRate } from "../lib/commission";
 
 const router: IRouter = Router();
 
@@ -217,13 +218,31 @@ router.post("/bookings/:id/payment/checkout", async (req, res): Promise<void> =>
       .where(eq(providersTable.id, booking.providerId))
       .limit(1);
     const baseUrl = getBaseUrl(req);
+    const totalCents = Math.round(booking.totalPrice * 100);
+
+    // Marketplace payout split: when the provider has completed Stripe Connect
+    // onboarding, route the charge as a destination charge — Stripe transfers
+    // the net to the provider and keeps the platform commission as an
+    // application fee. Without Connect, the platform collects the full amount
+    // (legacy behaviour) and settles with the provider out of band.
+    const connected = !!(provider?.stripeAccountId && provider?.stripeOnboardedAt);
+    const splitData =
+      connected && provider
+        ? {
+            application_fee_amount: Math.round(
+              totalCents * effectiveCommissionRate(provider),
+            ),
+            transfer_data: { destination: provider.stripeAccountId! },
+          }
+        : {};
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items: [
         {
           price_data: {
             currency: STRIPE_CONFIG.currency,
-            unit_amount: Math.round(booking.totalPrice * 100),
+            unit_amount: totalCents,
             product_data: {
               name: `${booking.serviceName} – ${provider?.displayName ?? booking.providerName}`,
             },
@@ -235,6 +254,10 @@ router.post("/bookings/:id/payment/checkout", async (req, res): Promise<void> =>
       success_url: `${baseUrl}/bookings?payment=success`,
       cancel_url: `${baseUrl}/bookings/${booking.id}?payment=cancelled`,
       metadata: { bookingId: String(booking.id), kind: "booking" },
+      payment_intent_data: {
+        metadata: { bookingId: String(booking.id), kind: "booking" },
+        ...splitData,
+      },
     });
 
     await db

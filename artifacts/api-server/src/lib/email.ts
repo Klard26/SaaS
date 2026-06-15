@@ -1,5 +1,8 @@
 import { getUncachableResendClient } from "./resendClient";
 import { logger } from "./logger";
+import { db } from "@workspace/db";
+import { emailLogTable } from "@workspace/db";
+import { and, eq, desc } from "drizzle-orm";
 
 import tplWelcomeProvider from "../email-templates/welcome_provider.hbs";
 import tplBookingConfirmCustomer from "../email-templates/booking_confirmation_customer.hbs";
@@ -10,6 +13,8 @@ import tplReminder24h from "../email-templates/booking_reminder_24h.hbs";
 import tplInvoiceReady from "../email-templates/invoice_ready.hbs";
 import tplWelcomeCustomer from "../email-templates/welcome_customer.hbs";
 import tplStripeActivated from "../email-templates/stripe_activated.hbs";
+import tplPaymentFailed from "../email-templates/payment_failed.hbs";
+import tplReminder1h from "../email-templates/booking_reminder_1h.hbs";
 
 const APP_URL =
   process.env["APP_URL"] ??
@@ -110,6 +115,42 @@ interface SendArgs {
   html: string;
   text?: string;
   attachments?: Array<{ filename: string; content: string; isBase64?: boolean }>;
+  /** Template identifier (filename stem) for the email_log audit trail. */
+  templateId?: string;
+  /** Domain object the email relates to (e.g. booking id) for dedupe lookups. */
+  relatedId?: string | number | null;
+}
+
+async function logEmail(args: SendArgs, status: "sent" | "failed" | "skipped", error?: string): Promise<void> {
+  if (!args.templateId) return;
+  try {
+    await db.insert(emailLogTable).values({
+      templateId: args.templateId,
+      recipient: args.to,
+      relatedId: args.relatedId == null ? null : String(args.relatedId),
+      subject: args.subject,
+      status,
+      error: error ?? null,
+    });
+  } catch (err) {
+    logger.error({ err, templateId: args.templateId }, "Failed to persist email_log entry");
+  }
+}
+
+/**
+ * Returns true if an email with the given templateId (and optional relatedId)
+ * has already been logged with status "sent". Used by schedulers to dedupe.
+ */
+export async function wasEmailSent(templateId: string, relatedId?: string | number | null): Promise<boolean> {
+  const conds = [eq(emailLogTable.templateId, templateId), eq(emailLogTable.status, "sent")];
+  if (relatedId != null) conds.push(eq(emailLogTable.relatedId, String(relatedId)));
+  const [row] = await db
+    .select({ id: emailLogTable.id })
+    .from(emailLogTable)
+    .where(and(...conds))
+    .orderBy(desc(emailLogTable.sentAt))
+    .limit(1);
+  return !!row;
 }
 
 async function send(args: SendArgs): Promise<void> {
@@ -117,6 +158,7 @@ async function send(args: SendArgs): Promise<void> {
     const r = await getUncachableResendClient();
     if (!r) {
       logger.warn({ to: args.to, subject: args.subject }, "Resend not configured — email skipped");
+      await logEmail(args, "skipped", "Resend not configured");
       return;
     }
     const { error } = await r.client.emails.send({
@@ -132,11 +174,14 @@ async function send(args: SendArgs): Promise<void> {
     });
     if (error) {
       logger.error({ err: error, to: args.to }, "Resend send failed");
+      await logEmail(args, "failed", String((error as { message?: string }).message ?? error));
     } else {
       logger.info({ to: args.to, subject: args.subject }, "Email sent");
+      await logEmail(args, "sent");
     }
   } catch (err) {
     logger.error({ err, to: args.to }, "Email send threw");
+    await logEmail(args, "failed", err instanceof Error ? err.message : String(err));
   }
 }
 
@@ -156,6 +201,8 @@ export async function sendProviderWelcome(p: {
     subject: "Willkommen bei Klard",
     html,
     text: `Willkommen bei Klard, ${p.displayName}! Ihr Berater-Profil ist aktiv. Dashboard: ${APP_URL}/dashboard`,
+    templateId: "welcome_provider",
+    relatedId: p.email,
   });
 }
 
@@ -173,6 +220,8 @@ export async function sendCustomerWelcome(p: {
     subject: "Willkommen bei Klard",
     html,
     text: `Willkommen bei Klard, ${p.customerName}! Jetzt geprüfte Berater finden und buchen: ${APP_URL}/search`,
+    templateId: "welcome_customer",
+    relatedId: p.email,
   });
 }
 
@@ -190,6 +239,8 @@ export async function sendStripeActivated(p: {
     subject: "Ihr Klard Premium ist aktiv",
     html,
     text: `Ihr Klard Premium-Abo ist aktiv, ${p.providerName}. Zum Dashboard: ${APP_URL}/dashboard`,
+    templateId: "stripe_activated",
+    relatedId: p.email,
   });
 }
 
@@ -260,6 +311,8 @@ export async function sendBookingConfirmationToCustomer(
     attachments: icsContent
       ? [{ filename: "termin.ics", content: icsContent }]
       : undefined,
+    templateId: "booking_confirmation_customer",
+    relatedId: ctx.bookingId,
   });
 }
 
@@ -293,6 +346,8 @@ export async function sendNewBookingToProvider(ctx: BookingEmailContext): Promis
     subject: `Neue Buchung – ${ctx.customerName ?? "Kunde"} am ${fmtDate(ctx.scheduledAt)}`,
     html,
     text: `Neue Buchung von ${ctx.customerName ?? "Kunde"} am ${fmtDateTime(ctx.scheduledAt)}.`,
+    templateId: "booking_confirmation_provider",
+    relatedId: ctx.bookingId,
   });
 }
 
@@ -322,6 +377,8 @@ export async function sendBookingCancellation(
         subject,
         html: renderTemplate(tplCancelledByCustomer, { ...baseVars, recipientName: ctx.providerName }),
         text: `Die Buchung (${ctx.serviceName}) am ${fmtDateTime(ctx.scheduledAt)} wurde vom Kunden storniert.`,
+        templateId: "booking_cancelled_by_customer",
+        relatedId: ctx.bookingId,
       });
     }
     if (ctx.customerEmail) {
@@ -333,6 +390,8 @@ export async function sendBookingCancellation(
           recipientName: ctx.customerName ?? "Kunde",
         }),
         text: `Ihre Buchung (${ctx.serviceName}) am ${fmtDateTime(ctx.scheduledAt)} wurde storniert.`,
+        templateId: "booking_cancelled_by_customer",
+        relatedId: ctx.bookingId,
       });
     }
     return;
@@ -356,6 +415,8 @@ export async function sendBookingCancellation(
         searchUrl: `${APP_URL}/search`,
       }),
       text: `Ihr Termin bei ${ctx.providerName} am ${fmtDateTime(ctx.scheduledAt)} wurde leider abgesagt.`,
+      templateId: "booking_cancelled_by_provider",
+      relatedId: ctx.bookingId,
     });
   }
 }
@@ -368,6 +429,8 @@ export async function sendPaymentConfirmation(ctx: BookingEmailContext): Promise
     subject: `Zahlung bestätigt – ${ctx.providerName} am ${fmtDate(ctx.scheduledAt)}`,
     html,
     text: `Zahlung über ${eur(ctx.totalPrice)} erhalten — Buchung bei ${ctx.providerName} bestätigt.`,
+    templateId: "booking_confirmation_customer",
+    relatedId: ctx.bookingId,
   });
 }
 
@@ -432,6 +495,8 @@ export async function sendInvoiceWithAttachment(p: {
       html,
       text: `Stornorechnung ${p.invoiceNumber} – ${p.providerName}. Betrag: ${totalEur}.`,
       attachments: [{ filename: p.filename, content: p.pdfBase64, isBase64: true }],
+      templateId: "invoice_storno",
+      relatedId: p.invoiceNumber,
     });
     return;
   }
@@ -455,6 +520,8 @@ export async function sendInvoiceWithAttachment(p: {
     html,
     text: `Ihre Rechnung ${p.invoiceNumber} – ${p.providerName}. Betrag: ${totalEur}.`,
     attachments: [{ filename: p.filename, content: p.pdfBase64, isBase64: true }],
+    templateId: "invoice_ready",
+    relatedId: p.invoiceNumber,
   });
 }
 
@@ -478,5 +545,100 @@ export async function sendBookingReminder(ctx: BookingEmailContext): Promise<voi
     subject: `Erinnerung: Termin morgen bei ${ctx.providerName}`,
     html,
     text: `Erinnerung: Termin morgen um ${fmtDateTime(ctx.scheduledAt)} bei ${ctx.providerName}.`,
+    templateId: "booking_reminder_24h",
+    relatedId: ctx.bookingId,
+  });
+}
+
+/**
+ * 1-hour pre-appointment reminder. Sent to BOTH the customer and the provider
+ * with role-aware "counterpart" fields. Deduped by the scheduler via email_log.
+ */
+export async function sendBookingReminder1h(ctx: BookingEmailContext): Promise<void> {
+  const dateStr = fmtDate(ctx.scheduledAt);
+  const timeStr = fmtTime(ctx.scheduledAt);
+  const duration = fmtDuration(ctx.durationMinutes);
+  const num = bookingNumber(ctx.bookingId);
+  const location = ctx.location || "Wird vom Berater mitgeteilt";
+
+  if (ctx.customerEmail) {
+    await send({
+      to: ctx.customerEmail,
+      subject: `In 1 Stunde: Termin bei ${ctx.providerName}`,
+      html: renderTemplate(tplReminder1h, {
+        recipientName: ctx.customerName ?? "Kunde",
+        serviceName: ctx.serviceName,
+        bookingTime: timeStr,
+        bookingDuration: duration,
+        bookingLocation: location,
+        bookingNumber: num,
+        counterpartLabel: "Ihr Berater",
+        counterpartName: ctx.providerName,
+        counterpartEmail: ctx.providerEmail ?? "—",
+        counterpartPhone: "—",
+        bookingUrl: `${APP_URL}/bookings`,
+      }),
+      text: `In 1 Stunde: Termin bei ${ctx.providerName} um ${timeStr} (${dateStr}).`,
+      templateId: "booking_reminder_1h",
+      relatedId: ctx.bookingId,
+    });
+  }
+
+  if (ctx.providerEmail) {
+    await send({
+      to: ctx.providerEmail,
+      subject: `In 1 Stunde: Termin mit ${ctx.customerName ?? "Kunde"}`,
+      html: renderTemplate(tplReminder1h, {
+        recipientName: ctx.providerName,
+        serviceName: ctx.serviceName,
+        bookingTime: timeStr,
+        bookingDuration: duration,
+        bookingLocation: location,
+        bookingNumber: num,
+        counterpartLabel: "Ihr Kunde",
+        counterpartName: ctx.customerName ?? "Kunde",
+        counterpartEmail: ctx.customerEmail ?? "—",
+        counterpartPhone: ctx.customerPhone || "—",
+        bookingUrl: `${APP_URL}/dashboard`,
+      }),
+      text: `In 1 Stunde: Termin mit ${ctx.customerName ?? "Kunde"} um ${timeStr} (${dateStr}).`,
+      templateId: "booking_reminder_1h",
+      relatedId: ctx.bookingId,
+    });
+  }
+}
+
+/**
+ * Notifies the customer that an online payment attempt for a booking failed,
+ * with a link to retry.
+ */
+export async function sendPaymentFailed(p: {
+  customerEmail: string | null;
+  customerName: string | null;
+  providerName: string;
+  serviceName: string;
+  scheduledAt: Date | string;
+  totalPrice: number;
+  bookingId: number;
+  failureReason?: string | null;
+}): Promise<void> {
+  if (!p.customerEmail) return;
+  const html = renderTemplate(tplPaymentFailed, {
+    customerName: p.customerName ?? "Kunde",
+    providerName: p.providerName,
+    serviceName: p.serviceName,
+    bookingDate: fmtDate(p.scheduledAt),
+    bookingTime: fmtTime(p.scheduledAt),
+    totalAmount: eur(p.totalPrice),
+    failureReason: p.failureReason || "Die Zahlung konnte nicht abgeschlossen werden.",
+    retryUrl: `${APP_URL}/bookings`,
+  });
+  await send({
+    to: p.customerEmail,
+    subject: `Zahlung fehlgeschlagen – ${p.providerName}`,
+    html,
+    text: `Ihre Zahlung für den Termin bei ${p.providerName} ist fehlgeschlagen. Bitte erneut versuchen: ${APP_URL}/bookings`,
+    templateId: "payment_failed",
+    relatedId: p.bookingId,
   });
 }

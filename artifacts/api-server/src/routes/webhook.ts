@@ -4,7 +4,7 @@ import { db } from "@workspace/db";
 import { providersTable, bookingsTable } from "@workspace/db";
 import { eq, and, ne } from "drizzle-orm";
 import { getUncachableStripeClient } from "../lib/stripeClient";
-import { sendPaymentConfirmation, sendStripeActivated } from "../lib/email";
+import { sendPaymentConfirmation, sendStripeActivated, sendPaymentFailed, wasEmailSent } from "../lib/email";
 import { issueInvoiceForBooking, sendInvoiceEmail } from "../lib/invoiceService";
 import { fulfillOrder } from "../lib/gebaeudecheck";
 
@@ -139,6 +139,66 @@ router.post(
             .update(providersTable)
             .set({ subscriptionTier: "basic", stripeSubscriptionId: null })
             .where(eq(providersTable.stripeSubscriptionId, sub.id));
+          break;
+        }
+        case "account.updated": {
+          // Stripe Connect Express onboarding progress. We cache the onboarding
+          // timestamp once the connected account can accept charges and has
+          // submitted its details, so booking checkouts can route the payout
+          // split. Writing the same timestamp on replays is harmless.
+          const account = event.data.object as Stripe.Account;
+          const onboarded = !!account.charges_enabled && !!account.details_submitted;
+          if (onboarded) {
+            await db
+              .update(providersTable)
+              .set({ stripeOnboardedAt: new Date() })
+              .where(eq(providersTable.stripeAccountId, account.id));
+          } else {
+            // Account no longer able to charge (e.g. requirements past due).
+            await db
+              .update(providersTable)
+              .set({ stripeOnboardedAt: null })
+              .where(eq(providersTable.stripeAccountId, account.id));
+          }
+          break;
+        }
+        case "payment_intent.payment_failed": {
+          // A booking payment attempt failed. The booking id is carried on the
+          // PaymentIntent metadata (set on the Checkout Session's
+          // payment_intent_data). Notify the customer with a retry link.
+          const pi = event.data.object as Stripe.PaymentIntent;
+          if (pi.metadata?.["kind"] === "booking") {
+            const bookingId = Number(pi.metadata["bookingId"]);
+            if (Number.isFinite(bookingId)) {
+              // Idempotent: only act on the first failure. Stripe retries/replays
+              // this event, so skip if the booking is already marked failed or
+              // a payment_failed email was already sent for it.
+              const [current] = await db
+                .select()
+                .from(bookingsTable)
+                .where(eq(bookingsTable.id, bookingId))
+                .limit(1);
+              const alreadyFailed = current?.paymentStatus === "failed";
+              const [booking] = await db
+                .update(bookingsTable)
+                .set({ paymentStatus: "failed" })
+                .where(eq(bookingsTable.id, bookingId))
+                .returning();
+              if (booking && !alreadyFailed && !(await wasEmailSent("payment_failed", booking.id))) {
+                void sendPaymentFailed({
+                  customerEmail: booking.customerEmail,
+                  customerName: booking.customerName,
+                  providerName: booking.providerName,
+                  serviceName: booking.serviceName,
+                  scheduledAt: booking.scheduledAt,
+                  totalPrice: booking.totalPrice,
+                  bookingId: booking.id,
+                  failureReason:
+                    pi.last_payment_error?.message ?? null,
+                });
+              }
+            }
+          }
           break;
         }
         case "invoice.payment_failed": {

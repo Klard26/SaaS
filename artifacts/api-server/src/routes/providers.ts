@@ -457,6 +457,8 @@ router.patch("/providers/:id", async (req, res): Promise<void> => {
     if (d.responseTime !== undefined) updateData.responseTime = d.responseTime;
     if (d.consultationMode !== undefined) updateData.consultationMode = d.consultationMode;
     if (d.certificates !== undefined) updateData.certificates = d.certificates;
+    if (d.externalIcalUrl !== undefined)
+      updateData.externalIcalUrl = d.externalIcalUrl || null;
 
     const [updated] = await db
       .update(providersTable)

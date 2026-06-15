@@ -25,5 +25,7 @@ export interface ProviderUpdate {
   responseTime?: string;
   consultationMode?: ProviderUpdateConsultationMode;
   certificates?: string[];
+  /** @nullable */
+  externalIcalUrl?: string | null;
   qualifications?: ProviderUpdateQualifications;
 }

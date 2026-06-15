@@ -24,5 +24,6 @@ export interface ProviderInput {
   responseTime?: string;
   consultationMode?: ProviderInputConsultationMode;
   certificates?: string[];
+  externalIcalUrl?: string;
   qualifications?: ProviderInputQualifications;
 }

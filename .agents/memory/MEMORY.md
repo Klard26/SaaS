@@ -1,1 +1,2 @@
-- [Email templates](email-templates.md) — branded .hbs bundled via esbuild text loader (no runtime reads); renderer handles single+double brace; some templates unwired by design.
+- [Klard frontend zod resolver mismatch](klard-zod-resolver.md) — pre-existing dual-zod (v3 pages vs v4 in @hookform/resolvers types); frontend `tsc` fails on all zodResolver pages, app still runs (Vite/esbuild skips typecheck).
+- [Klard Stripe v22 Connect split](klard-stripe-connect.md) — booking checkout payout split spread inline (no PaymentIntentData type); commission single source of truth.

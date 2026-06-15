@@ -42,6 +42,8 @@ export * from "./bookingStatusUpdateStatus";
 export * from "./category";
 export * from "./categoryQualifications";
 export * from "./checkoutSession";
+export * from "./connectOnboardingLink";
+export * from "./connectStatus";
 export * from "./deleteTimeSlotParams";
 export * from "./gebaeudecheckCheckoutInput";
 export * from "./gebaeudecheckCredits";

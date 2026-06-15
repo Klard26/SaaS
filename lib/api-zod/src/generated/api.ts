@@ -139,6 +139,7 @@ export const CreateProviderBody = zod.object({
   responseTime: zod.string().optional(),
   consultationMode: zod.enum(["online", "in-person", "both"]).optional(),
   certificates: zod.array(zod.string()).optional(),
+  externalIcalUrl: zod.string().optional(),
   qualifications: zod.record(zod.string(), zod.unknown()).optional(),
 });
 
@@ -178,6 +179,9 @@ export const GetProviderResponse = zod.object({
   responseTime: zod.string().nullish(),
   consultationMode: zod.enum(["online", "in-person", "both"]).optional(),
   certificates: zod.array(zod.string()).optional(),
+  externalIcalUrl: zod.string().nullish(),
+  stripeAccountId: zod.string().nullish(),
+  stripeOnboarded: zod.boolean().optional(),
   qualifications: zod.record(zod.string(), zod.unknown()).nullish(),
   createdAt: zod.string().optional(),
 });
@@ -206,6 +210,7 @@ export const UpdateProviderBody = zod.object({
   responseTime: zod.string().optional(),
   consultationMode: zod.enum(["online", "in-person", "both"]).optional(),
   certificates: zod.array(zod.string()).optional(),
+  externalIcalUrl: zod.string().nullish(),
   qualifications: zod.record(zod.string(), zod.unknown()).optional(),
 });
 
@@ -238,6 +243,9 @@ export const UpdateProviderResponse = zod.object({
   responseTime: zod.string().nullish(),
   consultationMode: zod.enum(["online", "in-person", "both"]).optional(),
   certificates: zod.array(zod.string()).optional(),
+  externalIcalUrl: zod.string().nullish(),
+  stripeAccountId: zod.string().nullish(),
+  stripeOnboarded: zod.boolean().optional(),
   qualifications: zod.record(zod.string(), zod.unknown()).nullish(),
   createdAt: zod.string().optional(),
 });
@@ -274,6 +282,9 @@ export const GetMyProviderProfileResponse = zod.object({
   responseTime: zod.string().nullish(),
   consultationMode: zod.enum(["online", "in-person", "both"]).optional(),
   certificates: zod.array(zod.string()).optional(),
+  externalIcalUrl: zod.string().nullish(),
+  stripeAccountId: zod.string().nullish(),
+  stripeOnboarded: zod.boolean().optional(),
   qualifications: zod.record(zod.string(), zod.unknown()).nullish(),
   createdAt: zod.string().optional(),
 });
@@ -642,6 +653,24 @@ export const CreateBookingCheckoutParams = zod.object({
 export const CreateBookingCheckoutResponse = zod.object({
   url: zod.string(),
   sessionId: zod.string().optional(),
+});
+
+/**
+ * @summary Get the signed-in provider's Stripe Connect (payout) status
+ */
+export const GetMyConnectStatusResponse = zod.object({
+  hasAccount: zod.boolean(),
+  onboarded: zod.boolean(),
+  chargesEnabled: zod.boolean(),
+  payoutsEnabled: zod.boolean(),
+  detailsSubmitted: zod.boolean(),
+});
+
+/**
+ * @summary Create a Stripe Connect Express account (if needed) and return an onboarding link
+ */
+export const CreateConnectOnboardingResponse = zod.object({
+  url: zod.string(),
 });
 
 /**

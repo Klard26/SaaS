@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { bookingsTable, timeSlotsTable, servicesTable, providersTable, categoriesTable, assessmentsTable } from "@workspace/db";
+import { bookingsTable, timeSlotsTable, servicesTable, providersTable, categoriesTable, assessmentsTable, blockedSlotsTable } from "@workspace/db";
 import { clerkClient } from "@clerk/express";
 import {
   CreateBookingBody,
@@ -9,7 +9,7 @@ import {
   UpdateBookingStatusBody,
   ListProviderBookingsParams,
 } from "@workspace/api-zod";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, lt, gt } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 import {
   sendBookingConfirmationToCustomer,
@@ -136,6 +136,24 @@ router.post("/bookings", async (req, res): Promise<void> => {
         throw new Error("SLOT_PROVIDER_MISMATCH");
       }
 
+      // Reject if the slot overlaps an external-calendar busy interval (the
+      // provider is blocked elsewhere). Mirrors the availability filter so a
+      // stale client can't book over an imported event.
+      const conflicts = await tx
+        .select({ id: blockedSlotsTable.id })
+        .from(blockedSlotsTable)
+        .where(
+          and(
+            eq(blockedSlotsTable.providerId, d.providerId),
+            lt(blockedSlotsTable.startTime, slot.endTime),
+            gt(blockedSlotsTable.endTime, slot.startTime),
+          ),
+        )
+        .limit(1);
+      if (conflicts.length > 0) {
+        throw new Error("SLOT_BLOCKED");
+      }
+
       const [b] = await tx
         .insert(bookingsTable)
         .values({
@@ -206,6 +224,10 @@ router.post("/bookings", async (req, res): Promise<void> => {
     }
     if (err instanceof Error && err.message === "SLOT_PROVIDER_MISMATCH") {
       res.status(400).json({ error: "Termin gehört nicht zu diesem Berater." });
+      return;
+    }
+    if (err instanceof Error && err.message === "SLOT_BLOCKED") {
+      res.status(409).json({ error: "Dieser Termin ist im Kalender des Beraters nicht mehr verfügbar. Bitte wählen Sie einen anderen." });
       return;
     }
     req.log.error({ err }, "Failed to create booking");

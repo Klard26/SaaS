@@ -639,6 +639,11 @@ export interface Provider {
   consultationMode?: ProviderConsultationMode;
   certificates?: string[];
   /** @nullable */
+  externalIcalUrl?: string | null;
+  /** @nullable */
+  stripeAccountId?: string | null;
+  stripeOnboarded?: boolean;
+  /** @nullable */
   qualifications?: ProviderQualifications;
   createdAt?: string;
 }
@@ -670,6 +675,7 @@ export interface ProviderInput {
   responseTime?: string;
   consultationMode?: ProviderInputConsultationMode;
   certificates?: string[];
+  externalIcalUrl?: string;
   qualifications?: ProviderInputQualifications;
 }
 
@@ -701,6 +707,8 @@ export interface ProviderUpdate {
   responseTime?: string;
   consultationMode?: ProviderUpdateConsultationMode;
   certificates?: string[];
+  /** @nullable */
+  externalIcalUrl?: string | null;
   qualifications?: ProviderUpdateQualifications;
 }
 
@@ -923,6 +931,18 @@ export interface ProviderDashboard {
 export interface CheckoutSession {
   url: string;
   sessionId?: string;
+}
+
+export interface ConnectStatus {
+  hasAccount: boolean;
+  onboarded: boolean;
+  chargesEnabled: boolean;
+  payoutsEnabled: boolean;
+  detailsSubmitted: boolean;
+}
+
+export interface ConnectOnboardingLink {
+  url: string;
 }
 
 export type SubscriptionStatusTier =

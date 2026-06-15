@@ -36,6 +36,8 @@ import type {
   BookingStatusUpdate,
   Category,
   CheckoutSession,
+  ConnectOnboardingLink,
+  ConnectStatus,
   DeleteTimeSlotParams,
   GebaeudecheckCheckoutInput,
   GebaeudecheckCredits,
@@ -2564,6 +2566,162 @@ export const useCreateBookingCheckout = <
   TContext
 > => {
   return useMutation(getCreateBookingCheckoutMutationOptions(options));
+};
+
+/**
+ * @summary Get the signed-in provider's Stripe Connect (payout) status
+ */
+export const getGetMyConnectStatusUrl = () => {
+  return `/api/providers/me/connect`;
+};
+
+export const getMyConnectStatus = async (
+  options?: RequestInit,
+): Promise<ConnectStatus> => {
+  return customFetch<ConnectStatus>(getGetMyConnectStatusUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMyConnectStatusQueryKey = () => {
+  return [`/api/providers/me/connect`] as const;
+};
+
+export const getGetMyConnectStatusQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMyConnectStatus>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMyConnectStatus>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMyConnectStatusQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getMyConnectStatus>>
+  > = ({ signal }) => getMyConnectStatus({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMyConnectStatus>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMyConnectStatusQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMyConnectStatus>>
+>;
+export type GetMyConnectStatusQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get the signed-in provider's Stripe Connect (payout) status
+ */
+
+export function useGetMyConnectStatus<
+  TData = Awaited<ReturnType<typeof getMyConnectStatus>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMyConnectStatus>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMyConnectStatusQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a Stripe Connect Express account (if needed) and return an onboarding link
+ */
+export const getCreateConnectOnboardingUrl = () => {
+  return `/api/providers/me/connect/onboard`;
+};
+
+export const createConnectOnboarding = async (
+  options?: RequestInit,
+): Promise<ConnectOnboardingLink> => {
+  return customFetch<ConnectOnboardingLink>(getCreateConnectOnboardingUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getCreateConnectOnboardingMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createConnectOnboarding>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createConnectOnboarding>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["createConnectOnboarding"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createConnectOnboarding>>,
+    void
+  > = () => {
+    return createConnectOnboarding(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateConnectOnboardingMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createConnectOnboarding>>
+>;
+
+export type CreateConnectOnboardingMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a Stripe Connect Express account (if needed) and return an onboarding link
+ */
+export const useCreateConnectOnboarding = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createConnectOnboarding>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createConnectOnboarding>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getCreateConnectOnboardingMutationOptions(options));
 };
 
 /**

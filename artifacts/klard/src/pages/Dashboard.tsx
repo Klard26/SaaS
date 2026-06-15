@@ -12,9 +12,11 @@ import {
   useListProviderBookings, getListProviderBookingsQueryKey,
   useUpdateBookingStatus, getListProviderBookingsQueryKey as providerBookingsKey,
   useGetMySubscription, getGetMySubscriptionQueryKey,
+  useGetMyConnectStatus, getGetMyConnectStatusQueryKey,
+  useCreateConnectOnboarding,
   getGetProviderCalendarFeedUrl,
 } from "@workspace/api-client-react";
-import { Star, TrendingUp, Calendar, DollarSign, Users, PlusCircle, Settings, Clock, Crown, Copy, Sparkles, Building2, Lock, Receipt } from "lucide-react";
+import { Star, TrendingUp, Calendar, DollarSign, Users, PlusCircle, Settings, Clock, Crown, Copy, Sparkles, Building2, Lock, Receipt, Banknote, CheckCircle2 } from "lucide-react";
 import { InvoicesPanel } from "@/components/InvoicesPanel";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -71,7 +73,22 @@ export default function Dashboard() {
     query: { enabled: !!profile?.id, queryKey: getGetMySubscriptionQueryKey() },
   });
 
+  const { data: connect } = useGetMyConnectStatus({
+    query: { enabled: !!profile?.id, queryKey: getGetMyConnectStatusQueryKey() },
+  });
+
+  const createConnectOnboarding = useCreateConnectOnboarding();
+
   const updateStatus = useUpdateBookingStatus();
+
+  async function startConnectOnboarding() {
+    try {
+      const res = await createConnectOnboarding.mutateAsync();
+      if (res?.url) window.location.href = res.url;
+    } catch {
+      toast({ title: "Fehler", description: "Auszahlungskonto konnte nicht gestartet werden.", variant: "destructive" });
+    }
+  }
 
   // Reconcile billing state when returning from a successful Stripe Checkout.
   useEffect(() => {
@@ -91,6 +108,18 @@ export default function Dashboard() {
       toast({ title: "Premium aktiviert", description: "Vielen Dank! Ihre Mitgliedschaft ist aktiv." });
       window.history.replaceState({}, "", window.location.pathname);
     })();
+  }, [qc, toast]);
+
+  // Refresh payout status when returning from Stripe Connect onboarding.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const connectParam = params.get("connect");
+    if (connectParam !== "return" && connectParam !== "refresh") return;
+    qc.invalidateQueries({ queryKey: getGetMyConnectStatusQueryKey() });
+    if (connectParam === "return") {
+      toast({ title: "Auszahlungskonto aktualisiert", description: "Ihr Stripe-Konto wurde verbunden." });
+    }
+    window.history.replaceState({}, "", window.location.pathname);
   }, [qc, toast]);
 
   const isPremium = subscription?.tier === "premium";
@@ -235,6 +264,40 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         ))}
+
+        {/* Stripe Connect payout account */}
+        {profile && connect && (
+          connect.onboarded ? (
+            <Card className="mb-6 rounded-[20px] border-[1.5px] border-[var(--klard-teal-p)] bg-[var(--klard-teal-l)]/30 shadow-sm">
+              <CardContent className="p-5 flex items-center gap-3">
+                <CheckCircle2 className="h-5 w-5 text-[var(--klard-teal-d)] shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <span className="font-serif text-base font-semibold text-foreground">Auszahlungskonto aktiv</span>
+                  <p className="text-xs text-[var(--klard-mid)] leading-relaxed mt-0.5">
+                    Zahlungen Ihrer Mandanten werden nach Abzug der Plattformprovision automatisch auf Ihr Stripe-Konto ausgezahlt.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="mb-6 rounded-[20px] border-[1.5px] border-[var(--klard-gold-l)] bg-gradient-to-r from-[var(--klard-gold-l)]/30 to-amber-50 shadow-sm">
+              <CardContent className="p-5 flex items-start justify-between gap-4 flex-col sm:flex-row">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <Banknote className="h-4 w-4 text-[var(--klard-gold)]" />
+                    <span className="font-serif text-base font-semibold text-foreground">Auszahlungskonto einrichten</span>
+                  </div>
+                  <p className="text-sm text-[var(--klard-mid)] leading-relaxed">
+                    Verbinden Sie ein Stripe-Konto, um Zahlungen Ihrer Mandanten direkt zu empfangen. Die Plattformprovision wird automatisch einbehalten.
+                  </p>
+                </div>
+                <Button size="sm" className="gap-1.5 shrink-0 rounded-full bg-[var(--klard-gold)] hover:bg-[#92400E] text-white" onClick={startConnectOnboarding} disabled={createConnectOnboarding.isPending} data-testid="button-connect-onboard">
+                  <Banknote className="h-3.5 w-3.5" /> {createConnectOnboarding.isPending ? "Wird geöffnet..." : "Konto einrichten"}
+                </Button>
+              </CardContent>
+            </Card>
+          )
+        )}
 
         {/* Quick Actions */}
         <div className="grid sm:grid-cols-3 gap-3 mb-8">

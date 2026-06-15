@@ -52,6 +52,11 @@ export interface Provider {
   consultationMode?: ProviderConsultationMode;
   certificates?: string[];
   /** @nullable */
+  externalIcalUrl?: string | null;
+  /** @nullable */
+  stripeAccountId?: string | null;
+  stripeOnboarded?: boolean;
+  /** @nullable */
   qualifications?: ProviderQualifications;
   createdAt?: string;
 }
