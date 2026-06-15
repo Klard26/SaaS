@@ -17,7 +17,7 @@ import {
   useAcceptOffer,
 } from "@workspace/api-client-react";
 import type { Service } from "@workspace/api-client-react";
-import { Star, MapPin, Clock, CheckCircle, Globe, Phone, Sparkles, ChevronRight, Crown, Info, Briefcase, Plus, Check, FileSignature, Loader2, ShieldCheck } from "lucide-react";
+import { Star, MapPin, Clock, CheckCircle, Globe, Phone, Sparkles, ChevronRight, ChevronDown, Crown, Info, Briefcase, Plus, Check, FileSignature, Loader2, ShieldCheck } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { publicUrlForObjectPath } from "@/lib/upload";
 import { formatPriceEUR, formatTimeBerlin, formatDateBerlin } from "@/lib/dateFmt";
@@ -56,6 +56,7 @@ export default function ProviderDetail() {
 
   const [selectedService, setSelectedService] = useState<number | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
+  const [showOfferBuilder, setShowOfferBuilder] = useState(false);
   const [aiInquiry, setAiInquiry] = useState("");
   const [aiResult, setAiResult] = useState<{ offer: string; estimatedPrice?: number | null; estimatedDuration?: string | null } | null>(null);
   const [selectedOffer, setSelectedOffer] = useState<Set<number>>(new Set());
@@ -114,8 +115,9 @@ export default function ProviderDetail() {
     : null;
 
   function handleBooking() {
-    if (!isSignedIn) { setLocation("/sign-in"); return; }
     if (!selectedService || !selectedSlot) return;
+    // Navigate straight to the booking page; if the user is signed out the
+    // AuthRoute redirects to sign-in and brings them right back to this booking.
     setLocation(`/booking/${providerId}/${selectedService}/${selectedSlot}`);
   }
 
@@ -142,7 +144,7 @@ export default function ProviderDetail() {
   const offerTotalGross = offerItems.reduce((a, i) => a + i.grossPrice, 0);
 
   async function handleAcceptOffer() {
-    if (!isSignedIn) { setLocation("/sign-in"); return; }
+    if (!isSignedIn) { setLocation(`/sign-in?redirect=${encodeURIComponent(`/providers/${providerId}`)}`); return; }
     if (offerItems.length === 0 || !agbAccepted) return;
     await acceptOffer.mutateAsync({
       data: {
@@ -296,10 +298,13 @@ export default function ProviderDetail() {
 
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            {/* Services */}
+            {/* Services — step 1 of the simple booking path */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Leistungen</CardTitle>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold shrink-0">1</span>
+                  Leistung wählen
+                </CardTitle>
               </CardHeader>
               <CardContent className="pt-0">
                 {services.length === 0 ? (
@@ -340,8 +345,31 @@ export default function ProviderDetail() {
               </CardContent>
             </Card>
 
-            {/* Branded binding offer */}
-            <div className="overflow-hidden rounded-[20px] border border-[#3B0764] text-white shadow-md">
+            {/* Optional: individual binding offer + AI Bedarfsanalyse (secondary path) */}
+            <div className="rounded-[16px] border-[1.5px] border-border bg-white shadow-sm">
+              <button
+                type="button"
+                onClick={() => setShowOfferBuilder((v) => !v)}
+                aria-expanded={showOfferBuilder}
+                className="w-full flex items-center gap-3 px-5 py-4 text-left"
+                data-testid="button-toggle-offer-builder"
+              >
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#EDE9FE] shrink-0">
+                  <Sparkles className="h-4 w-4 text-[#6D28D9]" />
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className="block font-semibold text-foreground text-sm">
+                    Individuelles Angebot zusammenstellen
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    Optional: mehrere Leistungen bündeln, KI-Bedarfsanalyse erstellen und verbindlich annehmen.
+                  </span>
+                </span>
+                <ChevronDown className={`h-5 w-5 text-muted-foreground shrink-0 transition-transform ${showOfferBuilder ? "rotate-180" : ""}`} />
+              </button>
+
+              {showOfferBuilder && (
+            <div className="overflow-hidden rounded-[20px] border border-[#3B0764] text-white shadow-md mx-3 mb-3">
               {/* Header */}
               <div
                 className="px-6 py-5"
@@ -512,6 +540,8 @@ export default function ProviderDetail() {
                 )}
               </div>
             </div>
+              )}
+            </div>
 
             {/* Reviews */}
             <Card>
@@ -549,11 +579,14 @@ export default function ProviderDetail() {
           <div className="space-y-4">
             <Card className="sticky top-20">
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Termin buchen</CardTitle>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold shrink-0">2</span>
+                  Termin wählen
+                </CardTitle>
               </CardHeader>
               <CardContent className="pt-0 space-y-4">
                 {!selectedService ? (
-                  <p className="text-sm text-muted-foreground">Wahlen Sie zunachst eine Leistung aus.</p>
+                  <p className="text-sm text-muted-foreground">Wählen Sie zunächst eine Leistung aus.</p>
                 ) : (
                   <>
                     <div className="space-y-3 max-h-96 overflow-y-auto pr-1">

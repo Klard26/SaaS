@@ -14,9 +14,11 @@ import {
   useGetMySubscription, getGetMySubscriptionQueryKey,
   useGetMyConnectStatus, getGetMyConnectStatusQueryKey,
   useCreateConnectOnboarding,
+  useListProviderServices, getListProviderServicesQueryKey,
+  useListAvailability, getListAvailabilityQueryKey,
   getGetProviderCalendarFeedUrl,
 } from "@workspace/api-client-react";
-import { Star, TrendingUp, Calendar, DollarSign, Users, PlusCircle, Settings, Clock, Crown, Copy, Sparkles, Building2, Lock, Receipt, Banknote, CheckCircle2 } from "lucide-react";
+import { Star, TrendingUp, Calendar, DollarSign, Users, PlusCircle, Settings, Clock, Crown, Copy, Sparkles, Building2, Lock, Receipt, Banknote, CheckCircle2, Circle, ArrowRight, AlertCircle } from "lucide-react";
 import { InvoicesPanel } from "@/components/InvoicesPanel";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -75,6 +77,14 @@ export default function Dashboard() {
 
   const { data: connect } = useGetMyConnectStatus({
     query: { enabled: !!profile?.id, queryKey: getGetMyConnectStatusQueryKey() },
+  });
+
+  const { data: services = [] } = useListProviderServices(profile?.id ?? 0, {
+    query: { enabled: !!profile?.id, queryKey: getListProviderServicesQueryKey(profile?.id ?? 0) },
+  });
+
+  const { data: slots = [] } = useListAvailability(profile?.id ?? 0, {
+    query: { enabled: !!profile?.id, queryKey: getListAvailabilityQueryKey(profile?.id ?? 0) },
   });
 
   const createConnectOnboarding = useCreateConnectOnboarding();
@@ -145,6 +155,23 @@ export default function Dashboard() {
 
   const isLoading = profileLoading || statsLoading;
 
+  // Guided-setup status: a provider is bookable once they have at least one
+  // service AND at least one open time slot. Payout is recommended but optional.
+  const hasServices = services.length > 0;
+  const hasAvailability = slots.some((s) => s.isAvailable);
+  const hasPayout = !!connect?.onboarded;
+  const isBookable = hasServices && hasAvailability;
+  const pendingCount = bookings.filter((b) => b.status === "pending").length;
+
+  const setupSteps = [
+    { key: "profil", label: "Profil angelegt", hint: "Name, Beschreibung und Kontaktdaten", done: true, optional: false, cta: "Profil bearbeiten", action: () => setLocation("/provider/profile") },
+    { key: "leistungen", label: "Leistungen hinzufügen", hint: "Mindestens eine buchbare Leistung mit Preis", done: hasServices, optional: false, cta: "Leistungen verwalten", action: () => setLocation("/provider/services") },
+    { key: "verfuegbarkeit", label: "Verfügbarkeit eintragen", hint: "Freie Termine, die Kunden buchen können", done: hasAvailability, optional: false, cta: "Termine hinzufügen", action: () => setLocation("/provider/availability") },
+    { key: "auszahlung", label: "Auszahlungskonto verbinden", hint: "Optional – nötig, um Zahlungen zu empfangen", done: hasPayout, optional: true, cta: "Konto einrichten", action: startConnectOnboarding },
+  ];
+  const doneCount = setupSteps.filter((s) => !s.optional && s.done).length;
+  const totalRequired = setupSteps.filter((s) => !s.optional).length;
+
   if (!profileLoading && !profile) {
     return (
       <div className="min-h-screen bg-[var(--klard-bg)]">
@@ -193,6 +220,85 @@ export default function Dashboard() {
             </Button>
           </div>
         </div>
+
+        {/* Bookable status + guided setup checklist */}
+        {profile && (
+          isBookable ? (
+            <Card className="mb-6 rounded-[20px] border-[1.5px] border-[var(--klard-green-l)] bg-[var(--klard-green-l)]/30 shadow-sm">
+              <CardContent className="p-5 flex items-center gap-3">
+                <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[var(--klard-green-l)] shrink-0">
+                  <CheckCircle2 className="h-5 w-5 text-[var(--klard-green)]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-serif text-base font-semibold text-foreground">Sie sind buchbar</p>
+                  <p className="text-xs text-[var(--klard-mid)] leading-relaxed mt-0.5">
+                    Ihr Profil ist online und Kunden können Termine bei Ihnen buchen.
+                    {!hasPayout && " Verbinden Sie noch ein Auszahlungskonto, um Zahlungen zu empfangen."}
+                  </p>
+                </div>
+                <Button size="sm" variant="outline" className="gap-1.5 shrink-0 rounded-full border-[1.5px]" onClick={() => setLocation(`/providers/${profile.id}`)} data-testid="button-view-public-profile">
+                  Profil ansehen <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="mb-6 rounded-[20px] border-[1.5px] border-[var(--klard-gold-l)] bg-gradient-to-r from-[var(--klard-gold-l)]/40 to-amber-50 shadow-sm">
+              <CardContent className="p-5">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[var(--klard-gold-l)] shrink-0">
+                    <AlertCircle className="h-5 w-5 text-[var(--klard-gold)]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-serif text-base font-semibold text-foreground">Noch nicht buchbar</p>
+                    <p className="text-xs text-[var(--klard-mid)] leading-relaxed mt-0.5">
+                      Schließen Sie die folgenden Schritte ab, damit Kunden Termine bei Ihnen buchen können
+                      ({doneCount} von {totalRequired} erledigt).
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {setupSteps.map((step) => (
+                    <div
+                      key={step.key}
+                      className="flex items-center gap-3 rounded-xl border-[1.5px] border-border bg-white px-4 py-3"
+                      data-testid={`setup-step-${step.key}`}
+                    >
+                      {step.done ? (
+                        <CheckCircle2 className="h-5 w-5 text-[var(--klard-green)] shrink-0" />
+                      ) : (
+                        <Circle className="h-5 w-5 text-muted-foreground/50 shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-semibold ${step.done ? "text-muted-foreground line-through" : "text-foreground"}`}>
+                          {step.label}
+                          {step.optional && <span className="ml-2 text-[10px] font-normal uppercase tracking-wide text-muted-foreground">optional</span>}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{step.hint}</p>
+                      </div>
+                      {!step.done && (
+                        <Button size="sm" className="gap-1.5 shrink-0 rounded-full" onClick={step.action} data-testid={`button-setup-${step.key}`}>
+                          {step.cta} <ArrowRight className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )
+        )}
+
+        {/* Pending bookings highlight */}
+        {profile && pendingCount > 0 && (
+          <Card className="mb-6 rounded-[20px] border-[1.5px] border-[var(--klard-teal-p)] bg-[var(--klard-teal-l)]/40 shadow-sm">
+            <CardContent className="p-4 flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-[var(--klard-teal-d)] shrink-0" />
+              <p className="text-sm text-foreground flex-1">
+                <strong>{pendingCount}</strong> {pendingCount === 1 ? "Anfrage wartet" : "Anfragen warten"} auf Ihre Bestätigung.
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Stats */}
         {isLoading ? (

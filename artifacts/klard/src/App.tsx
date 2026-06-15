@@ -5,6 +5,11 @@ import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from 'wouter';
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
+import {
+  useGetMyProviderProfile,
+  getGetMyProviderProfileQueryKey,
+} from "@workspace/api-client-react";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
@@ -107,32 +112,63 @@ const clerkAppearance = {
   },
 };
 
+// Only allow same-origin internal redirect targets (must start with a single "/").
+function readRedirectParam(): string | null {
+  const r = new URLSearchParams(window.location.search).get("redirect");
+  if (!r || !r.startsWith("/") || r.startsWith("//")) return null;
+  return r;
+}
+
 function SignInPage() {
+  const [cfg] = useState(() => {
+    const redirect = readRedirectParam();
+    return {
+      redirectUrl: redirect ? `${basePath}${redirect}` : undefined,
+      signUpUrl: `${basePath}/sign-up${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ""}`,
+    };
+  });
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4 py-12">
-      <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
+      <SignIn
+        routing="path"
+        path={`${basePath}/sign-in`}
+        signUpUrl={cfg.signUpUrl}
+        forceRedirectUrl={cfg.redirectUrl}
+        fallbackRedirectUrl={cfg.redirectUrl}
+      />
     </div>
   );
 }
 
 function SignUpPage() {
   // Berater come from the dedicated "Berater werden" area (?intent=berater) and
-  // continue to provider onboarding; everyone else is a customer and picks an
-  // account type after signing up.
-  const [redirectUrl] = useState(() => {
-    const intent = new URLSearchParams(window.location.search).get("intent");
-    return intent === "berater"
-      ? `${basePath}/provider/onboarding`
-      : `${basePath}/konto/willkommen`;
+  // continue to provider onboarding. Customers go straight to where they were
+  // headed (a deep-linked booking via ?redirect=) or to the search — no forced
+  // account-type chooser. Commercial profile details stay optional and reachable
+  // from "Mein Kundenkonto".
+  const [cfg] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const intent = params.get("intent");
+    const redirect = readRedirectParam();
+    const redirectUrl =
+      intent === "berater"
+        ? `${basePath}/provider/onboarding`
+        : redirect
+          ? `${basePath}${redirect}`
+          : `${basePath}/search`;
+    return {
+      redirectUrl,
+      signInUrl: `${basePath}/sign-in${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ""}`,
+    };
   });
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4 py-12">
       <SignUp
         routing="path"
         path={`${basePath}/sign-up`}
-        signInUrl={`${basePath}/sign-in`}
-        forceRedirectUrl={redirectUrl}
-        fallbackRedirectUrl={redirectUrl}
+        signInUrl={cfg.signInUrl}
+        forceRedirectUrl={cfg.redirectUrl}
+        fallbackRedirectUrl={cfg.redirectUrl}
       />
     </div>
   );
@@ -160,11 +196,27 @@ function ClerkQueryClientCacheInvalidator() {
   return null;
 }
 
+// Signed-in landing: Berater (have a provider profile) go to their dashboard,
+// everyone else (customers) goes to search — no forced detour.
+function SignedInHome() {
+  const { data: profile, isLoading, isError } = useGetMyProviderProfile({
+    query: { queryKey: getGetMyProviderProfileQueryKey() },
+  });
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-background">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  return <Redirect to={!isError && profile?.id ? "/dashboard" : "/search"} />;
+}
+
 function HomeRedirect() {
   return (
     <>
       <Show when="signed-in">
-        <Redirect to="/dashboard" />
+        <SignedInHome />
       </Show>
       <Show when="signed-out">
         <Home />
@@ -174,13 +226,20 @@ function HomeRedirect() {
 }
 
 function AuthRoute({ component: Component }: { component: React.ComponentType }) {
+  const [location] = useLocation();
+  // Preserve the intended destination so a deep-linked booking returns the
+  // customer exactly where they were after signing in.
+  const redirectTo =
+    location && location !== "/"
+      ? `/sign-in?redirect=${encodeURIComponent(location)}`
+      : "/sign-in";
   return (
     <>
       <Show when="signed-in">
         <Component />
       </Show>
       <Show when="signed-out">
-        <Redirect to="/sign-in" />
+        <Redirect to={redirectTo} />
       </Show>
     </>
   );
