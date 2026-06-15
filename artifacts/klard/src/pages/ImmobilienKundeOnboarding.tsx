@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { DeleteAccountSection } from "@/components/DeleteAccountSection";
 import {
   useGetMyImmobilienKunde,
   useUpsertMyImmobilienKunde,
@@ -261,6 +262,10 @@ export default function ImmobilienKundeOnboarding() {
             </Form>
           </CardContent>
         </Card>
+
+        <div className="mt-8">
+          <DeleteAccountSection variant="Kundenkonto" />
+        </div>
       </div>
       <Footer />
     </div>

@@ -223,6 +223,25 @@ paths:
         "404":
           description: Not found (not yet a provider)
 
+  /account/me:
+    delete:
+      operationId: deleteMyAccount
+      tags: [account]
+      summary: Permanently delete the current user's entire account (provider + customer data + login)
+      responses:
+        "200":
+          description: Account deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [deleted]
+                properties:
+                  deleted:
+                    type: boolean
+        "401":
+          description: Unauthorized
+
   /providers/{id}/services:
     get:
       operationId: listProviderServices

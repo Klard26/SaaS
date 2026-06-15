@@ -1230,6 +1230,10 @@ export type ListProvidersParams = {
   offset?: number;
 };
 
+export type DeleteMyAccount200 = {
+  deleted: boolean;
+};
+
 export type DeleteTimeSlotParams = {
   slotId: number;
 };

@@ -44,6 +44,7 @@ export * from "./categoryQualifications";
 export * from "./checkoutSession";
 export * from "./connectOnboardingLink";
 export * from "./connectStatus";
+export * from "./deleteMyAccount200";
 export * from "./deleteTimeSlotParams";
 export * from "./gebaeudecheckCheckoutInput";
 export * from "./gebaeudecheckCredits";

@@ -290,6 +290,13 @@ export const GetMyProviderProfileResponse = zod.object({
 });
 
 /**
+ * @summary Permanently delete the current user's entire account (provider + customer data + login)
+ */
+export const DeleteMyAccountResponse = zod.object({
+  deleted: zod.boolean(),
+});
+
+/**
  * @summary List services for a provider
  */
 export const ListProviderServicesParams = zod.object({

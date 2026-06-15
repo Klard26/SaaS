@@ -11,6 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Navbar } from "@/components/Navbar";
+import { DeleteAccountSection } from "@/components/DeleteAccountSection";
 import {
   useGetMyProviderProfile, getGetMyProviderProfileQueryKey,
   useUpdateProvider,
@@ -264,6 +265,10 @@ export default function ProviderProfile() {
             </CardContent>
           </Card>
         )}
+
+        <div className="mt-8">
+          <DeleteAccountSection variant="Berater-Konto" />
+        </div>
       </div>
     </div>
   );
