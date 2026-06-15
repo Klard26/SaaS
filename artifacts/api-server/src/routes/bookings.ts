@@ -177,6 +177,9 @@ router.post("/bookings", async (req, res): Promise<void> => {
         totalPrice: booking.totalPrice,
         paymentRequired: booking.paymentRequired,
         notes: booking.notes,
+        durationMinutes: service.durationMinutes ?? 60,
+        location: provider.address ?? `${provider.zip ?? ""} ${provider.city}`.trim(),
+        providerTier: provider.subscriptionTier,
       };
       const ics = buildIcs(
         [

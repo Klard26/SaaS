@@ -314,6 +314,9 @@ export async function sendInvoiceEmail(opts: {
       totalCents: invoice.totalCents,
       pdfBase64: pdf.toString("base64"),
       filename: `${invoice.invoiceNumber}.pdf`,
+      serviceName: booking.serviceName,
+      providerEmail: provider.email,
+      performanceDate: booking.scheduledAt,
     });
   } catch (err) {
     logger.error({ err, invoiceId: invoice.id }, "Invoice email send failed");

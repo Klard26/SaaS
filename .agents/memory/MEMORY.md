@@ -1,5 +1,1 @@
-- [Klard product truth](klard-product-truth.md) — Klard is a marketplace for Bau-/Gebäudeberater (8 categories, 153 services, HOAI/BAFA/KfW), NOT legal/tax; replit.md's category list is outdated, trust seed data.
-- [WattWechsel app split](wattwechsel-architecture.md) — WattWechsel is its own frontend at /wattwechsel/ sharing Klard's single Clerk tenant + shared api-server; 2nd Clerk tenant / 2nd api-server infeasible on Replit.
-- [Money endpoints must be server-authoritative](server-authoritative-pricing.md) — any binding/paid flow must recompute prices+totals from the DB catalog, never trust client-sent amounts.
-- [Klard registration flow](klard-registration-flow.md) — customer vs Berater signup split; ?intent= drives Clerk redirect; 7 account types; typ is text (no migration).
-- [Klard catalog/seed pipeline](klard-catalog-seed.md) — scripts/data/klard-katalog.json → seed.ts → categories + service_templates; seedServiceTemplates.ts is STALE/unused; restart api-server after schema change.
+- [Email templates](email-templates.md) — branded .hbs bundled via esbuild text loader (no runtime reads); renderer handles single+double brace; some templates unwired by design.

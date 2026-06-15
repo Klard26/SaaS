@@ -1,6 +1,16 @@
 import { getUncachableResendClient } from "./resendClient";
 import { logger } from "./logger";
 
+import tplWelcomeProvider from "../email-templates/welcome_provider.hbs";
+import tplBookingConfirmCustomer from "../email-templates/booking_confirmation_customer.hbs";
+import tplBookingConfirmProvider from "../email-templates/booking_confirmation_provider.hbs";
+import tplCancelledByCustomer from "../email-templates/booking_cancelled_by_customer.hbs";
+import tplCancelledByProvider from "../email-templates/booking_cancelled_by_provider.hbs";
+import tplReminder24h from "../email-templates/booking_reminder_24h.hbs";
+import tplInvoiceReady from "../email-templates/invoice_ready.hbs";
+import tplWelcomeCustomer from "../email-templates/welcome_customer.hbs";
+import tplStripeActivated from "../email-templates/stripe_activated.hbs";
+
 const APP_URL =
   process.env["APP_URL"] ??
   (process.env["REPLIT_DOMAINS"]?.split(",")[0]
@@ -13,12 +23,77 @@ const dt = new Intl.DateTimeFormat("de-DE", {
   timeStyle: "short",
   timeZone: BERLIN_TZ,
 });
+const dateFmt = new Intl.DateTimeFormat("de-DE", {
+  weekday: "short",
+  day: "2-digit",
+  month: "long",
+  year: "numeric",
+  timeZone: BERLIN_TZ,
+});
+const timeFmt = new Intl.DateTimeFormat("de-DE", {
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: BERLIN_TZ,
+});
 
+function toDate(d: Date | string): Date {
+  return typeof d === "string" ? new Date(d) : d;
+}
 function fmtDateTime(d: Date | string): string {
-  return dt.format(typeof d === "string" ? new Date(d) : d);
+  return dt.format(toDate(d));
+}
+function fmtDate(d: Date | string): string {
+  return dateFmt.format(toDate(d));
+}
+function fmtTime(d: Date | string): string {
+  return `${timeFmt.format(toDate(d))} Uhr`;
+}
+function fmtDuration(min?: number | null): string {
+  if (!min || min <= 0) return "—";
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  if (h && m) return `${h} Std. ${m} Min.`;
+  if (h) return `${h} Std.`;
+  return `${m} Min.`;
+}
+function eur(amount: number): string {
+  return amount.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+}
+function bookingNumber(id: number): string {
+  return `KLD-${String(id).padStart(6, "0")}`;
+}
+function commissionRate(tier?: string | null): number {
+  return tier === "premium" ? 0.04 : 0.09;
 }
 
-function wrap(title: string, bodyHtml: string): string {
+// ── Branded HTML template rendering ──────────────────────────────────────────
+// The attached templates mix correct `{{key}}` placeholders with a few
+// single-brace `{key}` typos, so the renderer replaces both forms for every
+// supplied key, then strips any leftover `{{...}}` placeholder.
+
+type Vars = Record<string, string | number | null | undefined>;
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function renderTemplate(tpl: string, vars: Vars): string {
+  let out = tpl;
+  for (const [key, raw] of Object.entries(vars)) {
+    const value = escapeHtml(raw == null ? "" : String(raw));
+    out = out.split(`{{${key}}}`).join(value).split(`{${key}}`).join(value);
+  }
+  // Remove any unreplaced double-brace placeholders so they never reach a user.
+  out = out.replace(/\{\{\s*[a-zA-Z0-9_]+\s*\}\}/g, "");
+  return out;
+}
+
+function legacyWrap(title: string, bodyHtml: string): string {
   return `<!doctype html><html><body style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#f7f7f8;margin:0;padding:24px;color:#111">
 <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;padding:32px;border:1px solid #e5e7eb">
   <h1 style="font-size:20px;margin:0 0 16px">Klard</h1>
@@ -72,22 +147,49 @@ export async function sendProviderWelcome(p: {
   displayName: string;
 }): Promise<void> {
   if (!p.email) return;
-  const html = wrap(
-    `Willkommen bei Klard, ${p.displayName}!`,
-    `<p>Ihr Berater-Profil wurde erfolgreich angelegt.</p>
-     <p>Als nächstes können Sie:</p>
-     <ul>
-       <li>Ihre Leistungen mit Preisen anlegen</li>
-       <li>Verfügbare Termine eintragen</li>
-       <li>Ihr Profil mit Logo und Bio vervollständigen</li>
-     </ul>
-     <p><a href="${APP_URL}/dashboard" style="display:inline-block;background:#111;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">Zum Dashboard</a></p>`,
-  );
+  const html = renderTemplate(tplWelcomeProvider, {
+    providerName: p.displayName,
+    dashboardUrl: `${APP_URL}/dashboard`,
+  });
   await send({
     to: p.email,
     subject: "Willkommen bei Klard",
     html,
     text: `Willkommen bei Klard, ${p.displayName}! Ihr Berater-Profil ist aktiv. Dashboard: ${APP_URL}/dashboard`,
+  });
+}
+
+export async function sendCustomerWelcome(p: {
+  email: string;
+  customerName: string;
+}): Promise<void> {
+  if (!p.email) return;
+  const html = renderTemplate(tplWelcomeCustomer, {
+    customerName: p.customerName,
+    accountUrl: `${APP_URL}/search`,
+  });
+  await send({
+    to: p.email,
+    subject: "Willkommen bei Klard",
+    html,
+    text: `Willkommen bei Klard, ${p.customerName}! Jetzt geprüfte Berater finden und buchen: ${APP_URL}/search`,
+  });
+}
+
+export async function sendStripeActivated(p: {
+  email: string;
+  providerName: string;
+}): Promise<void> {
+  if (!p.email) return;
+  const html = renderTemplate(tplStripeActivated, {
+    providerName: p.providerName,
+    dashboardUrl: `${APP_URL}/dashboard`,
+  });
+  await send({
+    to: p.email,
+    subject: "Ihr Klard Premium ist aktiv",
+    html,
+    text: `Ihr Klard Premium-Abo ist aktiv, ${p.providerName}. Zum Dashboard: ${APP_URL}/dashboard`,
   });
 }
 
@@ -102,6 +204,46 @@ export interface BookingEmailContext {
   totalPrice: number;
   paymentRequired: boolean;
   notes?: string | null;
+  durationMinutes?: number | null;
+  location?: string | null;
+  customerPhone?: string | null;
+  providerTier?: string | null;
+}
+
+function customerConfirmationHtml(ctx: BookingEmailContext, paid: boolean): string {
+  let confirmIntro: string;
+  let amountLabel: string;
+  let amountNote: string;
+  if (paid) {
+    confirmIntro = "Ihre Buchung wurde erfolgreich bezahlt und bestätigt. Hier sind alle Details:";
+    amountLabel = "Bezahlter Betrag";
+    amountNote = "Inkl. 19% USt — Ihre Rechnung erhalten Sie nach Leistungserbringung als PDF.";
+  } else if (ctx.paymentRequired) {
+    confirmIntro = "Ihre Buchung ist eingegangen und bestätigt. Hier sind alle Details:";
+    amountLabel = "Betrag";
+    amountNote = "Inkl. 19% USt — bitte begleichen Sie den Betrag bequem online in Ihrem Konto.";
+  } else {
+    confirmIntro = "Ihre Buchung ist bestätigt. Hier sind alle Details:";
+    amountLabel = "Betrag";
+    amountNote = "Die Abrechnung erfolgt direkt mit Ihrem Berater.";
+  }
+  return renderTemplate(tplBookingConfirmCustomer, {
+    customerName: ctx.customerName ?? "Kunde",
+    confirmIntro,
+    serviceName: ctx.serviceName,
+    providerName: ctx.providerName,
+    providerEmail: ctx.providerEmail ?? "hello@klard.de",
+    bookingDate: fmtDate(ctx.scheduledAt),
+    bookingTime: fmtTime(ctx.scheduledAt),
+    bookingDuration: fmtDuration(ctx.durationMinutes),
+    bookingLocation: ctx.location || "Wird vom Berater mitgeteilt",
+    bookingNumber: bookingNumber(ctx.bookingId),
+    amountLabel,
+    totalAmount: ctx.paymentRequired ? eur(ctx.totalPrice) : "Direktabrechnung",
+    amountNote,
+    bookingUrl: `${APP_URL}/bookings`,
+    icsUrl: `${APP_URL}/bookings`,
+  });
 }
 
 export async function sendBookingConfirmationToCustomer(
@@ -109,25 +251,12 @@ export async function sendBookingConfirmationToCustomer(
   icsContent?: string,
 ): Promise<void> {
   if (!ctx.customerEmail) return;
-  const when = fmtDateTime(ctx.scheduledAt);
-  const html = wrap(
-    "Termin bestätigt",
-    `<p>Hallo${ctx.customerName ? ` ${ctx.customerName}` : ""},</p>
-     <p>Ihr Termin bei <strong>${ctx.providerName}</strong> ist gebucht.</p>
-     <table style="font-size:14px;line-height:1.6">
-       <tr><td><strong>Leistung:</strong></td><td>&nbsp;${ctx.serviceName}</td></tr>
-       <tr><td><strong>Termin:</strong></td><td>&nbsp;${when}</td></tr>
-       <tr><td><strong>Preis:</strong></td><td>&nbsp;${ctx.totalPrice.toFixed(2)} €${ctx.paymentRequired ? "" : " (Direktabrechnung)"}</td></tr>
-     </table>
-     ${ctx.notes ? `<p><strong>Ihre Notiz:</strong> ${ctx.notes}</p>` : ""}
-     <p>Den Kalendereintrag (.ics) finden Sie im Anhang.</p>
-     <p><a href="${APP_URL}/bookings" style="display:inline-block;background:#111;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">Meine Buchungen</a></p>`,
-  );
+  const html = customerConfirmationHtml(ctx, false);
   await send({
     to: ctx.customerEmail,
-    subject: `Terminbestätigung – ${ctx.providerName} am ${when}`,
+    subject: `Buchung bestätigt – ${ctx.providerName} am ${fmtDate(ctx.scheduledAt)}`,
     html,
-    text: `Termin bestätigt bei ${ctx.providerName} am ${when} (${ctx.serviceName}).`,
+    text: `Buchung bestätigt bei ${ctx.providerName} am ${fmtDateTime(ctx.scheduledAt)} (${ctx.serviceName}).`,
     attachments: icsContent
       ? [{ filename: "termin.ics", content: icsContent }]
       : undefined,
@@ -136,23 +265,34 @@ export async function sendBookingConfirmationToCustomer(
 
 export async function sendNewBookingToProvider(ctx: BookingEmailContext): Promise<void> {
   if (!ctx.providerEmail) return;
-  const when = fmtDateTime(ctx.scheduledAt);
-  const html = wrap(
-    "Neue Buchung",
-    `<p>Sie haben eine neue Buchung über Klard erhalten.</p>
-     <table style="font-size:14px;line-height:1.6">
-       <tr><td><strong>Kunde:</strong></td><td>&nbsp;${ctx.customerName ?? "—"}${ctx.customerEmail ? ` (${ctx.customerEmail})` : ""}</td></tr>
-       <tr><td><strong>Leistung:</strong></td><td>&nbsp;${ctx.serviceName}</td></tr>
-       <tr><td><strong>Termin:</strong></td><td>&nbsp;${when}</td></tr>
-     </table>
-     ${ctx.notes ? `<p><strong>Notiz vom Kunden:</strong> ${ctx.notes}</p>` : ""}
-     <p><a href="${APP_URL}/dashboard" style="display:inline-block;background:#111;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">Im Dashboard öffnen</a></p>`,
-  );
+  const rate = commissionRate(ctx.providerTier);
+  const commission = ctx.totalPrice * rate;
+  const payout = ctx.totalPrice - commission;
+  const providerIntro = ctx.paymentRequired
+    ? "Sie haben eine neue Buchung erhalten. Der Termin ist verbindlich eingetragen."
+    : "Sie haben eine neue Buchung erhalten. Die Abrechnung erfolgt direkt mit dem Kunden — der Termin ist verbindlich eingetragen.";
+  const html = renderTemplate(tplBookingConfirmProvider, {
+    providerName: ctx.providerName,
+    providerIntro,
+    customerName: ctx.customerName ?? "Kunde",
+    customerEmail: ctx.customerEmail ?? "—",
+    customerPhone: ctx.customerPhone || "—",
+    serviceName: ctx.serviceName,
+    bookingDate: fmtDate(ctx.scheduledAt),
+    bookingTime: fmtTime(ctx.scheduledAt),
+    bookingDuration: fmtDuration(ctx.durationMinutes),
+    bookingNumber: bookingNumber(ctx.bookingId),
+    totalAmount: eur(ctx.totalPrice),
+    providerPayout: eur(payout),
+    commissionRate: `${Math.round(rate * 100)} %`,
+    commissionAmount: eur(commission),
+    bookingUrl: `${APP_URL}/dashboard`,
+  });
   await send({
     to: ctx.providerEmail,
-    subject: `Neue Buchung – ${ctx.customerName ?? "Kunde"} am ${when}`,
+    subject: `Neue Buchung – ${ctx.customerName ?? "Kunde"} am ${fmtDate(ctx.scheduledAt)}`,
     html,
-    text: `Neue Buchung von ${ctx.customerName ?? "Kunde"} am ${when}.`,
+    text: `Neue Buchung von ${ctx.customerName ?? "Kunde"} am ${fmtDateTime(ctx.scheduledAt)}.`,
   });
 }
 
@@ -160,41 +300,74 @@ export async function sendBookingCancellation(
   ctx: BookingEmailContext,
   cancelledBy: "customer" | "provider",
 ): Promise<void> {
-  const when = fmtDateTime(ctx.scheduledAt);
-  const subject = `Termin storniert – ${ctx.providerName} am ${when}`;
-  const who = cancelledBy === "customer" ? "vom Kunden" : "vom Berater";
-  const body = (recipient: "customer" | "provider") => wrap(
-    "Termin storniert",
-    `<p>Der folgende Termin wurde ${who} storniert:</p>
-     <table style="font-size:14px;line-height:1.6">
-       <tr><td><strong>Berater:</strong></td><td>&nbsp;${ctx.providerName}</td></tr>
-       <tr><td><strong>Leistung:</strong></td><td>&nbsp;${ctx.serviceName}</td></tr>
-       <tr><td><strong>Termin:</strong></td><td>&nbsp;${when}</td></tr>
-     </table>
-     <p>${recipient === "customer" ? "Sie können jederzeit einen neuen Termin buchen." : "Der Termin steht wieder zur Verfügung."}</p>`,
-  );
-  if (ctx.customerEmail) {
-    await send({ to: ctx.customerEmail, subject, html: body("customer") });
+  const dateStr = fmtDate(ctx.scheduledAt);
+  const refundInfo = ctx.paymentRequired
+    ? "Falls bereits bezahlt wurde, wird der Betrag automatisch innerhalb von 5–10 Werktagen auf Ihre ursprüngliche Zahlungsmethode erstattet."
+    : "Es wurde keine Online-Zahlung über Klard eingezogen — eine Erstattung ist nicht erforderlich.";
+
+  if (cancelledBy === "customer") {
+    const baseVars: Vars = {
+      serviceName: ctx.serviceName,
+      bookingDate: dateStr,
+      bookingTime: fmtTime(ctx.scheduledAt),
+      cancellationReason: "Auf Kundenwunsch storniert",
+      cancelledAt: fmtDateTime(new Date()),
+      bookingNumber: bookingNumber(ctx.bookingId),
+      refundInfo,
+    };
+    const subject = `Buchung storniert – ${ctx.providerName} am ${dateStr}`;
+    if (ctx.providerEmail) {
+      await send({
+        to: ctx.providerEmail,
+        subject,
+        html: renderTemplate(tplCancelledByCustomer, { ...baseVars, recipientName: ctx.providerName }),
+        text: `Die Buchung (${ctx.serviceName}) am ${fmtDateTime(ctx.scheduledAt)} wurde vom Kunden storniert.`,
+      });
+    }
+    if (ctx.customerEmail) {
+      await send({
+        to: ctx.customerEmail,
+        subject,
+        html: renderTemplate(tplCancelledByCustomer, {
+          ...baseVars,
+          recipientName: ctx.customerName ?? "Kunde",
+        }),
+        text: `Ihre Buchung (${ctx.serviceName}) am ${fmtDateTime(ctx.scheduledAt)} wurde storniert.`,
+      });
+    }
+    return;
   }
-  if (ctx.providerEmail) {
-    await send({ to: ctx.providerEmail, subject, html: body("provider") });
+
+  // Cancelled by provider — notify the customer with refund + alternatives.
+  if (ctx.customerEmail) {
+    await send({
+      to: ctx.customerEmail,
+      subject: `Termin abgesagt – ${ctx.providerName} am ${dateStr}`,
+      html: renderTemplate(tplCancelledByProvider, {
+        customerName: ctx.customerName ?? "Kunde",
+        providerName: ctx.providerName,
+        serviceName: ctx.serviceName,
+        bookingDate: dateStr,
+        bookingTime: fmtTime(ctx.scheduledAt),
+        cancellationReason: "Vom Berater abgesagt",
+        totalAmount: ctx.paymentRequired ? eur(ctx.totalPrice) : "Direktabrechnung",
+        alternativeCount: "zahlreiche",
+        branchName: "geprüfte",
+        searchUrl: `${APP_URL}/search`,
+      }),
+      text: `Ihr Termin bei ${ctx.providerName} am ${fmtDateTime(ctx.scheduledAt)} wurde leider abgesagt.`,
+    });
   }
 }
 
 export async function sendPaymentConfirmation(ctx: BookingEmailContext): Promise<void> {
   if (!ctx.customerEmail) return;
-  const when = fmtDateTime(ctx.scheduledAt);
-  const html = wrap(
-    "Zahlung erhalten",
-    `<p>Vielen Dank! Ihre Zahlung von <strong>${ctx.totalPrice.toFixed(2)} €</strong> für den Termin bei ${ctx.providerName} (${ctx.serviceName}) am ${when} wurde erfolgreich verarbeitet.</p>
-     <p>Eine Quittung erhalten Sie automatisch von unserem Zahlungsdienstleister Stripe.</p>
-     <p><a href="${APP_URL}/bookings" style="display:inline-block;background:#111;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">Meine Buchungen</a></p>`,
-  );
+  const html = customerConfirmationHtml(ctx, true);
   await send({
     to: ctx.customerEmail,
-    subject: `Zahlung bestätigt – ${ctx.providerName} am ${when}`,
+    subject: `Zahlung bestätigt – ${ctx.providerName} am ${fmtDate(ctx.scheduledAt)}`,
     html,
-    text: `Zahlung über ${ctx.totalPrice.toFixed(2)} € erhalten.`,
+    text: `Zahlung über ${eur(ctx.totalPrice)} erhalten — Buchung bei ${ctx.providerName} bestätigt.`,
   });
 }
 
@@ -208,7 +381,7 @@ export async function sendProviderAssessmentSaved(p: {
 }): Promise<void> {
   if (!p.providerEmail) return;
   const safeLabel = p.label.replace(/[\r\n]+/g, " ").slice(0, 200);
-  const html = wrap(
+  const html = legacyWrap(
     `Mandant gespeichert: ${safeLabel}`,
     `<p>Hallo ${p.providerName},</p>
      <p>Sie haben für den Mandanten <strong>${safeLabel}</strong> eine neue Gebäudeanalyse in Ihrem Klard-Dashboard gespeichert.</p>
@@ -237,47 +410,73 @@ export async function sendInvoiceWithAttachment(p: {
   totalCents: number;
   pdfBase64: string;
   filename: string;
+  serviceName?: string | null;
+  providerEmail?: string | null;
+  performanceDate?: Date | string | null;
 }): Promise<void> {
-  const totalEur = (p.totalCents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+  const totalEur = eur(p.totalCents / 100);
   const isStorno = p.kind === "storno";
-  const title = isStorno ? "Stornorechnung" : "Ihre Rechnung";
-  const subject = `${title} ${p.invoiceNumber} – ${p.providerName}`;
-  const html = wrap(
-    title,
-    `<p>Hallo${p.customerName ? ` ${p.customerName}` : ""},</p>
-     <p>${isStorno
-        ? `anbei erhalten Sie die <strong>Stornorechnung ${p.invoiceNumber}</strong> für Ihren stornierten Termin bei ${p.providerName}.`
-        : `vielen Dank für Ihre Buchung bei ${p.providerName}. Anbei erhalten Sie Ihre Rechnung <strong>${p.invoiceNumber}</strong> über <strong>${totalEur}</strong>.`}</p>
-     <p>Die Rechnung ist als PDF im Anhang dieser E-Mail.</p>
-     <p><a href="${APP_URL}/bookings" style="display:inline-block;background:#111;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">Meine Buchungen</a></p>`,
-  );
+
+  if (isStorno) {
+    // No dedicated storno template was provided — keep the simple branded fallback.
+    const html = legacyWrap(
+      "Stornorechnung",
+      `<p>Hallo${p.customerName ? ` ${p.customerName}` : ""},</p>
+       <p>anbei erhalten Sie die <strong>Stornorechnung ${p.invoiceNumber}</strong> für Ihren stornierten Termin bei ${p.providerName}.</p>
+       <p>Die Rechnung ist als PDF im Anhang dieser E-Mail.</p>
+       <p><a href="${APP_URL}/bookings" style="display:inline-block;background:#111;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">Meine Buchungen</a></p>`,
+    );
+    await send({
+      to: p.to,
+      subject: `Stornorechnung ${p.invoiceNumber} – ${p.providerName}`,
+      html,
+      text: `Stornorechnung ${p.invoiceNumber} – ${p.providerName}. Betrag: ${totalEur}.`,
+      attachments: [{ filename: p.filename, content: p.pdfBase64, isBase64: true }],
+    });
+    return;
+  }
+
+  const performance = p.performanceDate ? fmtDate(p.performanceDate) : "—";
+  const html = renderTemplate(tplInvoiceReady, {
+    customerName: p.customerName ?? "Kunde",
+    providerName: p.providerName,
+    providerEmail: p.providerEmail ?? "hello@klard.de",
+    serviceName: p.serviceName ?? "Beratungsleistung",
+    invoiceNumber: p.invoiceNumber,
+    invoiceDate: fmtDate(new Date()),
+    performanceStart: performance,
+    performanceEnd: performance,
+    totalAmount: totalEur,
+    invoicePdfUrl: `${APP_URL}/bookings`,
+  });
   await send({
     to: p.to,
-    subject,
+    subject: `Ihre Rechnung ${p.invoiceNumber} – ${p.providerName}`,
     html,
-    text: `${title} ${p.invoiceNumber} – ${p.providerName}. Betrag: ${totalEur}.`,
+    text: `Ihre Rechnung ${p.invoiceNumber} – ${p.providerName}. Betrag: ${totalEur}.`,
     attachments: [{ filename: p.filename, content: p.pdfBase64, isBase64: true }],
   });
 }
 
 export async function sendBookingReminder(ctx: BookingEmailContext): Promise<void> {
   if (!ctx.customerEmail) return;
-  const when = fmtDateTime(ctx.scheduledAt);
-  const html = wrap(
-    "Erinnerung: Ihr Termin morgen",
-    `<p>Hallo${ctx.customerName ? ` ${ctx.customerName}` : ""},</p>
-     <p>kleine Erinnerung an Ihren Termin <strong>morgen</strong>:</p>
-     <table style="font-size:14px;line-height:1.6">
-       <tr><td><strong>Berater:</strong></td><td>&nbsp;${ctx.providerName}</td></tr>
-       <tr><td><strong>Leistung:</strong></td><td>&nbsp;${ctx.serviceName}</td></tr>
-       <tr><td><strong>Termin:</strong></td><td>&nbsp;${when}</td></tr>
-     </table>
-     <p>Wir wünschen Ihnen ein erfolgreiches Gespräch.</p>`,
-  );
+  const html = renderTemplate(tplReminder24h, {
+    customerName: ctx.customerName ?? "Kunde",
+    providerName: ctx.providerName,
+    serviceName: ctx.serviceName,
+    bookingDate: fmtDate(ctx.scheduledAt),
+    bookingTime: fmtTime(ctx.scheduledAt),
+    bookingDuration: fmtDuration(ctx.durationMinutes),
+    bookingLocation: ctx.location || "Wird vom Berater mitgeteilt",
+    prepNote1: "Halten Sie relevante Unterlagen für Ihr Gespräch bereit.",
+    prepNote2: "Bei Verhinderung sagen Sie den Termin bitte rechtzeitig ab.",
+    bookingUrl: `${APP_URL}/bookings`,
+    cancelUrl: `${APP_URL}/bookings`,
+  });
   await send({
     to: ctx.customerEmail,
     subject: `Erinnerung: Termin morgen bei ${ctx.providerName}`,
     html,
-    text: `Erinnerung: Termin morgen um ${when} bei ${ctx.providerName}.`,
+    text: `Erinnerung: Termin morgen um ${fmtDateTime(ctx.scheduledAt)} bei ${ctx.providerName}.`,
   });
 }

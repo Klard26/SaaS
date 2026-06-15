@@ -2,7 +2,8 @@ import { Router, type IRouter } from "express";
 import { db, immobilienKundeTable } from "@workspace/db";
 import { UpsertMyImmobilienKundeBody } from "@workspace/api-zod";
 import { eq } from "drizzle-orm";
-import { getAuth } from "@clerk/express";
+import { getAuth, clerkClient } from "@clerk/express";
+import { sendCustomerWelcome } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -49,12 +50,22 @@ router.put("/immobilien-kunde/me", async (req, res): Promise<void> => {
       wohneinheitenGesamt: d.wohneinheitenGesamt ?? null,
       updatedAt: new Date(),
     };
-    const [row] = await db
+
+    // Atomic first-time detection: the DB resolves the race on the userId
+    // unique constraint, so only the single winning insert returns a row and
+    // sends the welcome email. Concurrent double-submits never double-send.
+    const inserted = await db
       .insert(immobilienKundeTable)
       .values(values)
-      .onConflictDoUpdate({
-        target: immobilienKundeTable.userId,
-        set: {
+      .onConflictDoNothing({ target: immobilienKundeTable.userId })
+      .returning();
+    const isFirstTime = inserted.length > 0;
+
+    let row = inserted[0];
+    if (!isFirstTime) {
+      [row] = await db
+        .update(immobilienKundeTable)
+        .set({
           typ: values.typ,
           firma: values.firma,
           ansprechpartner: values.ansprechpartner,
@@ -63,9 +74,30 @@ router.put("/immobilien-kunde/me", async (req, res): Promise<void> => {
           anzahlGebaeude: values.anzahlGebaeude,
           wohneinheitenGesamt: values.wohneinheitenGesamt,
           updatedAt: values.updatedAt,
-        },
-      })
-      .returning();
+        })
+        .where(eq(immobilienKundeTable.userId, userId))
+        .returning();
+    }
+
+    // Send the welcome email only on first-time profile creation.
+    if (isFirstTime && row) {
+      let email = d.email ?? "";
+      if (!email) {
+        try {
+          const u = await clerkClient.users.getUser(userId);
+          email = u.primaryEmailAddress?.emailAddress ?? "";
+        } catch {
+          // ignore — no email, no welcome
+        }
+      }
+      if (email) {
+        void sendCustomerWelcome({
+          email,
+          customerName: d.ansprechpartner || d.firma,
+        });
+      }
+    }
+
     res.json(row);
   } catch (err) {
     req.log.error({ err }, "Failed to upsert immobilien-kunde profile");

@@ -2,9 +2,9 @@ import { Router, type IRouter, raw } from "express";
 import type Stripe from "stripe";
 import { db } from "@workspace/db";
 import { providersTable, bookingsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, and, ne } from "drizzle-orm";
 import { getUncachableStripeClient } from "../lib/stripeClient";
-import { sendPaymentConfirmation } from "../lib/email";
+import { sendPaymentConfirmation, sendStripeActivated } from "../lib/email";
 import { issueInvoiceForBooking, sendInvoiceEmail } from "../lib/invoiceService";
 import { fulfillOrder } from "../lib/gebaeudecheck";
 
@@ -57,14 +57,30 @@ router.post(
           if (kind === "subscription") {
             const providerId = Number(session.metadata?.["providerId"]);
             if (Number.isFinite(providerId) && session.subscription) {
-              await db
+              // Only treat a non-premium → premium change as an activation, so
+              // Stripe webhook retries/replays don't resend the email. After a
+              // cancellation the tier is reset to "basic", so a genuine
+              // re-subscription still transitions and re-notifies.
+              const [activated] = await db
                 .update(providersTable)
                 .set({
                   subscriptionTier: "premium",
                   stripeSubscriptionId: String(session.subscription),
                   premiumSince: new Date(),
                 })
-                .where(eq(providersTable.id, providerId));
+                .where(
+                  and(
+                    eq(providersTable.id, providerId),
+                    ne(providersTable.subscriptionTier, "premium"),
+                  ),
+                )
+                .returning();
+              if (activated?.email) {
+                void sendStripeActivated({
+                  email: activated.email,
+                  providerName: activated.displayName,
+                });
+              }
             }
           } else if (kind === "gebaeudecheck") {
             if (session.payment_status === "paid") {
