@@ -7,6 +7,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -96,6 +97,7 @@ export function Navbar() {
                   <p className="text-xs text-muted-foreground truncate">{user?.primaryEmailAddress?.emailAddress}</p>
                 </div>
                 <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">Kundenbereich</DropdownMenuLabel>
                 <DropdownMenuItem onClick={() => setLocation("/bookings")} data-testid="menu-item-bookings">Meine Buchungen</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setLocation("/immobilien/onboarding")} data-testid="menu-item-immobilien">Mein Kundenkonto</DropdownMenuItem>
                 {isAdmin && (
@@ -104,6 +106,7 @@ export function Navbar() {
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">Beraterbereich</DropdownMenuLabel>
                 {hasProvider ? (
                   <>
                     <DropdownMenuItem onClick={() => setLocation("/dashboard")} data-testid="menu-item-dashboard">Berater-Dashboard</DropdownMenuItem>
@@ -164,10 +167,21 @@ export function Navbar() {
             <Link href="/berater-werden" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Für Berater</Link>
             {isSignedIn && (
               <>
+                <div className="mt-2 pt-2 border-t border-border" />
+                <p className="px-1 py-1 text-xs font-medium text-muted-foreground">Kundenbereich</p>
                 <Link href="/bookings" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Meine Buchungen</Link>
                 <Link href="/immobilien/onboarding" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Mein Kundenkonto</Link>
-                {hasProvider && (
-                  <Link href="/dashboard" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Berater-Dashboard</Link>
+                <div className="mt-2 pt-2 border-t border-border" />
+                <p className="px-1 py-1 text-xs font-medium text-muted-foreground">Beraterbereich</p>
+                {hasProvider ? (
+                  <>
+                    <Link href="/dashboard" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Berater-Dashboard</Link>
+                    <Link href="/provider/profile" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Berater-Profil</Link>
+                    <Link href="/provider/services" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Meine Leistungen</Link>
+                    <Link href="/provider/availability" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Verfügbarkeit</Link>
+                  </>
+                ) : (
+                  <Link href="/berater-werden" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Berater werden</Link>
                 )}
               </>
             )}
