@@ -324,6 +324,19 @@ router.post("/providers", async (req, res): Promise<void> => {
       return;
     }
     const cleanQualifications = qualCheck.data;
+
+    const [existing] = await db
+      .select({ id: providersTable.id })
+      .from(providersTable)
+      .where(eq(providersTable.clerkUserId, userId))
+      .limit(1);
+    if (existing) {
+      res.status(409).json({
+        error: "Sie haben bereits ein Berater-Profil. Bearbeiten Sie es in Ihrem Dashboard.",
+      });
+      return;
+    }
+
     let email = "";
     try {
       const u = await clerkClient.users.getUser(userId);
@@ -363,6 +376,19 @@ router.post("/providers", async (req, res): Promise<void> => {
 
     res.status(201).json(provider);
   } catch (err) {
+    // Race: two concurrent submits for the same Clerk user hit the unique
+    // constraint. Surface it as a clean conflict rather than a 500.
+    if (
+      err &&
+      typeof err === "object" &&
+      "cause" in err &&
+      (err as { cause?: { code?: string } }).cause?.code === "23505"
+    ) {
+      res.status(409).json({
+        error: "Sie haben bereits ein Berater-Profil. Bearbeiten Sie es in Ihrem Dashboard.",
+      });
+      return;
+    }
     req.log.error({ err }, "Failed to create provider");
     res.status(500).json({ error: "Internal server error" });
   }

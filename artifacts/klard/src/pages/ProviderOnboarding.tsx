@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { QualificationsForm, type QualificationsValue } from "@/components/QualificationsForm";
-import { useCreateProvider, useListCategories, getGetMyProviderProfileQueryKey } from "@workspace/api-client-react";
+import { useCreateProvider, useListCategories, useGetMyProviderProfile, getGetMyProviderProfileQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { UserCheck, Upload, Loader2 } from "lucide-react";
@@ -48,6 +48,15 @@ export default function ProviderOnboarding() {
 
   const { data: categories = [] } = useListCategories();
   const createProvider = useCreateProvider();
+
+  const { data: existingProfile } = useGetMyProviderProfile({
+    query: { queryKey: getGetMyProviderProfileQueryKey(), retry: false },
+  });
+  useEffect(() => {
+    if (existingProfile?.id) {
+      setLocation("/dashboard");
+    }
+  }, [existingProfile?.id, setLocation]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -91,6 +100,13 @@ export default function ProviderOnboarding() {
       toast({ title: "Willkommen!", description: "Ihr Berater-Profil wurde erstellt." });
       setLocation("/dashboard");
     } catch (err: unknown) {
+      const status = (err as { response?: { status?: number }; status?: number } | undefined);
+      if (status?.response?.status === 409 || status?.status === 409) {
+        qc.invalidateQueries({ queryKey: getGetMyProviderProfileQueryKey() });
+        toast({ title: "Profil vorhanden", description: "Sie haben bereits ein Berater-Profil." });
+        setLocation("/dashboard");
+        return;
+      }
       const msg = err instanceof Error ? err.message : "Profil konnte nicht erstellt werden.";
       toast({ title: "Fehler", description: msg, variant: "destructive" });
     }
