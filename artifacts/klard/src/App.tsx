@@ -28,7 +28,6 @@ import ProviderAvailability from "./pages/ProviderAvailability";
 import Pricing from "./pages/Pricing";
 import Gebaeudecheck from "./pages/Gebaeudecheck";
 import ImmobilienKundeOnboarding from "./pages/ImmobilienKundeOnboarding";
-import KontoTypWahl from "./pages/KontoTypWahl";
 import BeraterWerden from "./pages/BeraterWerden";
 import Impressum from "./pages/legal/Impressum";
 import AGB from "./pages/legal/AGB";
@@ -286,9 +285,6 @@ function ClerkProviderWithRoutes() {
           </Route>
           <Route path="/admin">
             {() => <AuthRoute component={Admin} />}
-          </Route>
-          <Route path="/konto/willkommen">
-            {() => <AuthRoute component={KontoTypWahl} />}
           </Route>
           <Route path="/immobilien/onboarding">
             {() => <AuthRoute component={ImmobilienKundeOnboarding} />}

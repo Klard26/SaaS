@@ -7,7 +7,7 @@ description: How Klard separates customer vs Berater (provider) signup, and the 
 
 Klard has two distinct registration tracks that both use the same managed Clerk tenant.
 
-- **Customer track**: navbar "Kostenlos registrieren" → Clerk `/sign-up` → **straight to `/search`** (or a deep-link target). The forced 7-type `KontoTypWahl` chooser was REMOVED (Doctolib-style low friction). `KontoTypWahl` at `/konto/willkommen` still exists as a route but is orphaned — commercial profile is now optional via Navbar "Mein Kundenkonto" → `/immobilien/onboarding` or the Gebäudecheck flow.
+- **Customer track**: navbar "Kostenlos registrieren" → Clerk `/sign-up` → **straight to `/search`** (or a deep-link target). The forced 7-type `KontoTypWahl` chooser page + its `/konto/willkommen` route were DELETED (Doctolib-style low friction). Commercial profile is now optional via Navbar "Mein Kundenkonto" → `/immobilien/onboarding` or the Gebäudecheck flow.
 - **Berater track**: public landing `/berater-werden` → `/sign-up?intent=berater` → `/provider/onboarding`.
 
 **Why:** the two audiences need different post-signup destinations and different profile tables (immobilienKunde vs providers). Forcing customers through a 7-type chooser before they could book added friction with no functional need — **booking creation requires NO `immobilien_kunde` profile** (bookings.ts uses only the auth `customerId`), so the chooser was safe to remove.
