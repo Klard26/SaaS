@@ -17,10 +17,12 @@ import {
   useAcceptOffer,
 } from "@workspace/api-client-react";
 import type { Service } from "@workspace/api-client-react";
-import { Star, MapPin, Clock, CheckCircle, Globe, Phone, Sparkles, ChevronRight, ChevronDown, Crown, Info, Briefcase, Plus, Check, FileSignature, Loader2, ShieldCheck } from "lucide-react";
+import { Star, MapPin, Clock, CheckCircle, Globe, Phone, Sparkles, ChevronRight, ChevronDown, Info, Briefcase, Plus, Check, FileSignature, Loader2, ShieldCheck } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { publicUrlForObjectPath } from "@/lib/upload";
 import { formatPriceEUR, formatTimeBerlin, formatDateBerlin } from "@/lib/dateFmt";
+import { VerifiedBadge, PremiumBadge } from "@/components/journey/Badges";
+import { Stepper } from "@/components/journey/Stepper";
 
 const AGB_VERSION = "2026-06";
 
@@ -210,16 +212,8 @@ export default function ProviderDetail() {
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2 mb-2">
                   <h1 className="font-serif text-3xl font-semibold text-foreground tracking-tight">{provider.displayName}</h1>
-                  {provider.verified && (
-                    <span className="inline-flex items-center gap-1 bg-[var(--klard-green-l)] text-[var(--klard-green)] text-[0.7rem] font-bold px-2 py-0.5 rounded-full">
-                      <CheckCircle className="h-3 w-3" /> Verifiziert
-                    </span>
-                  )}
-                  {provider.subscriptionTier === "premium" && (
-                    <span className="inline-flex items-center gap-1 bg-[var(--klard-gold-l)] text-[var(--klard-gold)] text-[0.7rem] font-bold px-2 py-0.5 rounded-full">
-                      <Crown className="h-3 w-3" /> Premium
-                    </span>
-                  )}
+                  {provider.verified && <VerifiedBadge size="md" />}
+                  {provider.subscriptionTier === "premium" && <PremiumBadge size="md" />}
                 </div>
                 {provider.requiresDirectBilling && (
                   <div className="mb-3 flex items-start gap-2.5 text-xs bg-gradient-to-br from-[#EFF6FF] to-[var(--klard-teal-p)] border border-[#BAE6FD] rounded-xl px-3.5 py-3">
@@ -295,6 +289,13 @@ export default function ProviderDetail() {
             )}
           </CardContent>
         </Card>
+
+        <div className="mb-6 rounded-[20px] border-[1.5px] border-border bg-white shadow-sm px-5 py-4">
+          <Stepper
+            steps={["Leistung", "Termin", "Bestätigung"]}
+            current={selectedSlot ? 1 : selectedService ? 1 : 0}
+          />
+        </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">

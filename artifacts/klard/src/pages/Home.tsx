@@ -5,7 +5,7 @@ import { Footer } from "@/components/Footer";
 import { EnergieSchnellcheck } from "@/components/EnergieSchnellcheck";
 import { useListCategories, useListProviders, useGetPlatformStats } from "@workspace/api-client-react";
 import {
-  Search, MapPin, Briefcase, Star, CheckCircle, Crown,
+  Search, MapPin, Briefcase, Star,
   CalendarCheck, UserPlus, ShieldCheck,
   Calculator, Zap, Scale, TrendingUp, Home as HomeIcon, Monitor,
   Megaphone, Users, Shield, Building, Target, FileSignature, ClipboardCheck,
@@ -14,6 +14,7 @@ import {
   SearchCheck, Scroll, Truck, GitMerge, Lightbulb, Receipt,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { VerifiedBadge, PremiumBadge } from "@/components/journey/Badges";
 
 const ICONS: Record<string, LucideIcon> = {
   calculator: Calculator, zap: Zap, briefcase: Briefcase, scale: Scale,
@@ -200,16 +201,8 @@ export default function Home() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <h3 className="font-sans font-bold text-base text-foreground truncate">{p.displayName}</h3>
-                      {p.verified && (
-                        <span className="inline-flex items-center gap-1 bg-[var(--klard-green-l)] text-[var(--klard-green)] text-[0.66rem] font-bold px-2 py-0.5 rounded-full">
-                          <CheckCircle className="h-2.5 w-2.5" /> Verifiziert
-                        </span>
-                      )}
-                      {p.subscriptionTier === "premium" && (
-                        <span className="inline-flex items-center gap-1 bg-[var(--klard-gold-l)] text-[var(--klard-gold)] text-[0.66rem] font-bold px-2 py-0.5 rounded-full">
-                          <Crown className="h-2.5 w-2.5" /> Premium
-                        </span>
-                      )}
+                      {p.verified && <VerifiedBadge />}
+                      {p.subscriptionTier === "premium" && <PremiumBadge />}
                     </div>
                     <p className="text-[0.76rem] text-muted-foreground">
                       {p.category} · {p.city}

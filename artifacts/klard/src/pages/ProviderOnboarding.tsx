@@ -17,6 +17,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { UserCheck, Upload, Loader2 } from "lucide-react";
 import { useFileUploader, publicUrlForObjectPath } from "@/lib/upload";
+import { GuidedHeader } from "@/components/journey/GuidedHeader";
 
 const schema = z.object({
   displayName: z.string().min(2, "Mindestens 2 Zeichen"),
@@ -116,13 +117,13 @@ export default function ProviderOnboarding() {
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10 flex-1 w-full">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 mb-4">
-            <UserCheck className="h-7 w-7 text-primary" aria-hidden="true" />
-          </div>
-          <h1 className="text-2xl font-bold text-foreground">Als Berater registrieren</h1>
-          <p className="text-muted-foreground mt-2">Erstellen Sie Ihr Profil und erhalten Sie neue Mandanten über Klard.</p>
-        </div>
+        <GuidedHeader
+          icon={UserCheck}
+          title="Als Berater registrieren"
+          subtitle="Erstellen Sie Ihr Profil und erhalten Sie neue Mandanten über Klard."
+          steps={["Profil", "Leistungen", "Verfügbarkeit"]}
+          current={0}
+        />
 
         <Card>
           <CardHeader className="pb-4">

@@ -19,6 +19,7 @@ import { CheckCircle, Clock, MapPin, Calendar, Info, Download } from "lucide-rea
 import { getGetBookingCalendarFileUrl } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { Stepper } from "@/components/journey/Stepper";
 
 export default function BookingConfirmation() {
   const { providerId: pId, serviceId: sId, slotId: slId } = useParams<{
@@ -121,6 +122,10 @@ export default function BookingConfirmation() {
       <Navbar />
       <div className="max-w-lg mx-auto px-4 sm:px-6 py-10">
         <h1 className="font-serif text-3xl font-semibold text-foreground mb-6 tracking-tight">Buchung bestätigen</h1>
+
+        <div className="mb-6 rounded-[20px] border-[1.5px] border-border bg-white shadow-sm px-5 py-4">
+          <Stepper steps={["Leistung", "Termin", "Bestätigung"]} current={2} />
+        </div>
 
         {isLoading ? (
           <Skeleton className="h-64 rounded-[20px]" />

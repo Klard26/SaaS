@@ -4,13 +4,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Navbar } from "@/components/Navbar";
 import { useListProviders, useListCategories, getListProvidersQueryKey } from "@workspace/api-client-react";
 import {
-  Search, MapPin, CheckCircle, Crown, Briefcase, Star, X,
+  Search, MapPin, Briefcase, Star, X,
   ShieldCheck, Trophy, Calendar,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Footer } from "@/components/Footer";
 import { publicUrlForObjectPath } from "@/lib/upload";
 import { formatPriceEUR } from "@/lib/dateFmt";
+import { VerifiedBadge, PremiumBadge } from "@/components/journey/Badges";
+import { EmptyState } from "@/components/journey/EmptyState";
 
 type ChipKey = "rating45" | "verified" | "top"
   | "exp1to5" | "exp5to10" | "exp10to20" | "exp20plus";
@@ -243,19 +245,20 @@ export default function SearchPage() {
               ))}
             </div>
           ) : providers.length === 0 ? (
-            <div className="bg-white border border-border rounded-[20px] py-16 px-6 text-center text-muted-foreground">
-              <Search className="h-12 w-12 mx-auto mb-3 opacity-30" />
-              <p className="font-semibold text-foreground">Keine Berater gefunden</p>
-              <p className="text-sm mt-1">Versuchen Sie andere Suchbegriffe oder passen Sie die Filter an.</p>
+            <EmptyState
+              icon={Search}
+              title="Keine Berater gefunden"
+              description="Versuchen Sie andere Suchbegriffe oder passen Sie die Filter an."
+            >
               <button
                 type="button"
                 onClick={clearAll}
-                className="mt-5 inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-border px-4 py-1.5 text-xs font-semibold hover:border-primary hover:text-primary transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-border px-4 py-1.5 text-xs font-semibold hover:border-primary hover:text-primary transition-colors"
                 data-testid="button-clear-search"
               >
                 Suche zurücksetzen
               </button>
-            </div>
+            </EmptyState>
           ) : (
             <div className="flex flex-col gap-4">
               {providers.map(p => (
@@ -292,16 +295,8 @@ export default function SearchPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           <h3 className="font-sans font-bold text-base text-foreground">{p.displayName}</h3>
-                          {p.verified && (
-                            <span className="inline-flex items-center gap-1 bg-[var(--klard-green-l)] text-[var(--klard-green)] text-[0.66rem] font-bold px-2 py-0.5 rounded-full">
-                              <CheckCircle className="h-2.5 w-2.5" /> Verifiziert
-                            </span>
-                          )}
-                          {p.subscriptionTier === "premium" && (
-                            <span className="inline-flex items-center gap-1 bg-[var(--klard-gold-l)] text-[var(--klard-gold)] text-[0.66rem] font-bold px-2 py-0.5 rounded-full">
-                              <Crown className="h-2.5 w-2.5" /> Top
-                            </span>
-                          )}
+                          {p.verified && <VerifiedBadge />}
+                          {p.subscriptionTier === "premium" && <PremiumBadge />}
                         </div>
                         <p className="text-[0.78rem] text-muted-foreground mb-1.5">{p.category}</p>
                         <div className="flex items-center gap-2">

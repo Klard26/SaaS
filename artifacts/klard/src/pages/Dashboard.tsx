@@ -5,7 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import { Navbar } from "@/components/Navbar";
+import { BookingStatusBadge } from "@/components/journey/StatusBadge";
+import { PremiumBadge, BasicBadge } from "@/components/journey/Badges";
 import {
   useGetMyProviderProfile, getGetMyProviderProfileQueryKey,
   useGetProviderDashboard, getGetProviderDashboardQueryKey,
@@ -36,20 +39,6 @@ import {
 } from "@workspace/energie-calc";
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
-
-const STATUS_LABELS: Record<string, string> = {
-  pending: "Ausstehend",
-  confirmed: "Bestätigt",
-  cancelled: "Storniert",
-  completed: "Abgeschlossen",
-};
-
-const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  pending: "secondary",
-  confirmed: "default",
-  cancelled: "destructive",
-  completed: "outline",
-};
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
@@ -201,13 +190,7 @@ export default function Dashboard() {
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="font-serif text-3xl font-semibold text-foreground tracking-tight">Dashboard</h1>
-              {isPremium ? (
-                <span className="inline-flex items-center gap-1 bg-[var(--klard-gold-l)] text-[var(--klard-gold)] text-xs font-bold px-2.5 py-1 rounded-full">
-                  <Crown className="h-3 w-3" /> Premium
-                </span>
-              ) : profile && (
-                <span className="inline-flex items-center text-xs font-bold px-2.5 py-1 rounded-full border-[1.5px] border-border text-muted-foreground">Basic</span>
-              )}
+              {isPremium ? <PremiumBadge size="md" /> : profile && <BasicBadge size="md" />}
             </div>
             {profile && <p className="text-[var(--klard-mid)] mt-1">{profile.displayName}</p>}
           </div>
@@ -256,6 +239,11 @@ export default function Dashboard() {
                     </p>
                   </div>
                 </div>
+                <Progress
+                  value={totalRequired > 0 ? (doneCount / totalRequired) * 100 : 0}
+                  className="mb-4 h-2"
+                  data-testid="progress-setup"
+                />
                 <div className="space-y-2">
                   {setupSteps.map((step) => (
                     <div
@@ -523,9 +511,7 @@ export default function Dashboard() {
                           {booking.totalPrice === 0 ? "—" : `${booking.totalPrice} €`}
                         </td>
                         <td className="py-3">
-                          <Badge variant={STATUS_VARIANTS[booking.status] ?? "outline"} className="text-xs">
-                            {STATUS_LABELS[booking.status] ?? booking.status}
-                          </Badge>
+                          <BookingStatusBadge status={booking.status} className="text-xs" />
                         </td>
                         <td className="py-3 pl-4">
                           {booking.status === "pending" && (

@@ -19,6 +19,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Building2 } from "lucide-react";
+import { GuidedHeader } from "@/components/journey/GuidedHeader";
 import { KONTO_TYPEN, KONTO_TYP_VALUES, isCommercialTyp } from "@/lib/kontoTypen";
 
 const TYP_TUPLE = [
@@ -126,19 +127,17 @@ export default function ImmobilienKundeOnboarding() {
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10 flex-1 w-full">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 mb-4">
-            <Building2 className="h-7 w-7 text-primary" aria-hidden="true" />
-          </div>
-          <h1 className="text-2xl font-bold text-foreground">
-            {isPrivat ? "Privatkonto einrichten" : "Gewerbliches Kundenprofil"}
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            {isPrivat
+        <GuidedHeader
+          icon={Building2}
+          title={isPrivat ? "Privatkonto einrichten" : "Gewerbliches Kundenprofil"}
+          subtitle={
+            isPrivat
               ? "Vervollständigen Sie Ihr Konto, um Berater zu buchen."
-              : "Hinterlegen Sie Ihr Profil für Buchungen und den Gebäudecheck. Portfolio-Angaben sind optional."}
-          </p>
-        </div>
+              : "Hinterlegen Sie Ihr Profil für Buchungen und den Gebäudecheck. Portfolio-Angaben sind optional."
+          }
+          steps={isPrivat ? undefined : ["Kundenprofil", "Gebäudecheck"]}
+          current={0}
+        />
 
         <Card>
           <CardHeader className="pb-4">

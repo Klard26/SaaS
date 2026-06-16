@@ -1,9 +1,11 @@
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Navbar } from "@/components/Navbar";
+import { BookingStatusBadge } from "@/components/journey/StatusBadge";
+import { PaymentBadge } from "@/components/journey/PaymentBadge";
+import { EmptyState } from "@/components/journey/EmptyState";
 import {
   useListMyBookings, getListMyBookingsQueryKey,
   useCreateReview, getGetProviderQueryKey,
@@ -18,20 +20,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Textarea } from "@/components/ui/textarea";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-
-const STATUS_LABELS: Record<string, string> = {
-  pending: "Ausstehend",
-  confirmed: "Bestätigt",
-  cancelled: "Storniert",
-  completed: "Abgeschlossen",
-};
-
-const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  pending: "secondary",
-  confirmed: "default",
-  cancelled: "destructive",
-  completed: "outline",
-};
 
 export default function MyBookings() {
   const [, setLocation] = useLocation();
@@ -91,9 +79,7 @@ export default function MyBookings() {
               <p className="font-serif text-lg font-semibold text-foreground tracking-tight">{booking.serviceName ?? "Leistung"}</p>
               <p className="text-sm text-[var(--klard-mid)]">{booking.providerName}</p>
             </div>
-            <Badge variant={STATUS_VARIANTS[booking.status] ?? "outline"} data-testid={`status-booking-${booking.id}`}>
-              {STATUS_LABELS[booking.status] ?? booking.status}
-            </Badge>
+            <BookingStatusBadge status={booking.status} data-testid={`status-booking-${booking.id}`} />
           </div>
 
           <div className="space-y-1.5 text-sm text-muted-foreground">
@@ -112,13 +98,11 @@ export default function MyBookings() {
                 </span>
                 <div className="flex items-center gap-1.5">
                   {booking.paymentRequired && booking.paymentStatus === "pending" && booking.status !== "cancelled" && (
-                    <span className="inline-flex items-center text-[0.7rem] font-bold px-2 py-0.5 rounded-full bg-[var(--klard-gold-l)] text-[var(--klard-gold)]">Zahlung offen</span>
+                    <PaymentBadge variant="offen" />
                   )}
-                  {booking.paymentStatus === "paid" && (
-                    <span className="inline-flex items-center text-[0.7rem] font-bold px-2 py-0.5 rounded-full bg-[var(--klard-green-l)] text-[var(--klard-green)]">Bezahlt</span>
-                  )}
+                  {booking.paymentStatus === "paid" && <PaymentBadge variant="bezahlt" />}
                   {!booking.paymentRequired && booking.totalPrice > 0 && (
-                    <span className="inline-flex items-center text-[0.7rem] font-bold px-2 py-0.5 rounded-full bg-[var(--klard-teal-l)] text-[var(--klard-teal-d)]">Direkt mit Berater</span>
+                    <PaymentBadge variant="direkt" />
                   )}
                 </div>
               </div>
@@ -188,14 +172,15 @@ export default function MyBookings() {
             {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-36 rounded-xl" />)}
           </div>
         ) : bookings.length === 0 ? (
-          <div className="bg-white border border-border rounded-[20px] py-16 px-6 text-center text-muted-foreground">
-            <Calendar className="h-12 w-12 mx-auto mb-3 opacity-30" />
-            <p className="font-semibold text-foreground">Keine Buchungen vorhanden</p>
-            <p className="text-sm mt-1">Buchen Sie Ihren ersten Berater.</p>
-            <Button className="mt-5 rounded-full" onClick={() => setLocation("/search")} data-testid="button-find-providers">
+          <EmptyState
+            icon={Calendar}
+            title="Keine Buchungen vorhanden"
+            description="Buchen Sie Ihren ersten Berater."
+          >
+            <Button className="rounded-full" onClick={() => setLocation("/search")} data-testid="button-find-providers">
               Berater finden
             </Button>
-          </div>
+          </EmptyState>
         ) : (
           <div className="space-y-8">
             {upcoming.length > 0 && (

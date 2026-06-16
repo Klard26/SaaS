@@ -1,4 +1,5 @@
 - [Klard frontend zod resolver mismatch](klard-zod-resolver.md) — pre-existing dual-zod (v3 pages vs v4 in @hookform/resolvers types); frontend `tsc` fails on all zodResolver pages, app still runs (Vite/esbuild skips typecheck).
 - [Klard Stripe v22 Connect split](klard-stripe-connect.md) — booking checkout payout split spread inline (no PaymentIntentData type); commission single source of truth.
+- [Klard unified journey primitives](klard-journey-primitives.md) — shared lib/journey.ts + components/journey/* for status/tier/payment badges, stepper, empty state, guided header; don't re-roll local maps.
 - [Klard account deletion tables](account-deletion-tables.md) — full DELETE /account/me must wipe every user-keyed table (incl. assessments, offer_acceptances, gebaeudecheck_*); DB-first then Clerk for retry-safety.
 - [Klard registration flow](klard-registration-flow.md) — customer signup goes straight to /search (no forced chooser; booking needs no immobilien_kunde); Berater via ?intent=berater; booking intent preserved via guarded ?redirect=.
