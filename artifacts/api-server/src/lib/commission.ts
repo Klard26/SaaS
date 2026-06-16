@@ -20,3 +20,28 @@ export function effectiveCommissionRate(
   }
   return tierCommissionRate(provider.subscriptionTier);
 }
+
+/**
+ * A booking charge is split as a Stripe destination charge (marketplace payout)
+ * only when the provider has both connected an Express account AND completed
+ * onboarding. Without both, the platform collects the full amount.
+ */
+export function isConnectSplitEligible(
+  provider:
+    | Pick<Provider, "stripeAccountId" | "stripeOnboardedAt">
+    | null
+    | undefined,
+): boolean {
+  return !!(provider?.stripeAccountId && provider?.stripeOnboardedAt);
+}
+
+/**
+ * The platform's application fee (in cents) taken from a destination charge.
+ * Computed from the booking total and the provider's effective commission rate.
+ */
+export function computeApplicationFeeCents(
+  provider: Pick<Provider, "commissionRate" | "subscriptionTier">,
+  totalCents: number,
+): number {
+  return Math.round(totalCents * effectiveCommissionRate(provider));
+}

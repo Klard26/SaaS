@@ -19,6 +19,11 @@ import {
 } from "../lib/email";
 import { buildIcs } from "../lib/icsBuilder";
 import { issueStornoForBooking, sendInvoiceEmail } from "../lib/invoiceService";
+import {
+  serviceBelongsToProvider,
+  slotBelongsToProvider,
+  paymentRequiredForCategory,
+} from "../lib/bookingValidation";
 
 const router: IRouter = Router();
 
@@ -68,7 +73,7 @@ router.post("/bookings", async (req, res): Promise<void> => {
       res.status(404).json({ error: "Service not found" });
       return;
     }
-    if (service.providerId !== d.providerId) {
+    if (!serviceBelongsToProvider(service, d.providerId)) {
       res.status(400).json({ error: "Leistung gehört nicht zu diesem Berater." });
       return;
     }
@@ -90,7 +95,7 @@ router.post("/bookings", async (req, res): Promise<void> => {
       .where(eq(categoriesTable.slug, provider.categorySlug))
       .limit(1);
 
-    const paymentRequired = !(category?.requiresDirectBilling ?? false);
+    const paymentRequired = paymentRequiredForCategory(category);
 
     let linkedAssessmentId: number | null = null;
     if (d.assessmentId != null) {
@@ -132,7 +137,7 @@ router.post("/bookings", async (req, res): Promise<void> => {
       if (!slot) {
         throw new Error("SLOT_TAKEN");
       }
-      if (slot.providerId !== d.providerId) {
+      if (!slotBelongsToProvider(slot, d.providerId)) {
         throw new Error("SLOT_PROVIDER_MISMATCH");
       }
 

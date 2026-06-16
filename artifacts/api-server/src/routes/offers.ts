@@ -3,10 +3,9 @@ import { db, offerAcceptancesTable, providersTable, servicesTable } from "@works
 import { AcceptOfferBody } from "@workspace/api-zod";
 import { eq, desc, and, inArray } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
+import { recomputeOfferPricing } from "../lib/offerPricing";
 
 const router: IRouter = Router();
-
-const round2 = (n: number): number => Math.round(n * 100) / 100;
 
 router.post("/offers/accept", async (req, res): Promise<void> => {
   try {
@@ -36,40 +35,24 @@ router.post("/offers/accept", async (req, res): Promise<void> => {
     // must reference a serviceId belonging to this provider; net/USt/brutto totals
     // are recomputed from the current catalog so the binding offer cannot be tampered.
     const serviceIds = d.items.map((it) => it.serviceId).filter((id): id is number => id != null);
-    if (serviceIds.length === 0 || serviceIds.length !== d.items.length) {
-      res.status(400).json({ error: "Jede Position muss eine gültige Leistung referenzieren." });
+    const dbServices = serviceIds.length
+      ? await db
+          .select()
+          .from(servicesTable)
+          .where(and(eq(servicesTable.providerId, d.providerId), inArray(servicesTable.id, serviceIds)))
+      : [];
+
+    const pricing = recomputeOfferPricing(d.items, dbServices);
+    if (!pricing.ok) {
+      res.status(400).json({
+        error:
+          pricing.error === "INVALID_ITEMS"
+            ? "Jede Position muss eine gültige Leistung referenzieren."
+            : "Eine ausgewählte Leistung gehört nicht zu diesem Berater.",
+      });
       return;
     }
-
-    const dbServices = await db
-      .select()
-      .from(servicesTable)
-      .where(and(eq(servicesTable.providerId, d.providerId), inArray(servicesTable.id, serviceIds)));
-
-    const byId = new Map(dbServices.map((s) => [s.id, s]));
-    const missing = serviceIds.filter((id) => !byId.has(id));
-    if (missing.length > 0) {
-      res.status(400).json({ error: "Eine ausgewählte Leistung gehört nicht zu diesem Berater." });
-      return;
-    }
-
-    const items = serviceIds.map((id) => {
-      const s = byId.get(id)!;
-      const vatRate = s.vatRate ?? 19;
-      const grossPrice = round2(s.price);
-      const netPrice = s.netPrice != null ? round2(s.netPrice) : round2(grossPrice / (1 + vatRate / 100));
-      return {
-        serviceId: s.id,
-        name: s.name,
-        durationMinutes: s.durationMinutes,
-        netPrice,
-        vatRate,
-        grossPrice,
-      };
-    });
-
-    const totalNet = round2(items.reduce((sum, it) => sum + it.netPrice, 0));
-    const totalGross = round2(items.reduce((sum, it) => sum + it.grossPrice, 0));
+    const { items, totalNet, totalGross } = pricing.value;
 
     const [row] = await db
       .insert(offerAcceptancesTable)

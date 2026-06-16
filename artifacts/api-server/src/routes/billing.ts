@@ -8,7 +8,10 @@ import {
   isStripeConfigured,
   STRIPE_CONFIG,
 } from "../lib/stripeClient";
-import { effectiveCommissionRate } from "../lib/commission";
+import {
+  isConnectSplitEligible,
+  computeApplicationFeeCents,
+} from "../lib/commission";
 
 const router: IRouter = Router();
 
@@ -225,12 +228,13 @@ router.post("/bookings/:id/payment/checkout", async (req, res): Promise<void> =>
     // the net to the provider and keeps the platform commission as an
     // application fee. Without Connect, the platform collects the full amount
     // (legacy behaviour) and settles with the provider out of band.
-    const connected = !!(provider?.stripeAccountId && provider?.stripeOnboardedAt);
+    const connected = isConnectSplitEligible(provider);
     const splitData =
       connected && provider
         ? {
-            application_fee_amount: Math.round(
-              totalCents * effectiveCommissionRate(provider),
+            application_fee_amount: computeApplicationFeeCents(
+              provider,
+              totalCents,
             ),
             transfer_data: { destination: provider.stripeAccountId! },
           }

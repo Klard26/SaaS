@@ -261,6 +261,9 @@ importers:
       thread-stream:
         specifier: 3.1.0
         version: 3.1.0
+      vitest:
+        specifier: ^3.2.6
+        version: 3.2.6(@types/node@25.3.5)(jiti@2.6.1)(jsdom@25.0.1)(lightningcss@1.31.1)(tsx@4.21.0)(yaml@2.8.2)
 
   artifacts/klard:
     dependencies:
