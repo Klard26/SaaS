@@ -195,15 +195,18 @@ export default function ProviderAvailability() {
                             <span className="text-sm text-foreground">
                               {new Date(slot.startTime).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} – {new Date(slot.endTime).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr
                             </span>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-destructive hover:text-destructive"
-                              onClick={() => handleDelete(slot.id)}
-                              data-testid={`button-delete-slot-${slot.id}`}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <SlotStatusBadge isAvailable={true} className="text-xs" />
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-destructive hover:text-destructive"
+                                onClick={() => handleDelete(slot.id)}
+                                data-testid={`button-delete-slot-${slot.id}`}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
                           </div>
                         ))}
                       </div>
