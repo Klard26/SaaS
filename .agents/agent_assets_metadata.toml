@@ -12,3 +12,9 @@ id = "BnE807WjzAPDCBgsV6Y2x"
 uri = "file://BD_Onboarding_SaaS_Plattformanalyse.pdf"
 type = "pdf"
 title = "BD Onboarding – SaaS-Plattformanalyse (Klard)"
+
+[[outputs]]
+id = "3M_irje1LNhJghVR8_yYw"
+uri = "file://Handlungsempfehlung_Einheitliche_Customer_Journey.pdf"
+type = "pdf"
+title = "Handlungsempfehlung – Einheitliche Customer Journey"
