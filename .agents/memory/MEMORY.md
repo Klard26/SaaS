@@ -4,3 +4,4 @@
 - [Klard frontend test setup](klard-test-setup.md) — vitest+testing-library+jsdom; standalone vitest.config.ts (vite.config throws without PORT/BASE_PATH); tests excluded from tsc.
 - [Klard account deletion tables](account-deletion-tables.md) — full DELETE /account/me must wipe every user-keyed table (incl. assessments, offer_acceptances, gebaeudecheck_*); DB-first then Clerk for retry-safety.
 - [Klard registration flow](klard-registration-flow.md) — customer signup goes straight to /search (no forced chooser; booking needs no immobilien_kunde); Berater via ?intent=berater; booking intent preserved via guarded ?redirect=.
+- [Vitest integration gotchas](vitest-integration-gotchas.md) — api-server route tests under Vitest hang on pino-pretty worker + Proxy-mock `then` trap; mount a minimal app, mock explicit named exports.
