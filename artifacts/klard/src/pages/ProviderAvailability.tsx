@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Navbar } from "@/components/Navbar";
+import { GuidedHeader } from "@/components/journey/GuidedHeader";
+import { EmptyState } from "@/components/journey/EmptyState";
 import {
   useGetMyProviderProfile, getGetMyProviderProfileQueryKey,
   useListAvailability, getListAvailabilityQueryKey,
@@ -13,7 +15,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { PlusCircle, Trash2, Calendar, Clock } from "lucide-react";
+import { PlusCircle, Trash2, Calendar, Clock, CalendarClock } from "lucide-react";
 
 export default function ProviderAvailability() {
   const [, setLocation] = useLocation();
@@ -95,12 +97,19 @@ export default function ProviderAvailability() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-foreground">Verfugbarkeit verwalten</h1>
+        <div className="flex justify-end mb-4">
           <Button variant="outline" size="sm" onClick={() => setLocation("/dashboard")} data-testid="button-back">
             Zum Dashboard
           </Button>
         </div>
+
+        <GuidedHeader
+          icon={CalendarClock}
+          title="Verfügbarkeit verwalten"
+          subtitle="Geben Sie Termine frei, damit Mandanten online bei Ihnen buchen können."
+          steps={["Profil", "Leistungen", "Verfügbarkeit"]}
+          current={2}
+        />
 
         {/* Add slot form */}
         <Card className="mb-6">
@@ -167,12 +176,11 @@ export default function ProviderAvailability() {
             {slotsLoading ? (
               <Skeleton className="h-48 rounded-xl" />
             ) : Object.entries(groupedSlots).length === 0 ? (
-              <Card>
-                <CardContent className="py-10 text-center text-muted-foreground text-sm">
-                  <Calendar className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                  Keine verfugbaren Termine. Fugen Sie Termine hinzu.
-                </CardContent>
-              </Card>
+              <EmptyState
+                icon={Calendar}
+                title="Keine verfügbaren Termine"
+                description="Fügen Sie oben Termine hinzu, damit Mandanten buchen können."
+              />
             ) : (
               <div className="space-y-4">
                 {Object.entries(groupedSlots).map(([date, dateSlots]) => (
@@ -211,11 +219,11 @@ export default function ProviderAvailability() {
               Gebuchte Termine ({bookedSlots.length})
             </h2>
             {bookedSlots.length === 0 ? (
-              <Card>
-                <CardContent className="py-10 text-center text-muted-foreground text-sm">
-                  Noch keine gebuchten Termine.
-                </CardContent>
-              </Card>
+              <EmptyState
+                icon={CalendarClock}
+                title="Noch keine gebuchten Termine"
+                description="Sobald Mandanten buchen, erscheinen die Termine hier."
+              />
             ) : (
               <div className="space-y-2">
                 {bookedSlots.map(slot => (

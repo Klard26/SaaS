@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Navbar } from "@/components/Navbar";
 import { DeleteAccountSection } from "@/components/DeleteAccountSection";
+import { GuidedHeader } from "@/components/journey/GuidedHeader";
+import { UserCog } from "lucide-react";
 import {
   useGetMyProviderProfile, getGetMyProviderProfileQueryKey,
   useUpdateProvider,
@@ -102,12 +104,19 @@ export default function ProviderProfile() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-foreground">Profil bearbeiten</h1>
+        <div className="flex justify-end mb-4">
           <Button variant="outline" size="sm" onClick={() => setLocation("/dashboard")} data-testid="button-back-dashboard">
             Zum Dashboard
           </Button>
         </div>
+
+        <GuidedHeader
+          icon={UserCog}
+          title="Profil bearbeiten"
+          subtitle="Halten Sie Ihre Berater-Angaben aktuell, damit Mandanten Sie leichter finden."
+          steps={["Profil", "Leistungen", "Verfügbarkeit"]}
+          current={0}
+        />
 
         {isLoading ? (
           <Skeleton className="h-96 rounded-xl" />

@@ -14,6 +14,8 @@ import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { GuidedHeader } from "@/components/journey/GuidedHeader";
+import { EmptyState } from "@/components/journey/EmptyState";
 import {
   useGetMyProviderProfile, getGetMyProviderProfileQueryKey,
   useListProviderServices, getListProviderServicesQueryKey,
@@ -23,7 +25,7 @@ import {
 import type { Service, ServiceTemplate } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { PlusCircle, Pencil, Trash2, Clock, Sparkles } from "lucide-react";
+import { PlusCircle, Pencil, Trash2, Clock, Sparkles, ClipboardList } from "lucide-react";
 import { formatPriceEUR } from "@/lib/dateFmt";
 
 const schema = z.object({
@@ -194,27 +196,35 @@ export default function ProviderServices() {
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10 flex-1 w-full">
-        <div className="flex items-center justify-between mb-6 gap-2 flex-wrap">
-          <h1 className="text-2xl font-bold text-foreground">Leistungen verwalten</h1>
-          <div className="flex gap-2 flex-wrap">
-            <Button variant="outline" size="sm" onClick={() => setLocation("/dashboard")} data-testid="button-back">
-              Zum Dashboard
+        <div className="flex justify-end mb-4">
+          <Button variant="outline" size="sm" onClick={() => setLocation("/dashboard")} data-testid="button-back">
+            Zum Dashboard
+          </Button>
+        </div>
+
+        <GuidedHeader
+          icon={ClipboardList}
+          title="Leistungen verwalten"
+          subtitle="Legen Sie fest, welche Leistungen Mandanten bei Ihnen buchen können."
+          steps={["Profil", "Leistungen", "Verfügbarkeit"]}
+          current={1}
+        />
+
+        <div className="flex justify-end gap-2 flex-wrap mb-6">
+          {templates.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setTemplateDialogOpen(true)}
+              className="gap-1.5"
+              data-testid="button-templates"
+            >
+              <Sparkles className="h-4 w-4" /> Aus Vorlagen
             </Button>
-            {templates.length > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setTemplateDialogOpen(true)}
-                className="gap-1.5"
-                data-testid="button-templates"
-              >
-                <Sparkles className="h-4 w-4" /> Aus Vorlagen
-              </Button>
-            )}
-            <Button size="sm" onClick={openCreate} className="gap-1.5" data-testid="button-add-service">
-              <PlusCircle className="h-4 w-4" /> Leistung hinzufügen
-            </Button>
-          </div>
+          )}
+          <Button size="sm" onClick={openCreate} className="gap-1.5" data-testid="button-add-service">
+            <PlusCircle className="h-4 w-4" /> Leistung hinzufügen
+          </Button>
         </div>
 
         {isLoading ? (
@@ -222,23 +232,22 @@ export default function ProviderServices() {
             {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)}
           </div>
         ) : services.length === 0 ? (
-          <Card>
-            <CardContent className="py-16 text-center text-muted-foreground">
-              <PlusCircle className="h-10 w-10 mx-auto mb-3 opacity-30" />
-              <p className="font-medium">Noch keine Leistungen</p>
-              <p className="text-sm mt-1">Wählen Sie aus Vorlagen oder fügen Sie individuelle Leistungen hinzu.</p>
-              <div className="flex gap-2 justify-center mt-4">
-                {templates.length > 0 && (
-                  <Button variant="outline" onClick={() => setTemplateDialogOpen(true)} data-testid="button-add-from-templates">
-                    Aus Vorlagen wählen
-                  </Button>
-                )}
-                <Button onClick={openCreate} data-testid="button-add-first-service">
-                  Eigene erstellen
+          <EmptyState
+            icon={PlusCircle}
+            title="Noch keine Leistungen"
+            description="Wählen Sie aus Vorlagen oder fügen Sie individuelle Leistungen hinzu."
+          >
+            <div className="flex gap-2 justify-center">
+              {templates.length > 0 && (
+                <Button variant="outline" onClick={() => setTemplateDialogOpen(true)} data-testid="button-add-from-templates">
+                  Aus Vorlagen wählen
                 </Button>
-              </div>
-            </CardContent>
-          </Card>
+              )}
+              <Button onClick={openCreate} data-testid="button-add-first-service">
+                Eigene erstellen
+              </Button>
+            </div>
+          </EmptyState>
         ) : (
           <Card>
             <CardHeader className="pb-2">
