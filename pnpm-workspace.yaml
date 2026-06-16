@@ -75,6 +75,12 @@ onlyBuiltDependencies:
   - unrs-resolver
 
 overrides:
+  # Force a single zod version across the workspace. @hookform/resolvers
+  # declares no zod dependency, so its `import { z } from 'zod'` would
+  # otherwise resolve to the root-hoisted zod@4 (a peer of @anthropic-ai/sdk),
+  # mismatching the zod@3 schemas the frontend forms produce. @anthropic-ai/sdk
+  # accepts zod ^3.25.0 || ^4.0.0, so pinning to v3 satisfies every consumer.
+  zod: "^3.25.76"
   # replit uses linux-x64 only, we can exclude all other platforms
   "esbuild>@esbuild/darwin-arm64": "-"
   "esbuild>@esbuild/darwin-x64": "-"

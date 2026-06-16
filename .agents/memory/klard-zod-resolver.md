@@ -1,10 +1,17 @@
 ---
-name: Klard frontend zod resolver typecheck mismatch
-description: Why `pnpm --filter @workspace/klard run typecheck` fails on every zodResolver page, and that it is pre-existing / not app-breaking.
+name: Klard frontend zod / zodResolver single-version pin
+description: Why the workspace pins a single zod v3 via pnpm override so @hookform/resolvers and the frontend forms agree on types.
 ---
 
-`pnpm --filter @workspace/klard run typecheck` reports TS2345 on EVERY page that does `zodResolver(schema)` (ProviderProfile, ProviderOnboarding, ProviderServices, ImmobilienKundeOnboarding): the local zod v3 `ZodObject` is "not assignable to ZodType<…, $ZodTypeInternals<…>>".
+The frontend form pages (`ProviderProfile`, `ProviderOnboarding`, `ProviderServices`, `ImmobilienKundeOnboarding`) build schemas with `import { z } from "zod"` (zod v3, the catalog pin) and pass them to `zodResolver`.
 
-**Why:** Two zod versions are installed — `zod@3.25.76` (catalog, used by pages via `import { z } from "zod"`) and `zod@4.3.6` (pulled transitively by `@anthropic-ai/sdk`). `@hookform/resolvers@3.10.0`'s `import { z } from 'zod'` resolves to the v4 types, so the resolver expects a v4 schema while pages produce v3 schemas. The `$ZodTypeInternals` / `toJSONSchema` symbols in the error are v4-only.
+**The trap:** `@hookform/resolvers@3.10.0` declares NO zod dependency (only a `react-hook-form` peer). So its internal `import { z } from 'zod'` resolves *up the tree* to whatever zod is hoisted at the workspace root. `@anthropic-ai/sdk` pulls `zod@4` as a peer, and that v4 got hoisted — so the resolver expected v4 types (`$ZodTypeInternals`, `toJSONSchema`, etc.) while the pages produced v3 schemas → TS2345 on every `zodResolver(schema)` call.
 
-**How to apply:** This is PRE-EXISTING and unrelated to feature work — it fails on pages you never touched. Do NOT treat it as a regression you introduced, and do not attempt a broad dual-zod fix as part of an unrelated task. The app runs fine because Vite/esbuild does not typecheck. A real fix would be a pnpm override forcing the resolver to resolve zod@3, or upgrading @hookform/resolvers to a zod-v4-compatible major and migrating pages — both project-wide and risky. Verify backend with `pnpm --filter @workspace/api-server run typecheck` (clean) instead of relying on the frontend typecheck for green.
+**Fix (in place):** a single workspace-wide pnpm override in `pnpm-workspace.yaml`:
+```
+overrides:
+  zod: "^3.25.76"
+```
+`@anthropic-ai/sdk`'s peer range is `^3.25.0 || ^4.0.0`, so pinning everything to v3 satisfies it AND makes the resolver resolve the same v3 the forms use. After this, `pnpm run typecheck` is fully green across all artifacts (klard included).
+
+**How to apply:** keep zod on a single major across the workspace. If anything ever genuinely needs zod v4, prefer upgrading `@hookform/resolvers` to a v4-compatible major and migrating the form pages together — do NOT let two zod majors coexist, or the resolver type mismatch returns. A stale `zod@4.x` dir may linger in the pnpm store after the override; harmless as long as `pnpm why -r zod` shows nothing references it.
