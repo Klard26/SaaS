@@ -6,3 +6,9 @@ id = "fBxVa8NQ_i4iyWLFKcHhe"
 uri = "file://.local/outputs/Klard-Pitch-Deck.pdf"
 type = "pdf"
 title = "Klard Pitch Deck (PDF)"
+
+[[outputs]]
+id = "BnE807WjzAPDCBgsV6Y2x"
+uri = "file://BD_Onboarding_SaaS_Plattformanalyse.pdf"
+type = "pdf"
+title = "BD Onboarding – SaaS-Plattformanalyse (Klard)"

@@ -1,0 +1,495 @@
+Du befindest dich in einem bereits bestehenden SaaS-Projekt.
+
+Deine Aufgabe ist NICHT, das Produkt, den Code, die Datenbank, das Design, die Logik oder bestehende Funktionen zu verändern.
+
+Deine einzige Aufgabe ist es, das bestehende Projekt vollständig zu analysieren und daraus eine visuelle, professionell strukturierte PDF-Dokumentation für einen neu eingestellten Business Developer zu erstellen, damit dieser das Projekt, die Customer Journey, den Workflow, die Funktionen, den aktuellen Stand und die Business-Potenziale sofort versteht und nahtlos andocken kann.
+
+WICHTIGSTE REGEL:
+Arbeite ausschließlich dokumentierend und analysierend.
+
+Keine Änderungen an bestehendem Projektcode.
+Keine Refactorings.
+Keine Feature-Implementierungen.
+Keine Änderungen an Datenbank, APIs, Authentifizierung, Konfigurationen, Packages, UI-Komponenten oder bestehenden Dateien.
+Keine Migrationen.
+Keine Commits.
+Keine Änderungen an .env-Dateien.
+Keine Secrets auslesen, kopieren oder in der Dokumentation anzeigen.
+
+AUSGABE DER PDF:
+Die fertige PDF soll direkt herunterladbar sein.
+
+Erstelle KEINEN separaten Ausgabeordner.
+Erstelle KEIN Verzeichnis wie /bd-onboarding-output/.
+Erstelle KEINE verschachtelte Ordnerstruktur.
+
+Die finale PDF muss direkt im Hauptverzeichnis des Replit-Projekts abgelegt werden mit exakt folgendem Dateinamen:
+
+BD_Onboarding_SaaS_Plattformanalyse.pdf
+
+Am Ende sollst du mir ausdrücklich mitteilen, dass die Datei erstellt wurde und direkt aus Replit heruntergeladen werden kann.
+
+Falls du temporäre Dateien für die PDF-Erstellung benötigst, lösche diese nach Fertigstellung wieder.
+Am Ende soll ausschließlich die finale PDF sichtbar übrig bleiben:
+
+BD_Onboarding_SaaS_Plattformanalyse.pdf
+
+ZIEL DER AUFGABE:
+Erstelle eine visuelle PDF mit dem Titel:
+
+“Business Developer Onboarding Dokumentation – SaaS Plattformanalyse”
+
+Die PDF soll einem neu eingestellten Business Developer erklären:
+
+1. Was die SaaS-Plattform ist
+2. Welches Problem sie löst
+3. Für welche Zielgruppen sie gedacht ist
+4. Wie die Customer Journey auf der Plattform abläuft
+5. Wie der Workflow technisch und fachlich gestaltet wurde
+6. Welche Funktionen bereits implementiert sind
+7. Welche Funktionen teilweise implementiert oder vorbereitet wirken
+8. Welche Rollen, Nutzergruppen und Zugriffsbereiche existieren
+9. Wie der aktuelle Produktstand zu bewerten ist
+10. Welche Stärken, Schwächen, Chancen und Risiken aktuell bestehen
+11. Wo der Business Developer sofort ansetzen kann
+12. Welche offenen Fragen er intern klären sollte
+
+ARBEITSWEISE:
+Analysiere das Projekt gründlich anhand der vorhandenen Dateien.
+
+Prüfe insbesondere, sofern vorhanden:
+
+- README-Dateien
+- package.json / requirements / lock files
+- Frontend-Struktur
+- Backend-Struktur
+- Routing
+- Pages
+- Components
+- API-Endpunkte
+- Authentifizierung
+- Rollen- und Rechtekonzept
+- Datenbankmodelle
+- ORM-Schema, z. B. Prisma, Drizzle, Sequelize, Mongoose, Supabase, Firebase etc.
+- Payment- oder Subscription-Logik
+- Onboarding-Prozesse
+- Dashboards
+- Admin-Bereiche
+- Nutzerbereiche
+- E-Mail- oder Notification-Flows
+- Upload-, Export- oder Reporting-Funktionen
+- Integrationen mit externen Diensten
+- Analytics- oder Tracking-Ansätze
+- Error Handling
+- Feature Flags
+- vorhandene Tests
+- vorhandene Demo-Daten oder Seed-Dateien
+- vorhandene Dokumentation
+
+Wenn Informationen nicht eindeutig aus dem Code hervorgehen, dann markiere sie klar als:
+
+“Annahme”
+“Unklar”
+“Im Code nicht eindeutig nachweisbar”
+“Bitte intern verifizieren”
+
+Erfinde keine Funktionen.
+Unterscheide sauber zwischen:
+
+- tatsächlich implementiert
+- vorbereitet / teilweise implementiert
+- konzeptionell naheliegend, aber nicht nachweisbar
+- nicht vorhanden
+
+PDF-INHALT:
+
+Die PDF soll nicht nur beschreiben, sondern visuell erklären.
+
+Erstelle eine hochwertige, visuelle Dokumentation mit folgenden Kapiteln:
+
+1. Executive Summary für den Business Developer
+
+Erkläre in einfacher, geschäftlicher Sprache:
+
+- Was ist das Produkt?
+- Welchen Nutzen bietet die SaaS-Plattform?
+- Wer sind die wahrscheinlichen Nutzer?
+- Welcher Kernprozess wird digitalisiert?
+- Was ist der aktuelle Projektstand?
+- Welche Erkenntnisse sind für Business Development besonders relevant?
+
+2. Produktverständnis
+
+Beschreibe:
+
+- Produktidee
+- Kernversprechen
+- vermutetes Geschäftsmodell
+- potenzielle Zielgruppen
+- wichtigste Use Cases
+- Nutzenversprechen aus Kundensicht
+- Nutzenversprechen aus Unternehmenssicht
+
+Übersetze technische Funktionen in Business-Nutzen.
+
+Nicht schreiben:
+“Endpoint X ruft Funktion Y auf.”
+
+Sondern schreiben:
+“Der Nutzer kann über diesen Prozess seine Daten einreichen, wodurch die Plattform automatisch den nächsten Schritt vorbereitet.”
+
+3. Customer Journey Map
+
+Erstelle eine visuelle Customer Journey mit Pfeilen.
+
+Die Journey soll mindestens folgende Phasen enthalten, sofern im Projekt erkennbar:
+
+Awareness 
+→ Registrierung / Login 
+→ Onboarding 
+→ Erste Aktion 
+→ Kernnutzen / Value Moment 
+→ Wiederkehrende Nutzung 
+→ Upgrade / Subscription / Conversion 
+→ Support / Retention 
+→ Expansion / Upsell
+
+Falls einzelne Phasen im Code nicht erkennbar sind, markiere sie entsprechend.
+
+Visualisiere die Journey mit:
+
+- Pfeildiagramm
+- Phasenbeschreibung
+- Nutzerziel je Phase
+- Plattformfunktion je Phase
+- möglichem Business-Development-Hebel je Phase
+- Reibungspunkten / offenen Fragen je Phase
+
+4. Workflow-Analyse
+
+Erstelle ein visuelles Workflow-Diagramm mit Pfeilen und Swimlanes.
+
+Nutze möglichst folgende Swimlanes:
+
+- Nutzer / Kunde
+- SaaS-Plattform
+- Backend / Datenbank
+- Admin / Betreiber
+- Externe Dienste, falls vorhanden
+
+Zeige:
+
+- Startpunkt des Nutzerprozesses
+- Eingaben des Nutzers
+- Systemreaktionen
+- Datenverarbeitung
+- Ergebnis / Output
+- mögliche Folgeaktionen
+- mögliche Abbruchpunkte
+- mögliche Conversion-Punkte
+
+5. Feature Landscape
+
+Erstelle eine Feature-Übersicht als visuelle Matrix.
+
+Kategorisiere Funktionen nach:
+
+- Authentifizierung & Nutzerverwaltung
+- Onboarding
+- Dashboard
+- Kernfunktionalität
+- Admin-Funktionen
+- Zahlungs- / Subscription-Funktionen
+- Reporting / Analytics
+- Kommunikation / Benachrichtigung
+- Integrationen
+- Sicherheit / Rollen / Rechte
+- Datenmanagement
+- Support- oder Help-Funktionen
+
+Nutze je Funktion folgende Bewertung:
+
+- Implementiert
+- Teilweise implementiert
+- Vorbereitet
+- Nicht erkennbar
+- Unklar
+
+Füge zu jeder Funktion eine kurze Business-Erklärung hinzu:
+
+“Warum ist diese Funktion für Wachstum, Vertrieb, Aktivierung oder Kundenbindung relevant?”
+
+6. Rollen- und Rechteübersicht
+
+Erstelle eine visuelle Übersicht der Rollen im System.
+
+Falls Rollen vorhanden sind, zeige:
+
+- Rolle
+- Zugriff
+- erlaubte Aktionen
+- nicht erlaubte Aktionen
+- Business-Relevanz
+- Risiken oder offene Fragen
+
+Falls kein klares Rollenmodell vorhanden ist, dokumentiere dies deutlich.
+
+7. System- und Architekturüberblick für Nicht-Techniker
+
+Erstelle ein vereinfachtes Architekturdiagramm.
+
+Nicht zu technisch, sondern verständlich für Business Development.
+
+Zeige beispielsweise:
+
+Frontend 
+→ API / Backend 
+→ Datenbank 
+→ externe Dienste 
+→ Nutzeroutput
+
+Erkläre:
+
+- Welche Hauptbestandteile existieren?
+- Welche Daten fließen wohin?
+- Welche externen Services sind angebunden?
+- Welche Bereiche sind für Sales, Onboarding oder Support relevant?
+
+Keine Secrets oder sensiblen Details anzeigen.
+
+8. SaaS-Funnel und Conversion-Punkte
+
+Erstelle einen visuellen SaaS-Funnel:
+
+Besucher / Interessent
+→ Registrierung
+→ Onboarding
+→ Aktivierung
+→ Nutzung der Kernfunktion
+→ Wiederkehrende Nutzung
+→ Conversion / Zahlung
+→ Retention
+→ Upsell / Expansion
+
+Markiere:
+
+- Welche Funnel-Stufen im Projekt sichtbar unterstützt werden
+- Wo Funktionen fehlen oder unklar sind
+- Wo Business Development direkt ansetzen kann
+- Welche Metriken sinnvoll wären
+
+9. SWOT-Analyse des aktuellen Projektstands
+
+Erstelle eine professionelle SWOT-Analyse als 2x2-Matrix.
+
+Bewerte den aktuellen Stand aus Business-Development-Sicht.
+
+Stärken:
+
+- Welche Produkt- oder Funktionsbereiche sind bereits gut nutzbar?
+- Welche Elemente können im Vertrieb oder in Demos genutzt werden?
+
+Schwächen:
+
+- Welche Lücken, Unklarheiten oder fehlenden Funktionen erschweren Vertrieb, Onboarding oder Skalierung?
+
+Chancen:
+
+- Welche Märkte, Zielgruppen, Partnerschaften, Use Cases oder Erweiterungen erscheinen naheliegend?
+
+Risiken:
+
+- Welche technischen, produktbezogenen, rechtlichen, vertrieblichen oder operativen Risiken sind erkennbar?
+
+Kennzeichne klar, ob eine Aussage auf Codeanalyse basiert oder eine Business-Annahme ist.
+
+10. Business-Development-Startplan
+
+Erstelle einen konkreten Startplan für den neuen Business Developer.
+
+Gliedere in:
+
+Erste 7 Tage:
+
+- Produkt verstehen
+- Demo-Pfade testen
+- Zielgruppenhypothesen prüfen
+- interne Fragen klären
+
+Erste 30 Tage:
+
+- ICP definieren
+- Nutzenargumentation erstellen
+- Demo-Script entwickeln
+- erste Partner- oder Kundenansprache vorbereiten
+- Feedbackschleifen aufsetzen
+
+Erste 60–90 Tage:
+
+- Go-to-Market-Hypothesen testen
+- Sales-Funnel strukturieren
+- Conversion-Metriken definieren
+- Prioritäten für Produktfeedback ableiten
+
+11. Demo-Script für Business Development
+
+Erstelle ein erstes Demo-Script auf Basis der vorhandenen Plattform.
+
+Das Script soll enthalten:
+
+- Einstieg / Problem
+- Zielgruppe
+- Nutzenversprechen
+- Schritt-für-Schritt-Plattformdemo
+- wichtigste Funktionen
+- typische Kundenfragen
+- mögliche Einwände
+- passende Antworten
+- Abschluss / nächster Schritt
+
+Nur Funktionen verwenden, die tatsächlich vorhanden oder eindeutig vorbereitet sind.
+Alles andere als “zukünftig möglich” oder “noch zu verifizieren” markieren.
+
+12. Offene Fragen an Gründer / Produktteam
+
+Erstelle eine Liste mit offenen Fragen, die der Business Developer intern klären sollte.
+
+Zum Beispiel:
+
+- Wer ist die primäre Zielgruppe?
+- Welches Preismodell ist geplant?
+- Welche Kernfunktion ist der wichtigste Value Moment?
+- Gibt es bereits Kundenfeedback?
+- Welche Funktionen sind verkaufsreif?
+- Welche Funktionen sind Demo-only?
+- Welche KPIs sind entscheidend?
+- Welche Integrationen sind strategisch wichtig?
+- Welche rechtlichen oder operativen Einschränkungen bestehen?
+
+13. Priorisierte Handlungsempfehlungen
+
+Erstelle eine priorisierte Liste mit Handlungsempfehlungen aus Business-Development-Sicht.
+
+Sortiere nach:
+
+- Hoher Impact / geringer Aufwand
+- Hoher Impact / hoher Aufwand
+- Niedriger Impact / geringer Aufwand
+- Niedriger Impact / hoher Aufwand
+
+Wichtig:
+Keine Umsetzung vornehmen.
+Nur dokumentieren und empfehlen.
+
+VISUELLE ANFORDERUNGEN AN DIE PDF:
+
+Die PDF muss visuell aufgebaut sein und darf nicht nur Fließtext enthalten.
+
+Verwende:
+
+- Pfeildiagramme
+- Customer-Journey-Map
+- Swimlane-Workflow
+- Funnel-Diagramm
+- Feature-Matrix
+- SWOT-2x2-Matrix
+- Architekturübersicht
+- Rollenübersicht
+- Priorisierungsmatrix
+- Status-Badges
+- Tabellen
+- Legenden
+- klare Icons oder einfache visuelle Marker
+- farblich unterscheidbare Bereiche, sofern technisch möglich
+
+Die PDF soll professionell aussehen:
+
+- Deckblatt
+- Inhaltsverzeichnis
+- klare Kapitelstruktur
+- Executive Summary
+- visuelle Diagramme
+- kurze, prägnante Texte
+- keine unnötig technischen Details
+- verständlich für Business Development, Sales, Partnerships und Management
+
+SPRACHE UND TONALITÄT:
+
+Die gesamte Dokumentation soll auf Deutsch erstellt werden.
+
+Ton:
+
+- professionell
+- klar
+- geschäftsorientiert
+- onboarding-tauglich
+- verständlich für Nicht-Techniker
+- präzise und belastbar
+
+NACHWEISBARKEIT:
+
+Füge am Ende der PDF einen Abschnitt “Quellen innerhalb des Projekts” hinzu.
+
+Dort dokumentierst du:
+
+- Welche Dateien analysiert wurden
+- Welche Funktionen aus welchen Projektbereichen abgeleitet wurden
+- Wo Unsicherheiten bestehen
+- Welche Bereiche nicht eindeutig bewertet werden konnten
+
+Nutze keine externen Quellen, außer sie sind im Projekt selbst verlinkt oder dokumentiert.
+Falls externe Marktannahmen gemacht werden, markiere sie klar als Annahme.
+
+SICHERHEIT:
+
+Keine Secrets anzeigen.
+Keine API Keys anzeigen.
+Keine Tokens anzeigen.
+Keine Passwörter anzeigen.
+Keine personenbezogenen Daten aus Beispieldaten in der PDF darstellen.
+Falls solche Daten im Projekt vorhanden sind, anonymisieren oder nur allgemein beschreiben.
+
+DATEIAUSGABE:
+
+Erstelle genau eine finale Datei direkt im Hauptverzeichnis des Replit-Projekts:
+
+BD_Onboarding_SaaS_Plattformanalyse.pdf
+
+Kein zusätzlicher Ausgabeordner.
+Kein Ordner /bd-onboarding-output/.
+Keine zusätzlichen finalen HTML-, Markdown-, JSON-, TXT- oder Asset-Dateien.
+Keine neue Dokumentationsstruktur.
+
+Falls du aus technischen Gründen temporär Dateien zur PDF-Erstellung erzeugen musst, müssen diese nach erfolgreicher PDF-Erstellung wieder gelöscht werden.
+
+Am Ende darf nur diese neue finale Datei übrig bleiben:
+
+BD_Onboarding_SaaS_Plattformanalyse.pdf
+
+ABSCHLUSSPRÜFUNG:
+
+Bevor du fertig bist, prüfe:
+
+1. Wurden bestehende Projektdateien unverändert gelassen?
+2. Wurde kein zusätzlicher Ausgabeordner erstellt?
+3. Liegt die finale PDF direkt im Hauptverzeichnis?
+4. Heißt die Datei exakt BD_Onboarding_SaaS_Plattformanalyse.pdf?
+5. Enthält die PDF visuelle Diagramme und nicht nur Text?
+6. Sind Customer Journey, Workflow, Funktionen und SWOT enthalten?
+7. Sind Annahmen klar gekennzeichnet?
+8. Sind sensible Daten entfernt oder anonymisiert?
+9. Ist die Dokumentation für einen Business Developer ohne technische Einarbeitung verständlich?
+10. Gibt es eine Quellen-/Nachweisübersicht innerhalb der PDF?
+11. Sind temporäre Dateien wieder gelöscht worden?
+
+ABSCHLUSSMELDUNG:
+
+Gib am Ende eine kurze Abschlussmeldung mit:
+
+- Bestätigung, dass die PDF erstellt wurde
+- Exakter Dateiname: BD_Onboarding_SaaS_Plattformanalyse.pdf
+- Hinweis, dass sie direkt aus Replit heruntergeladen werden kann
+- Kurze Angabe, welche Projektbereiche analysiert wurden
+- Kurze Angabe, welche Informationen nicht eindeutig aus dem Code ableitbar waren
+- Bestätigung, dass keine bestehenden Projektdateien verändert wurden
+- Bestätigung, dass kein zusätzlicher Ausgabeordner erstellt wurde
