@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import { Navbar } from "@/components/Navbar";
 import { GuidedHeader } from "@/components/journey/GuidedHeader";
+import { SlotStatusBadge } from "@/components/journey/StatusBadge";
 import { EmptyState } from "@/components/journey/EmptyState";
 import {
   useGetMyProviderProfile, getGetMyProviderProfileQueryKey,
@@ -228,7 +228,7 @@ export default function ProviderAvailability() {
               <div className="space-y-2">
                 {bookedSlots.map(slot => (
                   <div key={slot.id} className="flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-muted/30" data-testid={`booked-slot-${slot.id}`}>
-                    <Badge variant="secondary" className="text-xs shrink-0">Gebucht</Badge>
+                    <SlotStatusBadge isAvailable={false} className="text-xs shrink-0" />
                     <div className="text-sm">
                       <p className="font-medium text-foreground">
                         {new Date(slot.startTime).toLocaleDateString("de-DE", { day: "numeric", month: "short" })}

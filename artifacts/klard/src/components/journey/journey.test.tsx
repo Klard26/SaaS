@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { Crown, Inbox } from "lucide-react";
-import { BookingStatusBadge } from "./StatusBadge";
+import { BookingStatusBadge, SlotStatusBadge } from "./StatusBadge";
 import { VerifiedBadge, PremiumBadge, BasicBadge } from "./Badges";
 import { PaymentBadge } from "./PaymentBadge";
 import { Stepper } from "./Stepper";
@@ -17,6 +17,18 @@ describe("BookingStatusBadge", () => {
   it("renders the raw status for an unknown value", () => {
     render(<BookingStatusBadge status="mystery" />);
     expect(screen.getByText("mystery")).toBeInTheDocument();
+  });
+});
+
+describe("SlotStatusBadge", () => {
+  it("renders 'Gebucht' for a booked slot", () => {
+    render(<SlotStatusBadge isAvailable={false} />);
+    expect(screen.getByText("Gebucht")).toBeInTheDocument();
+  });
+
+  it("renders 'Verfügbar' for an available slot", () => {
+    render(<SlotStatusBadge isAvailable={true} />);
+    expect(screen.getByText("Verfügbar")).toBeInTheDocument();
   });
 });
 

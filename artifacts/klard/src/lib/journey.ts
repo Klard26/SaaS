@@ -24,6 +24,17 @@ export function bookingStatus(status: string): { label: string; variant: BadgeVa
   return BOOKING_STATUS[status] ?? { label: status, variant: "outline" };
 }
 
+export type SlotState = "available" | "booked";
+
+export const SLOT_STATE: Record<SlotState, { label: string; variant: BadgeVariant }> = {
+  available: { label: "Verfügbar", variant: "outline" },
+  booked: { label: "Gebucht", variant: "default" },
+};
+
+export function slotState(isAvailable: boolean): { label: string; variant: BadgeVariant } {
+  return isAvailable ? SLOT_STATE.available : SLOT_STATE.booked;
+}
+
 export type PaymentBadgeVariant = "offen" | "bezahlt" | "direkt";
 
 export const PAYMENT_BADGES: Record<PaymentBadgeVariant, { label: string; className: string }> = {
