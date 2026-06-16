@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Förderpilot – Prototyp</title>
+<style>
+  /* ============================================================
+     FÖRDERPILOT — Design Tokens
+     Palette: "Behördlich, aber wach" — Tiefes Tintenblau als Autorität,
+     ein warmes Signal-Bernstein als Wegmarke (der "Pilot"), Papier-Cremeweiß.
+     ============================================================ */
+  :root{
+    --ink:#13243d;        /* Tintenblau, Autorität */
+    --ink-soft:#2c3e5c;
+    --paper:#f7f4ee;      /* Aktenpapier-Creme */
+    --paper-2:#efe9df;
+    --amber:#d98324;      /* Signal-Bernstein, der Lotse */
+    --amber-deep:#b86a14;
+    --teal:#1f7a6d;       /* Erfolg / "geschafft" */
+    --teal-soft:#e2f0ed;
+    --line:#d8cfc0;
+    --line-strong:#bcae98;
+    --white:#ffffff;
+    --shadow:0 1px 2px rgba(19,36,61,.06), 0 8px 24px rgba(19,36,61,.08);
+    --shadow-lg:0 24px 60px rgba(19,36,61,.18);
+    --radius:14px;
+    --radius-sm:9px;
+    --maxw:1180px;
+    --font-display:"Georgia","Times New Roman",serif;
+    --font-body:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:var(--font-body);
+    background:var(--paper);
+    color:var(--ink);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none!important;transition:none!important}
+    html{scroll-behavior:auto}
+  }
+
+  /* ---------- Top Bar ---------- */
+  header.topbar{
+    position:sticky;top:0;z-index:50;
+    background:rgba(247,244,238,.86);
+    backdrop-filter:saturate(140%) blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .topbar-inner{
+    max-width:var(--maxw);margin:0 auto;padding:14px 24px;
+    display:flex;align-items:center;gap:24px;
+  }
+  .brand{display:flex;align-items:center;gap:11px;cursor:pointer;user-select:none}
+  .brand .compass{
+    width:34px;height:34px;flex:0 0 34px;
+    border-radius:50%;
+    background:radial-gradient(circle at 50% 50%, #fff 0 30%, var(--ink) 32% 100%);
+    position:relative;box-shadow:inset 0 0 0 2px var(--amber);
+  }
+  .brand .compass::before{
+    content:"";position:absolute;inset:0;margin:auto;
+    width:0;height:0;
+    border-left:5px solid transparent;border-right:5px solid transparent;
+    border-bottom:13px solid var(--amber);
+    transform:translateY(-3px) rotate(38deg);transform-origin:50% 70%;
+  }
+  .brand .compass::after{
+    content:"";position:absolute;inset:0;margin:auto;
+    width:0;height:0;
+    border-left:5px solid transparent;border-right:5px solid transparent;
+    border-top:13px solid #fff;
+    transform:translateY(3px) rotate(38deg);transform-origin:50% 30%;
+  }
+  .brand b{font-family:var(--font-display);font-size:21px;letter-spacing:-.3px}
+  .brand b span{color:var(--amber-deep)}
+  nav.mainnav{display:flex;gap:4px;margin-left:auto}
+  nav.mainnav button{
+    background:none;border:none;font:inherit;font-size:14px;color:var(--ink-soft);
+    padding:8px 13px;border-radius:8px;cursor:pointer;font-weight:500;
+  }
+  nav.mainnav button:hover{background:var(--paper-2)}
+  nav.mainnav button.active{background:var(--ink);color:#fff}
+  .badge-demo{
+    font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+    color:var(--amber-deep);border:1px solid var(--amber);border-radius:20px;
+    padding:3px 10px;background:#fff;
+  }
+
+  /* ---------- View System ---------- */
+  .view{display:none;animation:fade .35s ease}
+  .view.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+
+  /* ---------- HERO ---------- */
+  .hero{padding:64px 0 36px;position:relative;overflow:hidden}
+  .hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:48px;align-items:center}
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:12.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
+    color:var(--amber-deep);margin-bottom:18px;
+  }
+  .eyebrow::before{content:"";width:26px;height:2px;background:var(--amber)}
+  .hero h1{
+    font-family:var(--font-display);font-weight:400;
+    font-size:clamp(34px,4.6vw,56px);line-height:1.05;letter-spacing:-1px;
+    margin-bottom:20px;
+  }
+  .hero h1 em{font-style:italic;color:var(--amber-deep)}
+  .hero p.lead{font-size:18px;color:var(--ink-soft);max-width:34em;margin-bottom:28px}
+  .hero-cta{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .stat-strip{display:flex;gap:30px;margin-top:38px;flex-wrap:wrap}
+  .stat-strip .s b{font-family:var(--font-display);font-size:28px;display:block;line-height:1}
+  .stat-strip .s span{font-size:12.5px;color:var(--ink-soft)}
+
+  .btn{
+    font:inherit;font-weight:600;font-size:15px;cursor:pointer;border:none;
+    padding:13px 22px;border-radius:10px;transition:transform .12s, box-shadow .2s;
+    display:inline-flex;align-items:center;gap:9px;
+  }
+  .btn:active{transform:translateY(1px)}
+  .btn-primary{background:var(--amber);color:#fff;box-shadow:0 6px 18px rgba(217,131,36,.35)}
+  .btn-primary:hover{background:var(--amber-deep)}
+  .btn-ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line-strong)}
+  .btn-ghost:hover{border-color:var(--ink);background:#fff}
+  .btn-sm{padding:9px 15px;font-size:13.5px;border-radius:8px}
+
+  /* Hero "Kompass-Karte" Signature element */
+  .compass-card{
+    background:var(--ink);color:#fff;border-radius:20px;padding:30px;
+    box-shadow:var(--shadow-lg);position:relative;overflow:hidden;
+  }
+  .compass-card::before{
+    content:"";position:absolute;right:-60px;top:-60px;width:200px;height:200px;
+    border-radius:50%;border:1px dashed rgba(255,255,255,.18);
+  }
+  .compass-card::after{
+    content:"";position:absolute;right:-30px;top:-30px;width:140px;height:140px;
+    border-radius:50%;border:1px dashed rgba(255,255,255,.12);
+  }
+  .compass-card .cc-label{font-size:12px;letter-spacing:.5px;text-transform:uppercase;color:var(--amber);font-weight:700;margin-bottom:6px}
+  .compass-card .cc-q{font-family:var(--font-display);font-size:19px;margin-bottom:18px;position:relative}
+  .quickform label{display:block;font-size:12.5px;color:rgba(255,255,255,.7);margin:14px 0 6px}
+  .quickform select{
+    width:100%;font:inherit;font-size:14.5px;padding:11px 12px;border-radius:9px;
+    border:1px solid rgba(255,255,255,.2);background:#1b2f4f;color:#fff;cursor:pointer;
+  }
+  .quickform .btn{width:100%;justify-content:center;margin-top:18px}
+
+  /* ---------- Section frames ---------- */
+  .section{padding:54px 0}
+  .section-head{margin-bottom:30px}
+  .section-head .eyebrow{margin-bottom:12px}
+  .section-head h2{font-family:var(--font-display);font-weight:400;font-size:clamp(26px,3vw,36px);letter-spacing:-.5px}
+  .section-head p{color:var(--ink-soft);max-width:42em;margin-top:8px}
+
+  /* ---------- Finder / Filters ---------- */
+  .finder-layout{display:grid;grid-template-columns:262px 1fr;gap:28px;align-items:start}
+  .filters{
+    background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+    padding:20px;position:sticky;top:84px;box-shadow:var(--shadow);
+  }
+  .filters h3{font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft);margin-bottom:14px}
+  .fgroup{margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--paper-2)}
+  .fgroup:last-child{border:none;margin:0;padding:0}
+  .fgroup>label{display:block;font-weight:600;font-size:13.5px;margin-bottom:9px}
+  .chip{
+    display:inline-block;font-size:12.5px;padding:6px 12px;margin:0 6px 6px 0;
+    border:1px solid var(--line-strong);border-radius:20px;cursor:pointer;background:#fff;
+    transition:all .15s;user-select:none;
+  }
+  .chip:hover{border-color:var(--ink)}
+  .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .result-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+  .result-bar .count{font-size:14px;color:var(--ink-soft)}
+  .result-bar .count b{color:var(--ink);font-size:16px}
+
+  /* ---------- Program Cards ---------- */
+  .cards{display:grid;gap:16px}
+  .pcard{
+    background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px;box-shadow:var(--shadow);cursor:pointer;
+    transition:transform .15s, box-shadow .2s, border-color .2s;
+    display:grid;grid-template-columns:1fr auto;gap:18px;align-items:start;
+  }
+  .pcard:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);border-color:var(--line-strong)}
+  .pcard .tags{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}
+  .tag{font-size:11px;font-weight:600;padding:3px 9px;border-radius:6px;letter-spacing:.2px}
+  .tag.lvl-bund{background:#e8edf6;color:#34507e}
+  .tag.lvl-land{background:#efe9df;color:#8a6d2f}
+  .tag.lvl-eu{background:#eae6f4;color:#5b4a8a}
+  .tag.type{background:var(--teal-soft);color:var(--teal)}
+  .pcard h3{font-family:var(--font-display);font-size:20px;font-weight:400;margin-bottom:6px;letter-spacing:-.3px}
+  .pcard .giver{font-size:13px;color:var(--ink-soft);margin-bottom:10px}
+  .pcard .desc{font-size:14px;color:var(--ink-soft);line-height:1.5}
+  .pcard .meta{display:flex;gap:18px;margin-top:14px;flex-wrap:wrap}
+  .pcard .meta .m b{display:block;font-size:15px;font-family:var(--font-display)}
+  .pcard .meta .m span{font-size:11.5px;color:var(--ink-soft)}
+  .pcard-right{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:12px;min-width:120px}
+  /* success gauge */
+  .gauge{width:84px;text-align:center}
+  .gauge svg{transform:rotate(-90deg)}
+  .gauge .gl{font-size:10.5px;color:var(--ink-soft);margin-top:2px;line-height:1.2}
+  .gauge b{font-family:var(--font-display);font-size:15px}
+
+  /* ---------- Program Detail ---------- */
+  .detail-top{
+    background:var(--ink);color:#fff;border-radius:0 0 var(--radius) var(--radius);
+    padding:34px 0 30px;margin-bottom:30px;
+  }
+  .back-link{background:none;border:none;color:rgba(255,255,255,.75);font:inherit;font-size:14px;cursor:pointer;display:inline-flex;gap:7px;align-items:center;margin-bottom:18px}
+  .back-link:hover{color:#fff}
+  .detail-top h1{font-family:var(--font-display);font-weight:400;font-size:clamp(26px,3.4vw,40px);letter-spacing:-.5px;margin-bottom:8px}
+  .detail-top .d-giver{color:rgba(255,255,255,.8);margin-bottom:16px}
+  .detail-facts{display:flex;gap:34px;flex-wrap:wrap;margin-top:20px}
+  .detail-facts .f b{display:block;font-family:var(--font-display);font-size:21px}
+  .detail-facts .f span{font-size:12px;color:rgba(255,255,255,.65)}
+
+  .detail-layout{display:grid;grid-template-columns:1fr 320px;gap:32px;align-items:start;padding-bottom:60px}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:26px;box-shadow:var(--shadow);margin-bottom:20px}
+  .panel h2{font-family:var(--font-display);font-weight:400;font-size:23px;margin-bottom:6px}
+  .panel .sub{color:var(--ink-soft);font-size:14px;margin-bottom:20px}
+
+  /* Stepper */
+  .steps{position:relative}
+  .step{display:grid;grid-template-columns:42px 1fr;gap:16px;padding-bottom:8px}
+  .step:not(:last-child) .s-num::after{
+    content:"";position:absolute;left:20px;top:42px;bottom:-2px;width:2px;background:var(--line);
+  }
+  .s-num{position:relative}
+  .s-num i{
+    display:flex;align-items:center;justify-content:center;
+    width:40px;height:40px;border-radius:50%;background:var(--paper-2);
+    color:var(--ink);font-style:normal;font-weight:700;font-family:var(--font-display);
+    border:2px solid var(--line);
+  }
+  .step.done .s-num i{background:var(--teal);color:#fff;border-color:var(--teal)}
+  .step.active .s-num i{background:var(--amber);color:#fff;border-color:var(--amber);box-shadow:0 0 0 4px rgba(217,131,36,.18)}
+  .s-body{padding-bottom:24px}
+  .s-body h4{font-size:16px;margin-bottom:5px}
+  .s-body p{font-size:14px;color:var(--ink-soft);margin-bottom:10px}
+  .s-meta{display:inline-flex;gap:6px;align-items:center;font-size:12px;color:var(--ink-soft);background:var(--paper);border:1px solid var(--line);padding:4px 10px;border-radius:7px;margin-right:8px}
+  .s-actions{margin-top:12px;display:flex;gap:9px;flex-wrap:wrap}
+  .pill-action{font-size:12.5px;font-weight:600;color:var(--amber-deep);background:#fff;border:1px solid var(--amber);padding:7px 13px;border-radius:8px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+  .pill-action:hover{background:#fff7ed}
+
+  /* Sidebar widgets */
+  .side-widget{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow);margin-bottom:18px}
+  .side-widget h3{font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft);margin-bottom:14px}
+  .checklist{list-style:none;font-size:13.5px}
+  .checklist li{display:flex;gap:9px;padding:7px 0;border-bottom:1px solid var(--paper-2);align-items:flex-start}
+  .checklist li:last-child{border:none}
+  .checklist .box{width:17px;height:17px;border:1.5px solid var(--line-strong);border-radius:4px;flex:0 0 17px;margin-top:2px;cursor:pointer;position:relative}
+  .checklist .box.checked{background:var(--teal);border-color:var(--teal)}
+  .checklist .box.checked::after{content:"✓";position:absolute;color:#fff;font-size:12px;left:2.5px;top:-1px}
+  .checklist li.done span{text-decoration:line-through;color:var(--ink-soft)}
+
+  .advisor{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--paper-2);align-items:center}
+  .advisor:last-child{border:none}
+  .advisor .av{width:42px;height:42px;border-radius:50%;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:16px;flex:0 0 42px}
+  .advisor .ai b{font-size:14px;display:block}
+  .advisor .ai span{font-size:12px;color:var(--ink-soft)}
+  .advisor .rate{margin-left:auto;font-size:12px;color:var(--amber-deep);font-weight:700}
+
+  /* Document generator modal */
+  .modal-back{display:none;position:fixed;inset:0;background:rgba(19,36,61,.55);z-index:100;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(2px)}
+  .modal-back.open{display:flex;animation:fade .25s}
+  .modal{background:var(--paper);border-radius:18px;max-width:680px;width:100%;max-height:88vh;overflow:auto;box-shadow:var(--shadow-lg)}
+  .modal-head{padding:22px 26px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--paper);z-index:2}
+  .modal-head h3{font-family:var(--font-display);font-weight:400;font-size:22px}
+  .modal-head .x{background:none;border:none;font-size:24px;cursor:pointer;color:var(--ink-soft);line-height:1}
+  .modal-body{padding:26px}
+  .doc-field{margin-bottom:16px}
+  .doc-field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+  .doc-field input,.doc-field textarea{width:100%;font:inherit;font-size:14px;padding:11px 12px;border:1px solid var(--line-strong);border-radius:9px;background:#fff;resize:vertical}
+  .doc-field textarea{min-height:70px}
+  .ai-note{display:flex;gap:10px;background:var(--teal-soft);border:1px solid #bcddd6;border-radius:10px;padding:13px 15px;font-size:13px;color:#155;margin-bottom:20px;align-items:flex-start}
+  .doc-preview{background:#fff;border:1px solid var(--line);border-radius:10px;padding:22px;font-family:var(--font-display);font-size:14px;line-height:1.7;color:var(--ink)}
+  .doc-preview h4{font-size:17px;margin-bottom:4px}
+  .doc-preview .muted{color:var(--ink-soft);font-family:var(--font-body);font-size:12.5px}
+  .typing{border-right:2px solid var(--amber);animation:blink .8s step-end infinite}
+  @keyframes blink{50%{border-color:transparent}}
+
+  /* ---------- How it works (landing) ---------- */
+  .how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .how-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:26px;box-shadow:var(--shadow);position:relative}
+  .how-card .hn{font-family:var(--font-display);font-size:34px;color:var(--amber);line-height:1;margin-bottom:14px}
+  .how-card h3{font-size:17px;margin-bottom:8px}
+  .how-card p{font-size:14px;color:var(--ink-soft)}
+
+  .price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:8px}
+  .price{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:28px;box-shadow:var(--shadow);position:relative}
+  .price.feat{border-color:var(--amber);box-shadow:0 0 0 2px var(--amber), var(--shadow-lg)}
+  .price .pf-badge{position:absolute;top:-11px;left:24px;background:var(--amber);color:#fff;font-size:11px;font-weight:700;padding:4px 11px;border-radius:20px;letter-spacing:.4px}
+  .price h3{font-size:16px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+  .price .amt{font-family:var(--font-display);font-size:38px;line-height:1}
+  .price .amt small{font-size:14px;color:var(--ink-soft);font-family:var(--font-body)}
+  .price ul{list-style:none;margin:18px 0;font-size:13.5px}
+  .price li{padding:7px 0;display:flex;gap:9px;align-items:flex-start;color:var(--ink-soft)}
+  .price li::before{content:"→";color:var(--amber-deep);font-weight:700}
+
+  footer{background:var(--ink);color:rgba(255,255,255,.7);padding:40px 0;font-size:13px;margin-top:40px}
+  .footer-inner{max-width:var(--maxw);margin:0 auto;padding:0 24px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:20px}
+  .footer-inner .disc{max-width:40em;line-height:1.6}
+
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:13px 22px;border-radius:10px;font-size:14px;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:all .3s;z-index:200}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  @media (max-width:880px){
+    .hero-grid,.finder-layout,.detail-layout,.how-grid,.price-grid{grid-template-columns:1fr}
+    .filters{position:static}
+    nav.mainnav{display:none}
+    .detail-layout .side{order:-1}
+  }
+</style>
+</head>
+<body>
+
+<!-- ========================= TOP BAR ========================= -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand" onclick="go('home')">
+      <div class="compass"></div>
+      <b>Förder<span>pilot</span></b>
+    </div>
+    <nav class="mainnav">
+      <button id="nav-home" class="active" onclick="go('home')">Start</button>
+      <button id="nav-finder" onclick="go('finder')">Förderfinder</button>
+      <button id="nav-how" onclick="go('how')">So funktioniert's</button>
+      <button id="nav-price" onclick="go('price')">Preise</button>
+    </nav>
+    <span class="badge-demo">Prototyp</span>
+  </div>
+</header>
+
+<!-- ========================= HOME ========================= -->
+<section id="view-home" class="view active">
+  <div class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <span class="eyebrow">Dein Lotse durch den Förderdschungel</span>
+        <h1>2.500 Förderprogramme.<br>Ein <em>klarer Weg</em> zum Antrag.</h1>
+        <p class="lead">Förderpilot bündelt die Förderlandschaft von Bund, Ländern und EU – und zeigt dir für jedes Programm Schritt für Schritt, wie du es mit der höchsten Erfolgswahrscheinlichkeit beantragst. Inklusive Dokumenten-Erstellung und passenden Beratern.</p>
+        <div class="hero-cta">
+          <button class="btn btn-primary" onclick="go('finder')">Passende Förderung finden →</button>
+          <button class="btn btn-ghost" onclick="go('how')">So funktioniert's</button>
+        </div>
+        <div class="stat-strip">
+          <div class="s"><b>2.500+</b><span>Programme gebündelt</span></div>
+          <div class="s"><b>Bund · Land · EU</b><span>alle Ebenen</span></div>
+          <div class="s"><b>Schritt&nbsp;für&nbsp;Schritt</b><span>pro Programm</span></div>
+        </div>
+      </div>
+      <div class="compass-card">
+        <div class="cc-label">◇ Förder-Schnellcheck</div>
+        <div class="cc-q">In 3 Klicks zu deinen Programmen.</div>
+        <div class="quickform">
+          <label>Wer bist du?</label>
+          <select id="q-who">
+            <option>Bestehendes Unternehmen (KMU)</option>
+            <option>Gründer / Start-up</option>
+            <option>Berater / Dienstleister</option>
+            <option>Privatperson</option>
+          </select>
+          <label>Was hast du vor?</label>
+          <select id="q-what">
+            <option>Energieeffizienz / Sanierung</option>
+            <option>Digitalisierung</option>
+            <option>Innovation / Forschung</option>
+            <option>Gründung / Wachstum</option>
+            <option>Beratung in Anspruch nehmen</option>
+          </select>
+          <label>Wo?</label>
+          <select id="q-where">
+            <option>Berlin</option><option>Bundesweit</option><option>Hamburg</option>
+            <option>Bayern</option><option>NRW</option>
+          </select>
+          <button class="btn btn-primary" onclick="go('finder')">Förderungen anzeigen</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Problem framing -->
+  <div class="section" style="background:var(--paper-2)">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Warum es das braucht</span>
+        <h2>Fördergeld zu finden ist Hürde eins.<br>Es zu bekommen, ist Hürde zwei.</h2>
+        <p>Die Programme sind über Bund, 16 Länder, EU, KfW und BAFA verstreut. Die Richtlinien sind in Behördensprache geschrieben. Und nach dem Finden beginnt erst die eigentliche Arbeit: Antrag, Fristen, Nachweise, Businessplan. Genau hier setzt Förderpilot an.</p>
+      </div>
+      <div class="how-grid">
+        <div class="how-card">
+          <div class="hn">01</div>
+          <h3>Finden</h3>
+          <p>Filtere aus tausenden Programmen genau die heraus, die zu deinem Vorhaben, deiner Größe und deinem Bundesland passen – ohne Richtlinien-Kauderwelsch.</p>
+        </div>
+        <div class="how-card">
+          <div class="hn">02</div>
+          <h3>Verstehen & Beantragen</h3>
+          <p>Für jedes Programm ein geführter Antragspfad: jeder Schritt erklärt, mit Fristen, Stolperfallen und typischen Ablehnungsgründen.</p>
+        </div>
+        <div class="how-card">
+          <div class="hn">03</div>
+          <h3>Umsetzen lassen</h3>
+          <p>Businessplan & Pflichtdokumente per Assistent erstellen – oder direkt einen geprüften Berater für dein Programm buchen.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Featured programs teaser -->
+  <div class="section">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Beliebte Programme</span>
+        <h2>Schau dir an, wie ein geführter Antrag aussieht</h2>
+      </div>
+      <div class="cards" id="home-cards"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= FINDER ========================= -->
+<section id="view-finder" class="view">
+  <div class="section">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Förderfinder</span>
+        <h2>Deine passenden Programme</h2>
+        <p>Demo mit ausgewählten Beispielprogrammen. In der echten Plattform werden hier alle ~2.500 Programme aus Bund, Ländern und EU laufend synchronisiert und angereichert.</p>
+      </div>
+      <div class="finder-layout">
+        <aside class="filters">
+          <h3>Filter</h3>
+          <div class="fgroup">
+            <label>Förderebene</label>
+            <div data-group="level">
+              <span class="chip on" data-val="all">Alle</span>
+              <span class="chip" data-val="bund">Bund</span>
+              <span class="chip" data-val="land">Land</span>
+              <span class="chip" data-val="eu">EU</span>
+            </div>
+          </div>
+          <div class="fgroup">
+            <label>Förderart</label>
+            <div data-group="type">
+              <span class="chip on" data-val="all">Alle</span>
+              <span class="chip" data-val="Zuschuss">Zuschuss</span>
+              <span class="chip" data-val="Kredit">Kredit</span>
+              <span class="chip" data-val="Beratung">Beratung</span>
+            </div>
+          </div>
+          <div class="fgroup">
+            <label>Bereich</label>
+            <div data-group="area">
+              <span class="chip on" data-val="all">Alle</span>
+              <span class="chip" data-val="Energie">Energie</span>
+              <span class="chip" data-val="Digital">Digital</span>
+              <span class="chip" data-val="Innovation">Innovation</span>
+              <span class="chip" data-val="Gründung">Gründung</span>
+            </div>
+          </div>
+          <div class="fgroup">
+            <label>Zielgruppe</label>
+            <div data-group="who">
+              <span class="chip on" data-val="all">Alle</span>
+              <span class="chip" data-val="KMU">KMU</span>
+              <span class="chip" data-val="Gründer">Gründer</span>
+              <span class="chip" data-val="Privat">Privat</span>
+            </div>
+          </div>
+        </aside>
+        <div>
+          <div class="result-bar">
+            <div class="count"><b id="rc">0</b> Programme gefunden</div>
+            <button class="btn btn-ghost btn-sm" onclick="resetFilters()">Filter zurücksetzen</button>
+          </div>
+          <div class="cards" id="finder-cards"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= DETAIL ========================= -->
+<section id="view-detail" class="view">
+  <div class="detail-top">
+    <div class="wrap">
+      <button class="back-link" onclick="go('finder')">← Zurück zur Übersicht</button>
+      <div class="tags" id="d-tags" style="margin-bottom:12px"></div>
+      <h1 id="d-title"></h1>
+      <div class="d-giver" id="d-giver"></div>
+      <div class="detail-facts" id="d-facts"></div>
+    </div>
+  </div>
+  <div class="wrap detail-layout">
+    <div class="main">
+      <div class="panel">
+        <h2>Dein Weg zum Antrag</h2>
+        <p class="sub">Geführter Pfad – jeder Schritt mit Aufwand, Fristen und Stolperfallen. <b>Schritt 2</b> ist als Nächstes dran.</p>
+        <div class="steps" id="d-steps"></div>
+      </div>
+      <div class="panel">
+        <h2>Typische Ablehnungsgründe</h2>
+        <p class="sub">Das kostet die meisten Anträge den Erfolg – hier vorab geklärt.</p>
+        <ul class="checklist" id="d-pitfalls"></ul>
+      </div>
+    </div>
+    <div class="side">
+      <div class="side-widget">
+        <h3>Erfolgswahrscheinlichkeit</h3>
+        <div style="text-align:center;padding:6px 0">
+          <div class="gauge" id="d-gauge" style="width:120px;margin:0 auto"></div>
+        </div>
+        <p style="font-size:12.5px;color:var(--ink-soft);text-align:center;margin-top:8px" id="d-gauge-note"></p>
+      </div>
+      <div class="side-widget">
+        <h3>Unterlagen-Checkliste</h3>
+        <ul class="checklist" id="d-docs"></ul>
+      </div>
+      <div class="side-widget">
+        <h3>Geprüfte Berater für dieses Programm</h3>
+        <div id="d-advisors"></div>
+        <button class="btn btn-primary btn-sm" style="width:100%;justify-content:center;margin-top:14px" onclick="toast('Berater-Anfrage gesendet (Demo)')">Beratung anfragen</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= HOW ========================= -->
+<section id="view-how" class="view">
+  <div class="section">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">So funktioniert's</span>
+        <h2>Vom Förderdschungel zum bewilligten Antrag</h2>
+        <p>Förderpilot begleitet dich über den gesamten Lebenszyklus eines Förderantrags – nicht nur bis zum Finden.</p>
+      </div>
+      <div class="how-grid">
+        <div class="how-card"><div class="hn">01</div><h3>Profil statt Suchmaske</h3><p>Du beantwortest einmal, wer du bist und was du vorhast. Förderpilot matcht dich gegen alle Programme – statt dass du dich durch Richtlinien wühlst.</p></div>
+        <div class="how-card"><div class="hn">02</div><h3>Antragspfad pro Programm</h3><p>Jedes Programm hat einen eigenen, redaktionell gepflegten Schritt-für-Schritt-Pfad mit Fristen, Aufwand und Ablehnungsgründen.</p></div>
+        <div class="how-card"><div class="hn">03</div><h3>Dokumenten-Assistent</h3><p>Businessplan, Vorhabenbeschreibung, De-minimis-Erklärung – per geführtem Assistenten auf Basis deiner Eingaben erstellt.</p></div>
+        <div class="how-card"><div class="hn">04</div><h3>Berater-Matching</h3><p>Wo Eigenleistung an Grenzen stößt: Vermittlung an einen für genau dieses Programm geprüften Berater oder Dienstleister.</p></div>
+        <div class="how-card"><div class="hn">05</div><h3>Fristen & Status</h3><p>Erinnerungen an Stichtage, Verwendungsnachweise und Folgeanträge – damit kein Geld auf der Strecke bleibt.</p></div>
+        <div class="how-card"><div class="hn">06</div><h3>Immer aktuell</h3><p>Programmdaten werden laufend mit den offiziellen Quellen abgeglichen. Du arbeitest nie mit veralteten Richtlinien.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= PRICE ========================= -->
+<section id="view-price" class="view">
+  <div class="section">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Preise</span>
+        <h2>Hybrid-Modell: kostenlos starten, bei Bedarf upgraden</h2>
+        <p>Finden ist gratis. Verdient wird an der Umsetzung – durch Premium-Tools, Dokumente und Beratervermittlung.</p>
+      </div>
+      <div class="price-grid">
+        <div class="price">
+          <h3>Entdecken</h3>
+          <div class="amt">0&nbsp;€<small>/ immer</small></div>
+          <ul>
+            <li>Voller Zugriff auf den Förderfinder</li>
+            <li>Programm-Detailseiten ansehen</li>
+            <li>Antragspfade in der Vorschau</li>
+            <li>Frist-Erinnerungen für 1 Programm</li>
+          </ul>
+          <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="go('finder')">Kostenlos starten</button>
+        </div>
+        <div class="price feat">
+          <span class="pf-badge">Beliebt</span>
+          <h3>Pilot Pro</h3>
+          <div class="amt">29&nbsp;€<small>/ Monat</small></div>
+          <ul>
+            <li>Alle Antragspfade vollständig</li>
+            <li>Dokumenten-Assistent (Businessplan etc.)</li>
+            <li>Unbegrenzte Frist- & Status-Verwaltung</li>
+            <li>Mehrere Vorhaben parallel</li>
+            <li>Pro generiertem Dokument-Paket: Aufpreis</li>
+          </ul>
+          <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="toast('Pro-Upgrade (Demo)')">Pro testen</button>
+        </div>
+        <div class="price">
+          <h3>Beratung & Vermittlung</h3>
+          <div class="amt">Provision<small>/ erfolgsbasiert</small></div>
+          <ul>
+            <li>Vermittlung an geprüfte Berater</li>
+            <li>Berater zahlen pro qualifiziertem Lead</li>
+            <li>Optional: „Antrag machen lassen"</li>
+            <li>Für Berater: Listing & Lead-Abo</li>
+          </ul>
+          <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="toast('Berater-Onboarding (Demo)')">Als Berater listen</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= DOC MODAL ========================= -->
+<div class="modal-back" id="docmodal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="dm-title">Dokumenten-Assistent</h3>
+      <button class="x" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="ai-note">
+        <span>✦</span>
+        <div>Der Assistent erstellt auf Basis deiner Angaben einen ersten Entwurf, der exakt auf die Anforderungen dieses Förderprogramms zugeschnitten ist. Du bearbeitest ihn anschließend weiter.</div>
+      </div>
+      <div class="doc-field"><label>Projektname / Vorhaben</label><input id="df-name" value="Hydraulischer Abgleich & Heizungsoptimierung"></div>
+      <div class="doc-field"><label>Kurzbeschreibung des Vorhabens</label><textarea id="df-desc">Optimierung der bestehenden Heizungsanlage in einem Mehrfamilienhaus (Bj. 1992) zur Senkung des Endenergiebedarfs.</textarea></div>
+      <div class="doc-field"><label>Geschätzte Investitionssumme (€)</label><input id="df-sum" value="14.500"></div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="generateDoc()">✦ Entwurf erstellen</button>
+      <div id="dm-output" style="margin-top:22px"></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div>
+      <div class="brand" style="margin-bottom:12px"><div class="compass"></div><b style="color:#fff">Förder<span style="color:var(--amber)">pilot</span></b></div>
+      <div class="disc">Interaktiver Prototyp zu Demonstrationszwecken. Programmdaten und Erfolgsquoten sind illustrative Beispiele, keine verbindliche Förderberatung. Die echte Plattform synchronisiert offizielle Quellen und kennzeichnet redaktionelle Einschätzungen.</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:12px">Konzept-Demo · 2026</div>
+    </div>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   DATEN — illustrative Beispielprogramme (Energie/Bau-Kernmarkt
+   + breitere Beispiele für "alle Zielgruppen")
+   ============================================================ */
+const PROGRAMS = [
+  {
+    id:"beg-em", title:"BEG Einzelmaßnahmen (Heizungsoptimierung)",
+    giver:"BAFA – Bundesamt für Wirtschaft und Ausfuhrkontrolle",
+    level:"bund", levelLabel:"Bund", type:"Zuschuss", area:"Energie", who:["KMU","Privat"],
+    funding:"15–20 %", fundingLabel:"Zuschussquote",
+    max:"bis 30.000 € Kosten", maxLabel:"förderfähig",
+    deadline:"laufend", deadlineLabel:"Antragsfrist",
+    success:78, successNote:"Hohe Quote bei vollständigen Unterlagen und förderfähigen Maßnahmen.",
+    desc:"Zuschuss für Einzelmaßnahmen an der Gebäudehülle und Anlagentechnik – u. a. Heizungsoptimierung und hydraulischer Abgleich im Bestand.",
+    steps:[
+      {t:"Förderfähigkeit prüfen",d:"Abgleich, ob Gebäude und Maßnahme die technischen Mindestanforderungen (TMA) erfüllen.",aufwand:"30 Min.",frist:"vor Beginn",done:true},
+      {t:"Energieeffizienz-Experten einbinden",d:"Für viele Maßnahmen ist eine dena-gelistete Fachperson verpflichtend. Hier matchen wir dich.",aufwand:"1–2 Tage",frist:"vor Antrag",doc:"advisor",active:true},
+      {t:"Antrag VOR Vorhabenbeginn stellen",d:"Kritischster Schritt: Der Antrag muss vor Auftragsvergabe gestellt werden, sonst Totalausfall der Förderung.",aufwand:"1 Std.",frist:"zwingend vorab"},
+      {t:"Maßnahme umsetzen",d:"Durchführung durch Fachbetrieb innerhalb des Bewilligungszeitraums.",aufwand:"projektabh.",frist:"i. d. R. 24 Mon."},
+      {t:"Verwendungsnachweis einreichen",d:"Rechnungen, Fachunternehmererklärung und ggf. TPB hochladen – dann Auszahlung.",aufwand:"2 Std.",frist:"nach Abschluss"}
+    ],
+    pitfalls:[
+      "Auftrag VOR Antragstellung vergeben (häufigster Totalausfall)",
+      "Fehlende oder falsche Fachunternehmererklärung",
+      "Maßnahme erfüllt technische Mindestanforderungen nicht",
+      "Verwendungsnachweis-Frist versäumt"
+    ],
+    docs:["Rechnung(en) des Fachbetriebs","Fachunternehmererklärung","ggf. Bestätigung Energieeffizienz-Experte","Nachweis Zahlung"],
+    advisors:[
+      {n:"Energie Impuls GmbH",r:"dena-gelistet",init:"EI"},
+      {n:"Sanierungswerk Nord",r:"4,9 ★",init:"SN"},
+      {n:"GreenHaus Consulting",r:"4,7 ★",init:"GH"}
+    ],
+    genDoc:"Vorhabenbeschreibung"
+  },
+  {
+    id:"zim", title:"ZIM – Zentrales Innovationsprogramm Mittelstand",
+    giver:"BMWE – Bundesministerium für Wirtschaft und Energie",
+    level:"bund", levelLabel:"Bund", type:"Zuschuss", area:"Innovation", who:["KMU"],
+    funding:"bis 45 %", fundingLabel:"Förderquote",
+    max:"bis 550.000 €", maxLabel:"pro Projekt",
+    deadline:"laufend", deadlineLabel:"Antragsfrist",
+    success:42, successNote:"Wettbewerblich – Innovationshöhe und Verwertungsplan entscheiden.",
+    desc:"Förderung von Forschungs- und Entwicklungsprojekten kleiner und mittlerer Unternehmen, auch in Kooperation mit Forschungseinrichtungen.",
+    steps:[
+      {t:"Innovationsgehalt schärfen",d:"Das Projekt muss ein echtes technisches Risiko und Neuheit über den Stand der Technik hinaus aufweisen.",aufwand:"2–3 Tage",frist:"vor Skizze",done:true},
+      {t:"Projektskizze & Kalkulation",d:"Arbeitsplan, Meilensteine und Personalkostenkalkulation erstellen. Hier hilft der Dokument-Assistent.",aufwand:"1 Woche",frist:"laufend",doc:"genDoc",active:true},
+      {t:"Antrag über easy-Online",d:"Formgebundene Antragstellung mit Projektbeschreibung und Bonitätsnachweis.",aufwand:"2 Tage",frist:"laufend"},
+      {t:"Begutachtung abwarten",d:"Fachliche Prüfung durch den Projektträger – ggf. Rückfragen beantworten.",aufwand:"reaktiv",frist:"~3 Mon."},
+      {t:"Zwischen- & Verwendungsnachweise",d:"Laufende Nachweise der Mittelverwendung über die Projektlaufzeit.",aufwand:"laufend",frist:"quartalsweise"}
+    ],
+    pitfalls:[
+      "Innovationshöhe nicht überzeugend dargestellt",
+      "Kein nachvollziehbarer Verwertungs-/Marktplan",
+      "Personalkosten unrealistisch kalkuliert",
+      "Projekt bereits begonnen vor Antrag"
+    ],
+    docs:["Projektskizze","Arbeits- & Zeitplan","Personalkostenkalkulation","Bonitätsnachweis","ggf. Kooperationsvertrag"],
+    advisors:[
+      {n:"InnoFörder Partners",r:"4,8 ★",init:"IP"},
+      {n:"FuE-Lotsen GmbH",r:"4,6 ★",init:"FL"}
+    ],
+    genDoc:"Projektskizze"
+  },
+  {
+    id:"digitalpraemie-bln", title:"Digitalprämie Berlin",
+    giver:"IBB – Investitionsbank Berlin",
+    level:"land", levelLabel:"Land · Berlin", type:"Zuschuss", area:"Digital", who:["KMU"],
+    funding:"bis 50 %", fundingLabel:"Zuschussquote",
+    max:"bis 17.000 €", maxLabel:"max. Zuschuss",
+    deadline:"begrenzt", deadlineLabel:"Budget-Topf",
+    success:55, successNote:"Schnelles Handeln zählt – Budget ist gedeckelt und oft schnell ausgeschöpft.",
+    desc:"Zuschuss für kleine Berliner Unternehmen zur Einführung digitaler Technologien, Software und IT-Sicherheit.",
+    steps:[
+      {t:"Budget-Status prüfen",d:"Topf-basiert: Erst prüfen, ob aktuell Mittel verfügbar sind.",aufwand:"10 Min.",frist:"laufend",done:true},
+      {t:"Digitalisierungsvorhaben definieren",d:"Konkrete Software/Hardware und erwarteten Nutzen beschreiben.",aufwand:"halber Tag",frist:"vor Antrag",active:true},
+      {t:"Angebote einholen",d:"Vergleichsangebote als Kostengrundlage beilegen.",aufwand:"2–3 Tage",frist:"vor Antrag"},
+      {t:"Online-Antrag bei IBB",d:"Antrag über das IBB-Kundenportal stellen.",aufwand:"1 Std.",frist:"vor Beginn"},
+      {t:"Nachweis & Auszahlung",d:"Nach Umsetzung Rechnungen einreichen.",aufwand:"1 Std.",frist:"nach Abschluss"}
+    ],
+    pitfalls:["Topf bereits ausgeschöpft","Vorhaben vor Bewilligung begonnen","Nicht förderfähige Standardsoftware beantragt"],
+    docs:["Vergleichsangebote","Vorhabenbeschreibung","Gewerbenachweis Berlin","Rechnungen (für Nachweis)"],
+    advisors:[{n:"Digital Berlin Lab",r:"4,7 ★",init:"DB"},{n:"KMU Digitalpaten",r:"4,5 ★",init:"KD"}],
+    genDoc:"Vorhabenbeschreibung"
+  },
+  {
+    id:"gruendungszuschuss", title:"Gründungszuschuss",
+    giver:"Agentur für Arbeit",
+    level:"bund", levelLabel:"Bund", type:"Zuschuss", area:"Gründung", who:["Gründer"],
+    funding:"ALG I + 300 €", fundingLabel:"monatlich",
+    max:"6 + 9 Monate", maxLabel:"Förderdauer",
+    deadline:"individuell", deadlineLabel:"vor Gründung",
+    success:48, successNote:"Ermessensleistung – tragfähiger Businessplan und fachkundige Stellungnahme sind entscheidend.",
+    desc:"Unterstützung für Arbeitslose, die sich selbstständig machen – zur Sicherung des Lebensunterhalts in der Startphase.",
+    steps:[
+      {t:"Anspruch klären",d:"Restanspruch ALG I (min. 150 Tage) und Tragfähigkeit prüfen.",aufwand:"30 Min.",frist:"vor Gründung",done:true},
+      {t:"Businessplan erstellen",d:"Tragfähiges Konzept inkl. Finanzplan – Kern der Bewilligung. Dokument-Assistent nutzen.",aufwand:"1–2 Wochen",frist:"vor Antrag",doc:"genDoc",active:true},
+      {t:"Fachkundige Stellungnahme",d:"Tragfähigkeitsbescheinigung von IHK, Steuerberater o. ä. einholen.",aufwand:"3–5 Tage",frist:"vor Antrag"},
+      {t:"Antrag bei der Agentur",d:"Vor Aufnahme der Selbstständigkeit stellen.",aufwand:"1 Std.",frist:"zwingend vorab"},
+      {t:"Phase 2 beantragen",d:"Nach 6 Monaten Weiterförderung mit Nachweis der Geschäftstätigkeit.",aufwand:"1 Std.",frist:"nach Monat 6"}
+    ],
+    pitfalls:["Bereits gegründet vor Antrag","Businessplan nicht tragfähig","Restanspruch ALG I zu gering","Fachkundige Stellungnahme fehlt"],
+    docs:["Businessplan","Finanz- & Liquiditätsplan","Fachkundige Stellungnahme","Lebenslauf","Anmeldung Gewerbe/Finanzamt"],
+    advisors:[{n:"StartHilfe Berlin",r:"4,9 ★",init:"SH"},{n:"Gründerwerk",r:"4,6 ★",init:"GW"}],
+    genDoc:"Businessplan"
+  },
+  {
+    id:"kfw-270", title:"KfW 270 – Erneuerbare Energien Standard",
+    giver:"KfW Bankengruppe",
+    level:"bund", levelLabel:"Bund", type:"Kredit", area:"Energie", who:["KMU","Privat"],
+    funding:"ab 3,x %", fundingLabel:"Effektivzins",
+    max:"bis 150 Mio. €", maxLabel:"Kreditbetrag",
+    deadline:"laufend", deadlineLabel:"über Hausbank",
+    success:67, successNote:"Bonitätsgetrieben – Antrag läuft über die Hausbank.",
+    desc:"Zinsgünstiger Förderkredit für Photovoltaik, Speicher und weitere Anlagen zur Strom-/Wärmeerzeugung aus erneuerbaren Energien.",
+    steps:[
+      {t:"Vorhaben & Kreditbedarf klären",d:"Anlagengröße, Kosten und Eigenanteil bestimmen.",aufwand:"halber Tag",frist:"vor Beginn",done:true},
+      {t:"Hausbankgespräch vorbereiten",d:"KfW-Kredite laufen über die Hausbank – Unterlagen vorbereiten.",aufwand:"1–2 Tage",frist:"vor Antrag",active:true},
+      {t:"Antrag über die Hausbank",d:"Die Bank stellt den Antrag bei der KfW vor Vorhabenbeginn.",aufwand:"reaktiv",frist:"zwingend vorab"},
+      {t:"Zusage & Abruf",d:"Nach Zusage Mittel abrufen und Anlage errichten.",aufwand:"projektabh.",frist:"Abruffrist beachten"}
+    ],
+    pitfalls:["Vorhaben vor Kreditzusage begonnen","Unzureichende Bonität/Sicherheiten","Hausbank reicht Antrag verspätet ein"],
+    docs:["Investitionsplan","Angebote/Kostenvoranschläge","Bonitätsunterlagen","Grundbuch/Sicherheiten"],
+    advisors:[{n:"Energie Impuls GmbH",r:"dena-gelistet",init:"EI"},{n:"PV-Finanzpartner",r:"4,6 ★",init:"PV"}],
+    genDoc:"Investitionsplan"
+  },
+  {
+    id:"eu-life", title:"EU LIFE – Klima & Umwelt",
+    giver:"CINEA – Europäische Kommission",
+    level:"eu", levelLabel:"EU", type:"Zuschuss", area:"Innovation", who:["KMU"],
+    funding:"bis 60 %", fundingLabel:"Kofinanzierung",
+    max:"projektabhängig", maxLabel:"Volumen",
+    deadline:"Call-basiert", deadlineLabel:"jährliche Calls",
+    success:21, successNote:"Stark kompetitiv und aufwendig – ohne Erfahrung ist Partnerschaft ratsam.",
+    desc:"EU-Förderung für Projekte in Umwelt-, Naturschutz- und Klimapolitik mit europäischem Mehrwert.",
+    steps:[
+      {t:"Passenden Call identifizieren",d:"LIFE hat thematische Teilprogramme mit eigenen Stichtagen.",aufwand:"2–3 Tage",frist:"jährl. Call",done:true},
+      {t:"Konsortium / Partner finden",d:"Europäischer Mehrwert und oft Partner aus mehreren Ländern nötig.",aufwand:"Wochen",frist:"vor Einreichung",doc:"advisor",active:true},
+      {t:"Vollantrag im EU-Portal",d:"Detaillierter Antrag inkl. Wirkungslogik und Budget im Funding & Tenders Portal.",aufwand:"4–6 Wochen",frist:"Call-Stichtag"},
+      {t:"Evaluierung & Grant Agreement",d:"Bei Erfolg Verhandlung und Unterzeichnung des Grant Agreements.",aufwand:"reaktiv",frist:"~6 Mon."}
+    ],
+    pitfalls:["Kein klarer EU-Mehrwert dargestellt","Budget nicht regelkonform","Wirkungslogik zu schwach","Stichtag verpasst"],
+    docs:["Projektantrag (Part A/B)","Budget-Tabellen","Partnervereinbarungen","Wirkungs-/Monitoringplan"],
+    advisors:[{n:"EU Grant Studio",r:"4,8 ★",init:"EU"},{n:"Brussels Bridge",r:"4,5 ★",init:"BB"}],
+    genDoc:"Projektantrag"
+  }
+];
+
+/* ============================================================
+   NAV / VIEW SWITCHING
+   ============================================================ */
+function go(view){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+view).classList.add('active');
+  document.querySelectorAll('nav.mainnav button').forEach(b=>b.classList.remove('active'));
+  const nb=document.getElementById('nav-'+view); if(nb) nb.classList.add('active');
+  window.scrollTo({top:0,behavior:'instant'});
+  if(view==='finder') renderFinder();
+}
+
+/* ============================================================
+   SUCCESS GAUGE (SVG donut)
+   ============================================================ */
+function gauge(pct,size){
+  const r=size/2-6, c=2*Math.PI*r, off=c*(1-pct/100);
+  let col = pct>=65?'var(--teal)': pct>=40?'var(--amber)':'#c0563f';
+  return `<div class="gauge" style="width:${size}px">
+    <svg width="${size}" height="${size}">
+      <circle cx="${size/2}" cy="${size/2}" r="${r}" stroke="var(--line)" stroke-width="9" fill="none"/>
+      <circle cx="${size/2}" cy="${size/2}" r="${r}" stroke="${col}" stroke-width="9" fill="none"
+        stroke-dasharray="${c}" stroke-dashoffset="${off}" stroke-linecap="round"/>
+    </svg>
+    <div style="margin-top:-${size/2+8}px"><b style="font-size:${size/4.5}px">${pct}%</b></div>
+    <div class="gl" style="margin-top:${size/2-14}px">Erfolgs-<br>quote*</div>
+  </div>`;
+}
+
+/* ============================================================
+   PROGRAM CARD
+   ============================================================ */
+function card(p){
+  const tags = `<span class="tag lvl-${p.level}">${p.levelLabel}</span>
+                <span class="tag type">${p.type}</span>`;
+  return `<div class="pcard" onclick="openDetail('${p.id}')">
+    <div>
+      <div class="tags">${tags}</div>
+      <h3>${p.title}</h3>
+      <div class="giver">${p.giver}</div>
+      <div class="desc">${p.desc}</div>
+      <div class="meta">
+        <div class="m"><b>${p.funding}</b><span>${p.fundingLabel}</span></div>
+        <div class="m"><b>${p.max}</b><span>${p.maxLabel}</span></div>
+        <div class="m"><b>${p.deadline}</b><span>${p.deadlineLabel}</span></div>
+      </div>
+    </div>
+    <div class="pcard-right">
+      ${gauge(p.success,84)}
+      <span class="btn btn-ghost btn-sm">Antragspfad →</span>
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   FINDER + FILTERS
+   ============================================================ */
+const filterState={level:'all',type:'all',area:'all',who:'all'};
+document.querySelectorAll('.filters [data-group]').forEach(group=>{
+  const key=group.dataset.group;
+  group.querySelectorAll('.chip').forEach(chip=>{
+    chip.addEventListener('click',()=>{
+      group.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+      chip.classList.add('on');
+      filterState[key]=chip.dataset.val;
+      renderFinder();
+    });
+  });
+});
+function resetFilters(){
+  Object.keys(filterState).forEach(k=>filterState[k]='all');
+  document.querySelectorAll('.filters [data-group]').forEach(g=>{
+    g.querySelectorAll('.chip').forEach((c,i)=>c.classList.toggle('on',i===0));
+  });
+  renderFinder();
+}
+function renderFinder(){
+  const list=PROGRAMS.filter(p=>{
+    if(filterState.level!=='all'&&p.level!==filterState.level) return false;
+    if(filterState.type!=='all'&&p.type!==filterState.type) return false;
+    if(filterState.area!=='all'&&p.area!==filterState.area) return false;
+    if(filterState.who!=='all'&&!p.who.includes(filterState.who)) return false;
+    return true;
+  });
+  document.getElementById('rc').textContent=list.length;
+  document.getElementById('finder-cards').innerHTML =
+    list.length? list.map(card).join('') :
+    '<div class="panel" style="text-align:center;color:var(--ink-soft)">Keine Programme für diese Kombination. <b>Tipp:</b> Filter lockern.</div>';
+}
+
+/* ============================================================
+   DETAIL VIEW
+   ============================================================ */
+let currentProgram=null;
+function openDetail(id){
+  const p=PROGRAMS.find(x=>x.id===id); currentProgram=p;
+  go('detail');
+  document.getElementById('d-tags').innerHTML =
+    `<span class="tag lvl-${p.level}">${p.levelLabel}</span><span class="tag type">${p.type}</span>`;
+  document.getElementById('d-title').textContent=p.title;
+  document.getElementById('d-giver').textContent=p.giver;
+  document.getElementById('d-facts').innerHTML=`
+    <div class="f"><b>${p.funding}</b><span>${p.fundingLabel}</span></div>
+    <div class="f"><b>${p.max}</b><span>${p.maxLabel}</span></div>
+    <div class="f"><b>${p.deadline}</b><span>${p.deadlineLabel}</span></div>`;
+
+  // steps
+  document.getElementById('d-steps').innerHTML = p.steps.map((s,i)=>{
+    let cls = s.done?'done': s.active?'active':'';
+    let actions='';
+    if(s.doc==='genDoc') actions=`<button class="pill-action" onclick="openDoc('${p.genDoc}')">✦ ${p.genDoc} erstellen</button>`;
+    if(s.doc==='advisor') actions=`<button class="pill-action" onclick="document.getElementById('d-advisors').scrollIntoView({behavior:'smooth'})">→ Passenden Berater finden</button>`;
+    return `<div class="step ${cls}">
+      <div class="s-num"><i>${s.done?'✓':i+1}</i></div>
+      <div class="s-body">
+        <h4>${s.t}</h4>
+        <p>${s.d}</p>
+        <span class="s-meta">⏱ ${s.aufwand}</span>
+        <span class="s-meta">◷ ${s.frist}</span>
+        <div class="s-actions">${actions}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // pitfalls
+  document.getElementById('d-pitfalls').innerHTML = p.pitfalls.map(x=>
+    `<li><span class="box" style="border-color:#c0563f;background:#fbeeea" onclick="this.classList.toggle('checked');this.parentElement.classList.toggle('done')"></span><span>${x}</span></li>`
+  ).join('');
+
+  // gauge
+  document.getElementById('d-gauge').outerHTML = `<div id="d-gauge">${gauge(p.success,120)}</div>`;
+  document.getElementById('d-gauge-note').textContent = p.successNote;
+
+  // docs
+  document.getElementById('d-docs').innerHTML = p.docs.map(d=>
+    `<li><span class="box" onclick="this.classList.toggle('checked');this.parentElement.classList.toggle('done')"></span><span>${d}</span></li>`
+  ).join('');
+
+  // advisors
+  document.getElementById('d-advisors').innerHTML = p.advisors.map(a=>
+    `<div class="advisor"><div class="av">${a.init}</div><div class="ai"><b>${a.n}</b><span>Spezialisiert auf dieses Programm</span></div><span class="rate">${a.r}</span></div>`
+  ).join('');
+}
+
+/* ============================================================
+   DOCUMENT GENERATOR (simulated AI typing)
+   ============================================================ */
+function openDoc(kind){
+  document.getElementById('dm-title').textContent = kind + " – Assistent";
+  document.getElementById('dm-output').innerHTML='';
+  document.getElementById('docmodal').classList.add('open');
+}
+function closeModal(){ document.getElementById('docmodal').classList.remove('open'); }
+document.getElementById('docmodal').addEventListener('click',e=>{ if(e.target.id==='docmodal') closeModal(); });
+
+function generateDoc(){
+  const name=document.getElementById('df-name').value;
+  const desc=document.getElementById('df-desc').value;
+  const sum=document.getElementById('df-sum').value;
+  const prog = currentProgram? currentProgram.title : "das gewählte Förderprogramm";
+  const out=document.getElementById('dm-output');
+  const full =
+`<h4>${name}</h4>
+<div class="muted" style="margin-bottom:14px">Zugeschnitten auf: ${prog}</div>
+<b>1. Ausgangslage</b><br>${desc}<br><br>
+<b>2. Zielsetzung</b><br>Mit dem Vorhaben wird eine messbare Reduktion des Endenergiebedarfs angestrebt. Die Maßnahme erfüllt die für dieses Programm geltenden technischen Mindestanforderungen.<br><br>
+<b>3. Investitionsvolumen</b><br>Die geschätzten förderfähigen Kosten belaufen sich auf rund ${sum} €. Auf dieser Basis wird die programmspezifische Förderquote angesetzt.<br><br>
+<b>4. Umsetzung & Zeitplan</b><br>Die Durchführung erfolgt durch einen Fachbetrieb innerhalb des Bewilligungszeitraums. Der Antrag wird vor Vorhabenbeginn gestellt.<br><br>
+<span class="muted">✦ Entwurf vom Assistenten. In der echten Plattform editierbar & als PDF/DOCX exportierbar.</span>`;
+  // typewriter
+  out.innerHTML='<div class="doc-preview" id="dp"><span class="typing"></span></div>';
+  const dp=document.getElementById('dp');
+  let i=0;
+  (function type(){
+    if(i<=full.length){
+      dp.innerHTML=full.slice(0,i)+'<span class="typing"></span>';
+      i+=6; setTimeout(type,8);
+    } else { dp.innerHTML=full; }
+  })();
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+let toastTimer;
+function toast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+document.getElementById('home-cards').innerHTML = PROGRAMS.slice(0,3).map(card).join('');
+renderFinder();
+</script>
+</body>
+</html>
