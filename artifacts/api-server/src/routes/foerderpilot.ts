@@ -126,9 +126,12 @@ router.get("/foerderpilot/programme", async (req, res): Promise<void> => {
 
 router.get("/foerderpilot/filter-optionen", async (req, res): Promise<void> => {
   try {
-    const [kategorien, zielgruppen] = await Promise.all([
+    const [kategorien, zielgruppen, regionRows] = await Promise.all([
       fpQuery<{ slug: string; name: string }>("SELECT slug, name FROM kategorie ORDER BY name"),
       fpQuery<{ slug: string; name: string }>("SELECT slug, name FROM zielgruppe ORDER BY name"),
+      fpQuery<{ region: string }>(
+        "SELECT DISTINCT region::text AS region FROM programm_region ORDER BY 1",
+      ),
     ]);
     res.json({
       ebene: ["bund", "land", "eu", "kommune"],
@@ -137,6 +140,7 @@ router.get("/foerderpilot/filter-optionen", async (req, res): Promise<void> => {
       status: ["verifiziert", "zu_pruefen", "veraltet"],
       kategorien,
       zielgruppen,
+      regionen: regionRows.map((r) => r.region),
     });
   } catch (err) {
     req.log.error({ err }, "foerderpilot filter-optionen failed");
@@ -247,7 +251,14 @@ router.post("/foerderpilot/match", async (req, res): Promise<void> => {
     return `$${params.length}`;
   };
 
-  if (zielgruppe) where.push(`${p(zielgruppe)} = ANY(vp.zielgruppen)`);
+  if (zielgruppe) {
+    // zielgruppe arrives as a SLUG — resolve via the junction table (the view
+    // aggregates display NAMES, so `= ANY(vp.zielgruppen)` on a slug never matches).
+    where.push(
+      `vp.id IN (SELECT pz.programm_id FROM programm_zielgruppe pz
+                 JOIN zielgruppe zg ON zg.id = pz.zielgruppe_id WHERE zg.slug = ${p(zielgruppe)})`,
+    );
+  }
   if (region) {
     where.push(`(${p(region)} = ANY(vp.regionen) OR 'bundesweit' = ANY(vp.regionen))`);
   }

@@ -14,12 +14,18 @@ let didRun = false;
  * connected database. Runs once per process and is guarded on schema existence
  * so it works in BOTH dev and production (each environment loads on first boot).
  *
- * The schema script does a `DROP SCHEMA foerderpilot CASCADE`, so it is only run
- * when the `foerderpilot.programm` table is absent. The import + antragspfade
- * scripts are fully idempotent (ON CONFLICT / DELETE+INSERT), so they are run on
- * every first process boot — this self-heals a partial/aborted earlier load
- * where the schema exists but data is missing or incomplete. To fully re-seed,
- * drop the `foerderpilot` schema and restart the server.
+ * Idempotency: the import script is a SINGLE atomic transaction. Its `programm`
+ * + junction inserts ARE re-runnable (existence-guarded by titel / ON CONFLICT),
+ * but `foerdergeber` has no unique key (its `ON CONFLICT DO NOTHING` only guards
+ * the serial PK), so re-running would slowly DUPLICATE the foerdergeber rows. We
+ * therefore load ONLY when the catalog is absent or empty:
+ *   - table absent      → run schema (DROP+CREATE) + import + antragspfade.
+ *   - table present, 0 rows → run import + antragspfade (schema already exists;
+ *     a prior import that failed rolled back atomically, leaving 0 rows).
+ *   - table present, >0 rows → skip (already loaded — avoids any duplication).
+ * Because import is atomic, the row count is reliably either 0 or complete, so
+ * this both avoids duplicates AND self-heals an aborted earlier load. To fully
+ * re-seed, drop the `foerderpilot` schema and restart the server.
  */
 export async function ensureFoerderpilotCatalog(): Promise<void> {
   if (didRun) return;
@@ -30,25 +36,40 @@ export async function ensureFoerderpilotCatalog(): Promise<void> {
       "SELECT to_regclass('foerderpilot.programm')::text AS reg",
     );
 
+    let count = 0;
+    if (existing?.reg) {
+      const c = await fpQueryOne<{ n: string }>(
+        "SELECT count(*)::text AS n FROM foerderpilot.programm",
+      );
+      count = Number(c?.n ?? 0);
+    }
+
+    if (existing?.reg && count > 0) {
+      logger.info(
+        { programme: count },
+        "[foerderpilot] Catalog already populated — skipping load.",
+      );
+      return;
+    }
+
+    logger.info("[foerderpilot] Loading funding catalog…");
     const client = await foerderpilotPool.connect();
     try {
-      // Schema (DROP+CREATE) only when the catalog table is absent.
       if (!existing?.reg) {
-        logger.info("[foerderpilot] Creating funding catalog schema…");
         await client.query(schemaSql);
       }
-      // Idempotent data load — safe (and self-healing) to run on every boot.
+      // Atomic import + idempotent antragspfade (DELETE+INSERT).
       await client.query(importSql);
       await client.query(antragspfadeSql);
     } finally {
       client.release();
     }
 
-    const count = await fpQueryOne<{ n: string }>(
+    const loaded = await fpQueryOne<{ n: string }>(
       "SELECT count(*)::text AS n FROM foerderpilot.programm",
     );
     logger.info(
-      { programme: count?.n ?? "0" },
+      { programme: loaded?.n ?? "0" },
       "[foerderpilot] Funding catalog ready.",
     );
   } catch (err) {

@@ -15,6 +15,7 @@ import ReportPage from "./pages/ReportPage";
 import EnergieausweisPage from "./pages/EnergieausweisPage";
 import FoerderpilotFinder from "./pages/FoerderpilotFinder";
 import FoerderpilotDetail from "./pages/FoerderpilotDetail";
+import FoerderpilotSchnellcheck from "./pages/FoerderpilotSchnellcheck";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -164,6 +165,7 @@ function ClerkProviderWithRoutes() {
           <Route path="/sign-in/*?" component={SignInPage} />
           <Route path="/sign-up/*?" component={SignUpPage} />
           <Route path="/check" component={Gebaeudecheck} />
+          <Route path="/schnellcheck" component={FoerderpilotSchnellcheck} />
           <Route path="/foerderung" component={FoerderpilotFinder} />
           <Route path="/foerderung/:id" component={FoerderpilotDetail} />
           <Route path="/report" component={ReportPage} />

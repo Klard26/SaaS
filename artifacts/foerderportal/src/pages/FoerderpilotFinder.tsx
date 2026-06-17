@@ -25,6 +25,7 @@ import {
   EBENE_LABEL,
   ART_LABEL,
   STATUS_LABEL,
+  regionLabel,
   type Programm,
   type FilterOptionen,
   type Art,
@@ -46,6 +47,8 @@ export default function FoerderpilotFinder() {
   const [ebene, setEbene] = useState<string>(ALL);
   const [art, setArt] = useState<string>(ALL);
   const [kategorie, setKategorie] = useState<string>(ALL);
+  const [zielgruppe, setZielgruppe] = useState<string>(ALL);
+  const [region, setRegion] = useState<string>(ALL);
   const [page, setPage] = useState(0);
 
   useEffect(() => {
@@ -61,7 +64,7 @@ export default function FoerderpilotFinder() {
 
   useEffect(() => {
     setPage(0);
-  }, [sucheDebounced, ebene, art, kategorie]);
+  }, [sucheDebounced, ebene, art, kategorie, zielgruppe, region]);
 
   useEffect(() => {
     let cancelled = false;
@@ -72,6 +75,8 @@ export default function FoerderpilotFinder() {
       ebene: ebene === ALL ? undefined : (ebene as Ebene),
       art: art === ALL ? undefined : (art as Art),
       kategorie: kategorie === ALL ? undefined : kategorie,
+      zielgruppe: zielgruppe === ALL ? undefined : zielgruppe,
+      region: region === ALL ? undefined : region,
       limit: PAGE_SIZE,
       offset: page * PAGE_SIZE,
     })
@@ -92,10 +97,15 @@ export default function FoerderpilotFinder() {
     return () => {
       cancelled = true;
     };
-  }, [sucheDebounced, ebene, art, kategorie, page]);
+  }, [sucheDebounced, ebene, art, kategorie, zielgruppe, region, page]);
 
   const hasFilters =
-    sucheDebounced !== "" || ebene !== ALL || art !== ALL || kategorie !== ALL;
+    sucheDebounced !== "" ||
+    ebene !== ALL ||
+    art !== ALL ||
+    kategorie !== ALL ||
+    zielgruppe !== ALL ||
+    region !== ALL;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   function resetFilters() {
@@ -103,6 +113,8 @@ export default function FoerderpilotFinder() {
     setEbene(ALL);
     setArt(ALL);
     setKategorie(ALL);
+    setZielgruppe(ALL);
+    setRegion(ALL);
   }
 
   return (
@@ -126,7 +138,7 @@ export default function FoerderpilotFinder() {
 
       <section className="px-4 sm:px-8 py-8 max-w-[1180px] mx-auto w-full">
         {/* FILTERS */}
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mb-6">
           <div className="relative sm:col-span-2 lg:col-span-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -177,6 +189,34 @@ export default function FoerderpilotFinder() {
               {optionen?.kategorien.map((k) => (
                 <SelectItem key={k.slug} value={k.slug}>
                   {k.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={zielgruppe} onValueChange={setZielgruppe}>
+            <SelectTrigger data-testid="select-zielgruppe">
+              <SelectValue placeholder="Zielgruppe" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>Alle Zielgruppen</SelectItem>
+              {optionen?.zielgruppen.map((z) => (
+                <SelectItem key={z.slug} value={z.slug}>
+                  {z.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={region} onValueChange={setRegion}>
+            <SelectTrigger data-testid="select-region">
+              <SelectValue placeholder="Region" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>Alle Regionen</SelectItem>
+              {optionen?.regionen.map((r) => (
+                <SelectItem key={r} value={r}>
+                  {regionLabel(r)}
                 </SelectItem>
               ))}
             </SelectContent>

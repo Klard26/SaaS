@@ -103,6 +103,7 @@ export interface FilterOptionen {
   status: Status[];
   kategorien: FilterOption[];
   zielgruppen: FilterOption[];
+  regionen: string[];
 }
 
 export interface FinderFilter {
@@ -110,9 +111,23 @@ export interface FinderFilter {
   art?: Art;
   kategorie?: string;
   zielgruppe?: string;
+  region?: string;
   suche?: string;
   limit?: number;
   offset?: number;
+}
+
+export interface MatchProfil {
+  zielgruppe?: string;
+  region?: string;
+  kategorien?: string[];
+  limit?: number;
+}
+
+export interface MatchResponse {
+  profil: { zielgruppe?: string; region?: string; kategorien?: string[] };
+  anzahl: number;
+  treffer: Programm[];
 }
 
 async function getJson<T>(url: string): Promise<T> {
@@ -129,6 +144,7 @@ export function fetchProgramme(filter: FinderFilter): Promise<FinderResponse> {
   if (filter.art) params.set("art", filter.art);
   if (filter.kategorie) params.set("kategorie", filter.kategorie);
   if (filter.zielgruppe) params.set("zielgruppe", filter.zielgruppe);
+  if (filter.region) params.set("region", filter.region);
   if (filter.suche) params.set("suche", filter.suche);
   params.set("limit", String(filter.limit ?? 25));
   params.set("offset", String(filter.offset ?? 0));
@@ -141,6 +157,18 @@ export function fetchFilterOptionen(): Promise<FilterOptionen> {
 
 export function fetchProgrammDetail(id: string): Promise<ProgrammDetail> {
   return getJson<ProgrammDetail>(`/api/foerderpilot/programme/${id}`);
+}
+
+export async function matchProgramme(profil: MatchProfil): Promise<MatchResponse> {
+  const res = await fetch("/api/foerderpilot/match", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(profil),
+  });
+  if (!res.ok) {
+    throw new Error(`Förderpilot-Anfrage fehlgeschlagen (${res.status})`);
+  }
+  return (await res.json()) as MatchResponse;
 }
 
 /* ----------------------------- Label maps ----------------------------- */
@@ -173,3 +201,29 @@ export const STATUS_LABEL: Record<Status, string> = {
   zu_pruefen: "Zu prüfen",
   veraltet: "Veraltet",
 };
+
+export const REGION_LABEL: Record<string, string> = {
+  bundesweit: "Bundesweit",
+  eu_weit: "EU-weit",
+  baden_wuerttemberg: "Baden-Württemberg",
+  bayern: "Bayern",
+  berlin: "Berlin",
+  brandenburg: "Brandenburg",
+  bremen: "Bremen",
+  hamburg: "Hamburg",
+  hessen: "Hessen",
+  mecklenburg_vorpommern: "Mecklenburg-Vorpommern",
+  niedersachsen: "Niedersachsen",
+  nordrhein_westfalen: "Nordrhein-Westfalen",
+  rheinland_pfalz: "Rheinland-Pfalz",
+  saarland: "Saarland",
+  sachsen: "Sachsen",
+  sachsen_anhalt: "Sachsen-Anhalt",
+  schleswig_holstein: "Schleswig-Holstein",
+  thueringen: "Thüringen",
+  foerdergebiet_grw: "GRW-Fördergebiet",
+};
+
+export function regionLabel(slug: string): string {
+  return REGION_LABEL[slug] ?? slug;
+}

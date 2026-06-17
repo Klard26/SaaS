@@ -27,6 +27,13 @@ export function Navbar() {
             Gebäudecheck
           </Link>
           <Link
+            href="/schnellcheck"
+            className="text-muted-foreground hover:text-[var(--klard-teal-d)] transition-colors"
+            data-testid="link-schnellcheck"
+          >
+            Förder-Schnellcheck
+          </Link>
+          <Link
             href="/foerderung"
             className="text-muted-foreground hover:text-[var(--klard-teal-d)] transition-colors"
             data-testid="link-foerderdatenbank"
@@ -92,6 +99,9 @@ export function Navbar() {
           <nav className="flex flex-col px-4 py-3 gap-1">
             <Link href="/check" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>
               Gebäudecheck
+            </Link>
+            <Link href="/schnellcheck" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>
+              Förder-Schnellcheck
             </Link>
             <Link href="/foerderung" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>
               Förderdatenbank
