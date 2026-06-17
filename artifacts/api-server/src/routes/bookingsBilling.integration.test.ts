@@ -490,6 +490,123 @@ describe("PATCH /api/bookings/:id/status", () => {
   });
 });
 
+describe("re-booking a slot freed by a cancellation", () => {
+  // Book a slot, have the provider confirm it, then have the customer cancel —
+  // which flips the slot back to available. Returns the slot id so the caller
+  // can race fresh bookings at the freshly re-opened slot.
+  async function bookConfirmAndCancel(start: Date): Promise<number> {
+    authState.userId = customerId;
+    const slot = await createSlot(providerA.id, start);
+    const created = await api("POST", "/api/bookings", {
+      providerId: providerA.id,
+      serviceId: serviceA.id,
+      slotId: slot.id,
+    });
+    expect(created.status).toBe(201);
+
+    authState.userId = providerAUser;
+    const confirmed = await api(
+      "PATCH",
+      `/api/bookings/${created.body.id}/status`,
+      { status: "confirmed" },
+    );
+    expect(confirmed.status).toBe(200);
+    expect(confirmed.body.status).toBe("confirmed");
+
+    authState.userId = customerId;
+    const cancelled = await api(
+      "PATCH",
+      `/api/bookings/${created.body.id}/status`,
+      { status: "cancelled" },
+    );
+    expect(cancelled.status).toBe(200);
+    expect(cancelled.body.status).toBe("cancelled");
+
+    // Slot must be re-opened by the cancel branch.
+    const [slotAfter] = await db
+      .select()
+      .from(timeSlotsTable)
+      .where(eq(timeSlotsTable.id, slot.id));
+    expect(slotAfter?.isAvailable).toBe(true);
+
+    return slot.id;
+  }
+
+  it("lets a different customer re-book a slot immediately after it was cancelled (201)", async () => {
+    const slotId = await bookConfirmAndCancel(hourFromNow(620));
+
+    // A different customer grabs the just-freed slot.
+    authState.userId = otherUserId;
+    const rebook = await api("POST", "/api/bookings", {
+      providerId: providerA.id,
+      serviceId: serviceA.id,
+      slotId,
+    });
+    expect(rebook.status).toBe(201);
+    expect(rebook.body.status).toBe("pending");
+    expect(rebook.body.customerId).toBe(otherUserId);
+
+    // Slot is unavailable again, and there is exactly one ACTIVE (non-cancelled)
+    // booking for it — the new one — alongside the old cancelled row.
+    const [slotAfter] = await db
+      .select()
+      .from(timeSlotsTable)
+      .where(eq(timeSlotsTable.id, slotId));
+    expect(slotAfter?.isAvailable).toBe(false);
+
+    const rows = await db
+      .select()
+      .from(bookingsTable)
+      .where(eq(bookingsTable.slotId, slotId));
+    const active = rows.filter((r) => r.status !== "cancelled");
+    expect(active.length).toBe(1);
+    expect(active[0]?.id).toBe(rebook.body.id);
+  });
+
+  it("lets only ONE of N concurrent requests win a slot that was just re-opened by a cancel", async () => {
+    const slotId = await bookConfirmAndCancel(hourFromNow(640));
+
+    // Fire N truly simultaneous POSTs at the re-opened slot. The booking tx's
+    // row-lock must serialize them exactly as for an initially-open slot, so
+    // only one re-booking succeeds.
+    authState.userId = customerId;
+    const N = 8;
+    const results = await Promise.all(
+      Array.from({ length: N }, () =>
+        api("POST", "/api/bookings", {
+          providerId: providerA.id,
+          serviceId: serviceA.id,
+          slotId,
+        }),
+      ),
+    );
+
+    const created = results.filter((r) => r.status === 201);
+    const conflicts = results.filter((r) => r.status === 409);
+    expect(created.length).toBe(1);
+    expect(conflicts.length).toBe(N - 1);
+    for (const c of conflicts) {
+      expect(String(c.body.error)).toContain("gerade gebucht");
+    }
+
+    // Slot ends unavailable...
+    const [slotAfter] = await db
+      .select()
+      .from(timeSlotsTable)
+      .where(eq(timeSlotsTable.id, slotId));
+    expect(slotAfter?.isAvailable).toBe(false);
+
+    // ...with exactly one ACTIVE booking for it (plus the earlier cancelled row).
+    const rows = await db
+      .select()
+      .from(bookingsTable)
+      .where(eq(bookingsTable.slotId, slotId));
+    const active = rows.filter((r) => r.status !== "cancelled");
+    expect(active.length).toBe(1);
+    expect(active[0]?.id).toBe(created[0]?.body.id);
+  });
+});
+
 describe("POST /api/bookings/:id/payment/checkout (Stripe Connect split)", () => {
   async function insertBillableBooking(opts: {
     providerId: number;
