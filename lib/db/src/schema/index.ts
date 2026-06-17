@@ -13,3 +13,5 @@ export * from "./immobilienKunde";
 export * from "./offers";
 export * from "./blockedSlots";
 export * from "./emailLog";
+export * from "./userRoles";
+export * from "./foerderschiene";

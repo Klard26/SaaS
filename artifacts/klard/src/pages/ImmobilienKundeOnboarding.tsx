@@ -116,7 +116,7 @@ export default function ImmobilienKundeOnboarding() {
       });
       qc.invalidateQueries({ queryKey: getGetMyImmobilienKundeQueryKey() });
       toast({ title: "Gespeichert", description: "Ihr Kundenprofil wurde aktualisiert." });
-      setLocation(isCommercialTyp(values.typ) ? "/gebaeudecheck" : "/search");
+      setLocation("/search");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Profil konnte nicht gespeichert werden.";
       toast({ title: "Fehler", description: msg, variant: "destructive" });
@@ -133,10 +133,8 @@ export default function ImmobilienKundeOnboarding() {
           subtitle={
             isPrivat
               ? "Vervollständigen Sie Ihr Konto, um Berater zu buchen."
-              : "Hinterlegen Sie Ihr Profil für Buchungen und den Gebäudecheck. Portfolio-Angaben sind optional."
+              : "Hinterlegen Sie Ihr Profil für Buchungen. Portfolio-Angaben sind optional."
           }
-          steps={isPrivat ? undefined : ["Kundenprofil", "Gebäudecheck"]}
-          current={0}
         />
 
         <Card>
@@ -215,7 +213,7 @@ export default function ImmobilienKundeOnboarding() {
                   <div className="pt-4 border-t border-border">
                     <h3 className="text-sm font-semibold text-foreground mb-1">Portfolio (optional)</h3>
                     <p className="text-xs text-muted-foreground mb-4">
-                      Diese Angaben helfen uns, den Gebäudecheck auf Ihr Portfolio abzustimmen.
+                      Diese Angaben helfen uns, unsere Leistungen auf Ihr Portfolio abzustimmen.
                     </p>
                     <div className="grid sm:grid-cols-2 gap-4">
                       <FormField control={form.control} name="anzahlGebaeude" render={({ field }) => (

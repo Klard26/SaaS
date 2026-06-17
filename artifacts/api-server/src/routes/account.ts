@@ -16,8 +16,55 @@ import {
 import { eq } from "drizzle-orm";
 import { getAuth, clerkClient } from "@clerk/express";
 import { getUncachableStripeClient } from "../lib/stripeClient";
+import { getRole, claimRole, RoleConflictError, type UserRole } from "../lib/userRole";
 
 const router: IRouter = Router();
+
+/** Read the current user's role (customer | provider), or null if none claimed. */
+router.get("/account/role", async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const role = await getRole(userId);
+  res.status(200).json({ role });
+});
+
+/**
+ * Claim a role for the current user. Enforces strict separation: if the account
+ * already holds the OTHER role, this returns 409 instead of switching. Idempotent
+ * when the same role is re-claimed.
+ */
+router.post("/account/role", async (req, res): Promise<void> => {
+  const { userId } = getAuth(req);
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  const wanted = (req.body as { role?: string })?.role;
+  if (wanted !== "customer" && wanted !== "provider") {
+    res.status(400).json({ error: "role must be 'customer' or 'provider'" });
+    return;
+  }
+  try {
+    const role = await claimRole(userId, wanted as UserRole);
+    res.status(200).json({ role });
+  } catch (err) {
+    if (err instanceof RoleConflictError) {
+      res.status(409).json({
+        error:
+          err.current === "provider"
+            ? "Dieses Konto ist ein Berater-Konto und kann nicht als Kunde verwendet werden."
+            : "Dieses Konto ist ein Kunden-Konto und kann nicht als Berater verwendet werden.",
+        current: err.current,
+      });
+      return;
+    }
+    req.log.error({ err }, "Failed to claim role");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 /**
  * Permanently delete the authenticated user's entire Klard account — provider

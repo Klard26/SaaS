@@ -17,7 +17,7 @@ export function Footer() {
         <div>
           <h4 className="text-white/70 text-[0.74rem] font-bold tracking-wider uppercase mb-3">Für Kunden</h4>
           <Link href="/search" className="block text-[0.78rem] text-white/35 hover:text-white/70 mb-2">Berater finden</Link>
-          <Link href="/gebaeudecheck" className="block text-[0.78rem] text-white/35 hover:text-white/70 mb-2" data-testid="footer-gebaeudecheck">Gebäudecheck (kostenlos)</Link>
+          <a href="/foerderschiene/" className="block text-[0.78rem] text-white/35 hover:text-white/70 mb-2" data-testid="footer-gebaeudecheck">Gebäudecheck (kostenlos)</a>
           <Link href="/search" className="block text-[0.78rem] text-white/35 hover:text-white/70 mb-2">Preisvergleich</Link>
           <Link href="/search" className="block text-[0.78rem] text-white/35 hover:text-white/70 mb-2">KI-Angebot</Link>
           <Link href="/search" className="block text-[0.78rem] text-white/35 hover:text-white/70 mb-2">Bewertungen</Link>
@@ -25,10 +25,8 @@ export function Footer() {
 
         <div>
           <h4 className="text-white/70 text-[0.74rem] font-bold tracking-wider uppercase mb-3">Für Anbieter</h4>
-          <Link href="/provider/onboarding" className="block text-[0.78rem] text-white/35 hover:text-white/70 mb-2">Profil erstellen</Link>
-          <Link href="/provider/services" className="block text-[0.78rem] text-white/35 hover:text-white/70 mb-2">Preise pflegen</Link>
-          <Link href="/dashboard" className="block text-[0.78rem] text-white/35 hover:text-white/70 mb-2">Buchungen</Link>
-          <Link href="/pricing" className="block text-[0.78rem] text-white/35 hover:text-white/70 mb-2">Premium-Profil</Link>
+          <a href="/berater/" className="block text-[0.78rem] text-white/35 hover:text-white/70 mb-2">Klard für Berater</a>
+          <a href="/berater/pricing" className="block text-[0.78rem] text-white/35 hover:text-white/70 mb-2">Premium-Profil</a>
         </div>
 
         <div>

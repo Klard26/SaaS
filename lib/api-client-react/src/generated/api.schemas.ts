@@ -9,6 +9,39 @@ export interface AdminMe {
   isAdmin: boolean;
 }
 
+/**
+ * The role bound to this account, or null if none has been claimed.
+ * @nullable
+ */
+export type AccountRoleRole =
+  | (typeof AccountRoleRole)[keyof typeof AccountRoleRole]
+  | null;
+
+export const AccountRoleRole = {
+  customer: "customer",
+  provider: "provider",
+} as const;
+
+export interface AccountRole {
+  /**
+   * The role bound to this account, or null if none has been claimed.
+   * @nullable
+   */
+  role: AccountRoleRole;
+}
+
+export type ClaimRoleBodyRole =
+  (typeof ClaimRoleBodyRole)[keyof typeof ClaimRoleBodyRole];
+
+export const ClaimRoleBodyRole = {
+  customer: "customer",
+  provider: "provider",
+} as const;
+
+export interface ClaimRoleBody {
+  role: ClaimRoleBodyRole;
+}
+
 export interface Verwalter {
   id: number;
   clerkUserId: string;
@@ -1213,6 +1246,131 @@ export interface Invoice {
   serviceDescription?: string | null;
   status: string;
   hasPdf?: boolean;
+}
+
+export interface FoerderProgramm {
+  id: string;
+  titel: string;
+  foerdergeber: string;
+  ebene: string;
+  art: string;
+  timing?: string;
+  foerderquoteText: string;
+  /** @nullable */
+  quoteMax?: number | null;
+  maxBetragText: string;
+  /** @nullable */
+  maxBetragEur?: number | null;
+  kurzbeschreibung: string;
+  /** @nullable */
+  besonderheit?: string | null;
+  /** @nullable */
+  quelleUrl?: string | null;
+  /** @nullable */
+  erfolgsquote?: number | null;
+  tags: string[];
+  region: string;
+  aktiv: boolean;
+}
+
+export interface FoerderMatchInput {
+  baujahr: number;
+  wohnflaeche: number;
+  /** @nullable */
+  wohneinheiten?: number | null;
+  /** Heating system key e.g. gas, oel, waermepumpe, fernwaerme, pellet */
+  heizung: string;
+  /** Selected measure tags the owner is interested in (heizung, daemmung, fenster, pv, komplett) */
+  massnahmen?: string[];
+  /** @nullable */
+  selbstgenutzt?: boolean | null;
+}
+
+export type MassnahmeEstimateArt =
+  (typeof MassnahmeEstimateArt)[keyof typeof MassnahmeEstimateArt];
+
+export const MassnahmeEstimateArt = {
+  einzelmassnahme: "einzelmassnahme",
+  komplettsanierung: "komplettsanierung",
+} as const;
+
+export interface MassnahmeEstimate {
+  id: string;
+  label: string;
+  art: MassnahmeEstimateArt;
+  kostenMin: number;
+  kostenMax: number;
+  einsparung: string;
+  beschreibung: string;
+  tags?: string[];
+}
+
+export interface FoerderMatchResult {
+  programme: FoerderProgramm[];
+  massnahmen: MassnahmeEstimate[];
+  geschaetzteFoerderungEur: number;
+}
+
+export type ReportCheckoutInputProfil = { [key: string]: unknown };
+
+export interface ReportCheckoutInput {
+  /** @nullable */
+  adresse?: string | null;
+  profil: ReportCheckoutInputProfil;
+}
+
+export type FoerderschieneReportProfil = { [key: string]: unknown };
+
+export interface FoerderschieneReport {
+  id: number;
+  userId: string;
+  /** @nullable */
+  sessionId?: string | null;
+  status: string;
+  amountCents: number;
+  /** @nullable */
+  adresse?: string | null;
+  profil: FoerderschieneReportProfil;
+  createdAt: string;
+  /** @nullable */
+  paidAt?: string | null;
+}
+
+export type EnergieausweisOrderInputAusweisTyp =
+  (typeof EnergieausweisOrderInputAusweisTyp)[keyof typeof EnergieausweisOrderInputAusweisTyp];
+
+export const EnergieausweisOrderInputAusweisTyp = {
+  bedarf: "bedarf",
+  verbrauch: "verbrauch",
+} as const;
+
+export type EnergieausweisOrderInputIntake = { [key: string]: unknown };
+
+export interface EnergieausweisOrderInput {
+  ausweisTyp: EnergieausweisOrderInputAusweisTyp;
+  /** @minLength 1 */
+  kontaktName: string;
+  /** @minLength 3 */
+  kontaktEmail: string;
+  intake: EnergieausweisOrderInputIntake;
+}
+
+export type EnergieausweisOrderIntake = { [key: string]: unknown };
+
+export interface EnergieausweisOrder {
+  id: number;
+  userId: string;
+  /** @nullable */
+  sessionId?: string | null;
+  ausweisTyp: string;
+  status: string;
+  amountCents: number;
+  kontaktName: string;
+  kontaktEmail: string;
+  intake: EnergieausweisOrderIntake;
+  createdAt: string;
+  /** @nullable */
+  paidAt?: string | null;
 }
 
 export type ListServiceTemplatesParams = {

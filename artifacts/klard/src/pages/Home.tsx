@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { EnergieSchnellcheck } from "@/components/EnergieSchnellcheck";
 import { useListCategories, useListProviders, useGetPlatformStats } from "@workspace/api-client-react";
 import {
   Search, MapPin, Briefcase, Star,
@@ -126,7 +125,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ENERGIE-SCHNELLCHECK */}
+      {/* GEBÄUDECHECK & FÖRDERUNG */}
       <section className="bg-[var(--klard-bg)] py-12 px-4 sm:px-8 border-b border-border">
         <div className="max-w-[1100px] mx-auto">
           <div className="text-center mb-6">
@@ -136,12 +135,21 @@ export default function Home() {
             <h2 className="font-serif text-3xl font-semibold text-foreground">
               Wie effizient ist Ihr Gebäude?
             </h2>
-            <p className="text-muted-foreground text-sm mt-2 max-w-md mx-auto leading-relaxed">
-              Schnelleinschätzung der Energieklasse nach DIN V 18599 — danach den
-              passenden Energieberater in Ihrer Nähe direkt buchen.
+            <p className="text-muted-foreground text-sm mt-2 max-w-lg mx-auto leading-relaxed">
+              Mit der Förderschiene erhalten Sie eine Schnelleinschätzung der
+              Energieklasse, passende Förderprogramme und konkrete Sanierungs­empfehlungen
+              — danach den passenden Energieberater in Ihrer Nähe direkt buchen.
             </p>
           </div>
-          <EnergieSchnellcheck />
+          <div className="text-center">
+            <a
+              href="/foerderschiene/"
+              className="inline-flex items-center gap-2 rounded-full bg-[var(--klard-teal-d)] hover:bg-[var(--klard-teal)] text-white text-sm font-semibold px-6 py-3 transition-colors"
+              data-testid="button-home-foerderschiene"
+            >
+              Zum Gebäudecheck & Förderung
+            </a>
+          </div>
         </div>
       </section>
 
@@ -299,14 +307,13 @@ export default function Home() {
               <h4 className="font-sans font-bold text-sm text-foreground mb-1">Anbieter werden</h4>
               <p className="text-xs text-[var(--klard-mid)] leading-relaxed">
                 Kostenlos starten – nur 9 % Vermittlungsgebühr.{" "}
-                <button
-                  type="button"
-                  onClick={() => setLocation("/berater-werden")}
+                <a
+                  href="/berater/"
                   className="text-primary font-semibold hover:underline"
                   data-testid="link-become-provider"
                 >
                   Jetzt registrieren →
-                </button>
+                </a>
               </p>
             </div>
           </div>

@@ -297,6 +297,42 @@ export const DeleteMyAccountResponse = zod.object({
 });
 
 /**
+ * @summary Get the current user's role (customer | provider), or null if none claimed yet
+ */
+export const GetMyRoleResponse = zod.object({
+  role: zod
+    .union([
+      zod.literal("customer"),
+      zod.literal("provider"),
+      zod.literal(null),
+    ])
+    .nullable()
+    .describe(
+      "The role bound to this account, or null if none has been claimed.",
+    ),
+});
+
+/**
+ * @summary Claim a role for the current user (fails 409 if the other role is already held)
+ */
+export const ClaimMyRoleBody = zod.object({
+  role: zod.enum(["customer", "provider"]),
+});
+
+export const ClaimMyRoleResponse = zod.object({
+  role: zod
+    .union([
+      zod.literal("customer"),
+      zod.literal("provider"),
+      zod.literal(null),
+    ])
+    .nullable()
+    .describe(
+      "The role bound to this account, or null if none has been claimed.",
+    ),
+});
+
+/**
  * @summary List services for a provider
  */
 export const ListProviderServicesParams = zod.object({
@@ -787,6 +823,199 @@ export const ReconcileGebaeudecheckOrderResponse = zod.object({
   granted: zod.boolean(),
   balance: zod.number(),
 });
+
+/**
+ * @summary List all active funding programs (Förderprogramme)
+ */
+export const ListFoerderProgrammeResponseItem = zod.object({
+  id: zod.string(),
+  titel: zod.string(),
+  foerdergeber: zod.string(),
+  ebene: zod.string(),
+  art: zod.string(),
+  timing: zod.string().optional(),
+  foerderquoteText: zod.string(),
+  quoteMax: zod.number().nullish(),
+  maxBetragText: zod.string(),
+  maxBetragEur: zod.number().nullish(),
+  kurzbeschreibung: zod.string(),
+  besonderheit: zod.string().nullish(),
+  quelleUrl: zod.string().nullish(),
+  erfolgsquote: zod.number().nullish(),
+  tags: zod.array(zod.string()),
+  region: zod.string(),
+  aktiv: zod.boolean(),
+});
+export const ListFoerderProgrammeResponse = zod.array(
+  ListFoerderProgrammeResponseItem,
+);
+
+/**
+ * @summary Match a building profile to eligible funding programs + cost estimates
+ */
+export const MatchFoerderschieneBody = zod.object({
+  baujahr: zod.number(),
+  wohnflaeche: zod.number(),
+  wohneinheiten: zod.number().nullish(),
+  heizung: zod
+    .string()
+    .describe(
+      "Heating system key e.g. gas, oel, waermepumpe, fernwaerme, pellet",
+    ),
+  massnahmen: zod
+    .array(zod.string())
+    .optional()
+    .describe(
+      "Selected measure tags the owner is interested in (heizung, daemmung, fenster, pv, komplett)",
+    ),
+  selbstgenutzt: zod.boolean().nullish(),
+});
+
+export const MatchFoerderschieneResponse = zod.object({
+  programme: zod.array(
+    zod.object({
+      id: zod.string(),
+      titel: zod.string(),
+      foerdergeber: zod.string(),
+      ebene: zod.string(),
+      art: zod.string(),
+      timing: zod.string().optional(),
+      foerderquoteText: zod.string(),
+      quoteMax: zod.number().nullish(),
+      maxBetragText: zod.string(),
+      maxBetragEur: zod.number().nullish(),
+      kurzbeschreibung: zod.string(),
+      besonderheit: zod.string().nullish(),
+      quelleUrl: zod.string().nullish(),
+      erfolgsquote: zod.number().nullish(),
+      tags: zod.array(zod.string()),
+      region: zod.string(),
+      aktiv: zod.boolean(),
+    }),
+  ),
+  massnahmen: zod.array(
+    zod.object({
+      id: zod.string(),
+      label: zod.string(),
+      art: zod.enum(["einzelmassnahme", "komplettsanierung"]),
+      kostenMin: zod.number(),
+      kostenMax: zod.number(),
+      einsparung: zod.string(),
+      beschreibung: zod.string(),
+      tags: zod.array(zod.string()).optional(),
+    }),
+  ),
+  geschaetzteFoerderungEur: zod.number(),
+});
+
+/**
+ * @summary Create a Stripe Checkout Session to buy the detailed Gebäudereport PDF
+ */
+export const CreateReportCheckoutBody = zod.object({
+  adresse: zod.string().nullish(),
+  profil: zod.record(zod.string(), zod.unknown()),
+});
+
+export const CreateReportCheckoutResponse = zod.object({
+  url: zod.string(),
+  sessionId: zod.string().optional(),
+});
+
+/**
+ * @summary Unlock a paid report after the Checkout redirect (idempotent)
+ */
+export const ReconcileReportBody = zod.object({
+  sessionId: zod.string(),
+});
+
+export const ReconcileReportResponse = zod.object({
+  id: zod.number(),
+  userId: zod.string(),
+  sessionId: zod.string().nullish(),
+  status: zod.string(),
+  amountCents: zod.number(),
+  adresse: zod.string().nullish(),
+  profil: zod.record(zod.string(), zod.unknown()),
+  createdAt: zod.coerce.date(),
+  paidAt: zod.coerce.date().nullish(),
+});
+
+/**
+ * @summary List the current user's saved Gebäudereports
+ */
+export const ListMyReportsResponseItem = zod.object({
+  id: zod.number(),
+  userId: zod.string(),
+  sessionId: zod.string().nullish(),
+  status: zod.string(),
+  amountCents: zod.number(),
+  adresse: zod.string().nullish(),
+  profil: zod.record(zod.string(), zod.unknown()),
+  createdAt: zod.coerce.date(),
+  paidAt: zod.coerce.date().nullish(),
+});
+export const ListMyReportsResponse = zod.array(ListMyReportsResponseItem);
+
+/**
+ * @summary Create a paid Energieausweis order + Stripe Checkout Session (fulfilled by a certified Aussteller)
+ */
+
+export const createEnergieausweisCheckoutBodyKontaktEmailMin = 3;
+
+export const CreateEnergieausweisCheckoutBody = zod.object({
+  ausweisTyp: zod.enum(["bedarf", "verbrauch"]),
+  kontaktName: zod.string().min(1),
+  kontaktEmail: zod
+    .string()
+    .min(createEnergieausweisCheckoutBodyKontaktEmailMin),
+  intake: zod.record(zod.string(), zod.unknown()),
+});
+
+export const CreateEnergieausweisCheckoutResponse = zod.object({
+  url: zod.string(),
+  sessionId: zod.string().optional(),
+});
+
+/**
+ * @summary Mark an Energieausweis order paid after the Checkout redirect (idempotent)
+ */
+export const ReconcileEnergieausweisBody = zod.object({
+  sessionId: zod.string(),
+});
+
+export const ReconcileEnergieausweisResponse = zod.object({
+  id: zod.number(),
+  userId: zod.string(),
+  sessionId: zod.string().nullish(),
+  ausweisTyp: zod.string(),
+  status: zod.string(),
+  amountCents: zod.number(),
+  kontaktName: zod.string(),
+  kontaktEmail: zod.string(),
+  intake: zod.record(zod.string(), zod.unknown()),
+  createdAt: zod.coerce.date(),
+  paidAt: zod.coerce.date().nullish(),
+});
+
+/**
+ * @summary List the current user's Energieausweis orders + their issuer status
+ */
+export const ListMyEnergieausweisOrdersResponseItem = zod.object({
+  id: zod.number(),
+  userId: zod.string(),
+  sessionId: zod.string().nullish(),
+  ausweisTyp: zod.string(),
+  status: zod.string(),
+  amountCents: zod.number(),
+  kontaktName: zod.string(),
+  kontaktEmail: zod.string(),
+  intake: zod.record(zod.string(), zod.unknown()),
+  createdAt: zod.coerce.date(),
+  paidAt: zod.coerce.date().nullish(),
+});
+export const ListMyEnergieausweisOrdersResponse = zod.array(
+  ListMyEnergieausweisOrdersResponseItem,
+);
 
 /**
  * @summary Customer legally accepts an offer (selected services) from a provider

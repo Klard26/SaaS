@@ -11,6 +11,7 @@ import {
 } from "@workspace/api-zod";
 import { eq, and, inArray, lt, gt } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
+import { claimRole, RoleConflictError } from "../lib/userRole";
 import {
   sendBookingConfirmationToCustomer,
   sendNewBookingToProvider,
@@ -55,6 +56,17 @@ router.post("/bookings", async (req, res): Promise<void> => {
     if (!userId) {
       res.status(401).json({ error: "Unauthorized" });
       return;
+    }
+    try {
+      await claimRole(userId, "customer");
+    } catch (err) {
+      if (err instanceof RoleConflictError) {
+        res.status(403).json({
+          error: "Dieses Konto ist ein Berater-Konto und kann keine Buchungen vornehmen.",
+        });
+        return;
+      }
+      throw err;
     }
     const parsed = CreateBookingBody.safeParse(req.body);
     if (!parsed.success) {

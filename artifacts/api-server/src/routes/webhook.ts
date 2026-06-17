@@ -7,6 +7,7 @@ import { getUncachableStripeClient } from "../lib/stripeClient";
 import { sendPaymentConfirmation, sendStripeActivated, sendPaymentFailed, wasEmailSent } from "../lib/email";
 import { issueInvoiceForBooking, sendInvoiceEmail } from "../lib/invoiceService";
 import { fulfillOrder } from "../lib/gebaeudecheck";
+import { fulfillReport, fulfillEnergieausweis } from "../lib/foerderschiene";
 
 const router: IRouter = Router();
 
@@ -85,6 +86,14 @@ router.post(
           } else if (kind === "gebaeudecheck") {
             if (session.payment_status === "paid") {
               await fulfillOrder(session.id);
+            }
+          } else if (kind === "foerderschiene_report") {
+            if (session.payment_status === "paid") {
+              await fulfillReport(session.id);
+            }
+          } else if (kind === "foerderschiene_energieausweis") {
+            if (session.payment_status === "paid") {
+              await fulfillEnergieausweis(session.id);
             }
           } else if (kind === "booking") {
             const bookingId = Number(session.metadata?.["bookingId"]);

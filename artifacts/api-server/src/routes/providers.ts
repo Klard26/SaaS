@@ -13,6 +13,7 @@ import { getAuth, clerkClient } from "@clerk/express";
 import { randomBytes } from "node:crypto";
 import { slugify } from "../lib/slugify";
 import { sendProviderWelcome } from "../lib/email";
+import { claimRole, RoleConflictError } from "../lib/userRole";
 
 const router: IRouter = Router();
 
@@ -306,6 +307,17 @@ router.post("/providers", async (req, res): Promise<void> => {
     if (!userId) {
       res.status(401).json({ error: "Unauthorized" });
       return;
+    }
+    try {
+      await claimRole(userId, "provider");
+    } catch (err) {
+      if (err instanceof RoleConflictError) {
+        res.status(403).json({
+          error: "Dieses Konto ist ein Kunden-Konto und kann kein Berater-Profil anlegen.",
+        });
+        return;
+      }
+      throw err;
     }
     const parsed = CreateProviderBody.safeParse(req.body);
     if (!parsed.success) {

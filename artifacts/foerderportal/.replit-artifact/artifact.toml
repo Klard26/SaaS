@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/foerderschiene/"
+title = "Förderschiene – Gebäudereport & Förderung"
+version = "1.0.0"
+id = "artifacts/foerderportal"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/foerderschiene/" ]
+localPort = 21098
+
+[services.development]
+run = "pnpm --filter @workspace/foerderportal run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/foerderportal", "run", "build" ]
+publicDir = "artifacts/foerderportal/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21098"
+BASE_PATH = "/foerderschiene/"

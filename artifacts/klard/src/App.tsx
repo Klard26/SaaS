@@ -7,9 +7,11 @@ import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from 'wo
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import {
-  useGetMyProviderProfile,
-  getGetMyProviderProfileQueryKey,
+  useGetMyRole,
+  getGetMyRoleQueryKey,
+  useClaimMyRole,
 } from "@workspace/api-client-react";
+import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
@@ -19,16 +21,8 @@ import Search from "./pages/Search";
 import ProviderDetail from "./pages/ProviderDetail";
 import BookingConfirmation from "./pages/BookingConfirmation";
 import MyBookings from "./pages/MyBookings";
-import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
-import ProviderOnboarding from "./pages/ProviderOnboarding";
-import ProviderProfile from "./pages/ProviderProfile";
-import ProviderServices from "./pages/ProviderServices";
-import ProviderAvailability from "./pages/ProviderAvailability";
-import Pricing from "./pages/Pricing";
-import Gebaeudecheck from "./pages/Gebaeudecheck";
 import ImmobilienKundeOnboarding from "./pages/ImmobilienKundeOnboarding";
-import BeraterWerden from "./pages/BeraterWerden";
 import Impressum from "./pages/legal/Impressum";
 import AGB from "./pages/legal/AGB";
 import Datenschutz from "./pages/legal/Datenschutz";
@@ -140,21 +134,12 @@ function SignInPage() {
 }
 
 function SignUpPage() {
-  // Berater come from the dedicated "Berater werden" area (?intent=berater) and
-  // continue to provider onboarding. Customers go straight to where they were
-  // headed (a deep-linked booking via ?redirect=) or to the search — no forced
-  // account-type chooser. Commercial profile details stay optional and reachable
-  // from "Mein Kundenkonto".
+  // Klard is customer-only. Berater register in the dedicated provider app
+  // (/berater/). New customers go to where they were headed (a deep-linked
+  // booking via ?redirect=) or to the search — no forced account-type chooser.
   const [cfg] = useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    const intent = params.get("intent");
     const redirect = readRedirectParam();
-    const redirectUrl =
-      intent === "berater"
-        ? `${basePath}/provider/onboarding`
-        : redirect
-          ? `${basePath}${redirect}`
-          : `${basePath}/search`;
+    const redirectUrl = redirect ? `${basePath}${redirect}` : `${basePath}/search`;
     return {
       redirectUrl,
       signInUrl: `${basePath}/sign-in${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ""}`,
@@ -195,27 +180,80 @@ function ClerkQueryClientCacheInvalidator() {
   return null;
 }
 
-// Signed-in landing: Berater (have a provider profile) go to their dashboard,
-// everyone else (customers) goes to search — no forced detour.
-function SignedInHome() {
-  const { data: profile, isLoading, isError } = useGetMyProviderProfile({
-    query: { queryKey: getGetMyProviderProfileQueryKey() },
-  });
-  if (isLoading) {
-    return (
-      <div className="flex min-h-[100dvh] items-center justify-center bg-background">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+function FullscreenLoader() {
+  return (
+    <div className="flex min-h-[100dvh] items-center justify-center bg-background">
+      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+    </div>
+  );
+}
+
+// Sends Berater accounts to their own app. One account is either Kunde OR
+// Berater — never both (strict role separation in the shared Clerk instance).
+function RoleBlocked() {
+  const { signOut } = useClerk();
+  return (
+    <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4">
+      <div className="max-w-md text-center">
+        <h1 className="text-2xl font-bold mb-3">Dieses Konto ist ein Beraterkonto</h1>
+        <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+          Mit dieser E-Mail-Adresse sind Sie als Berater registriert. Ein Konto kann
+          entweder Kunde oder Berater sein — nicht beides. Bitte nutzen Sie den
+          Beraterbereich, oder melden Sie sich mit einer anderen Adresse als Kunde an.
+        </p>
+        <div className="flex items-center justify-center gap-3">
+          <Button variant="outline" className="rounded-full" onClick={() => signOut({ redirectUrl: basePath || "/" })} data-testid="button-roleblock-signout">
+            Abmelden
+          </Button>
+          <a href="/berater/">
+            <Button className="rounded-full bg-primary hover:bg-[var(--klard-teal-d)] text-white" data-testid="button-roleblock-berater">
+              Zum Beraterbereich
+            </Button>
+          </a>
+        </div>
       </div>
-    );
-  }
-  return <Redirect to={!isError && profile?.id ? "/dashboard" : "/search"} />;
+    </div>
+  );
+}
+
+// Ensures the signed-in user holds the `customer` role: claims it if unset,
+// blocks if the account is already a provider.
+function CustomerRoleGate({ children }: { children: React.ReactNode }) {
+  const qc = useQueryClient();
+  const { data: role, isLoading, isError } = useGetMyRole({
+    query: { queryKey: getGetMyRoleQueryKey() },
+  });
+  const claim = useClaimMyRole();
+  const attempted = useRef(false);
+
+  useEffect(() => {
+    if (isLoading || isError || attempted.current) return;
+    if (role?.role == null) {
+      attempted.current = true;
+      claim.mutate(
+        { data: { role: "customer" } },
+        {
+          onSettled: () => {
+            qc.invalidateQueries({ queryKey: getGetMyRoleQueryKey() });
+          },
+        },
+      );
+    }
+  }, [role, isLoading, isError, claim, qc]);
+
+  if (isLoading) return <FullscreenLoader />;
+  if (!isError && role?.role === "provider") return <RoleBlocked />;
+  if (!isError && role?.role == null) return <FullscreenLoader />;
+  return <>{children}</>;
 }
 
 function HomeRedirect() {
   return (
     <>
       <Show when="signed-in">
-        <SignedInHome />
+        <CustomerRoleGate>
+          <Redirect to="/search" />
+        </CustomerRoleGate>
       </Show>
       <Show when="signed-out">
         <Home />
@@ -235,7 +273,9 @@ function AuthRoute({ component: Component }: { component: React.ComponentType })
   return (
     <>
       <Show when="signed-in">
-        <Component />
+        <CustomerRoleGate>
+          <Component />
+        </CustomerRoleGate>
       </Show>
       <Show when="signed-out">
         <Redirect to={redirectTo} />
@@ -265,9 +305,6 @@ function ClerkProviderWithRoutes() {
           <Route path="/sign-in/*?" component={SignInPage} />
           <Route path="/sign-up/*?" component={SignUpPage} />
           <Route path="/search" component={Search} />
-          <Route path="/pricing" component={Pricing} />
-          <Route path="/berater-werden" component={BeraterWerden} />
-          <Route path="/gebaeudecheck" component={Gebaeudecheck} />
           <Route path="/impressum" component={Impressum} />
           <Route path="/agb" component={AGB} />
           <Route path="/datenschutz" component={Datenschutz} />
@@ -280,26 +317,11 @@ function ClerkProviderWithRoutes() {
           <Route path="/bookings">
             {() => <AuthRoute component={MyBookings} />}
           </Route>
-          <Route path="/dashboard">
-            {() => <AuthRoute component={Dashboard} />}
-          </Route>
           <Route path="/admin">
             {() => <AuthRoute component={Admin} />}
           </Route>
           <Route path="/immobilien/onboarding">
             {() => <AuthRoute component={ImmobilienKundeOnboarding} />}
-          </Route>
-          <Route path="/provider/onboarding">
-            {() => <AuthRoute component={ProviderOnboarding} />}
-          </Route>
-          <Route path="/provider/profile">
-            {() => <AuthRoute component={ProviderProfile} />}
-          </Route>
-          <Route path="/provider/services">
-            {() => <AuthRoute component={ProviderServices} />}
-          </Route>
-          <Route path="/provider/availability">
-            {() => <AuthRoute component={ProviderAvailability} />}
           </Route>
           
           <Route component={NotFound} />

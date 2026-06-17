@@ -242,6 +242,42 @@ paths:
         "401":
           description: Unauthorized
 
+  /account/role:
+    get:
+      operationId: getMyRole
+      tags: [account]
+      summary: Get the current user's role (customer | provider), or null if none claimed yet
+      responses:
+        "200":
+          description: Current role
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountRole"
+        "401":
+          description: Unauthorized
+    post:
+      operationId: claimMyRole
+      tags: [account]
+      summary: Claim a role for the current user (fails 409 if the other role is already held)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimRoleBody"
+      responses:
+        "200":
+          description: Role after claim
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountRole"
+        "401":
+          description: Unauthorized
+        "409":
+          description: Account already holds the other role
+
   /providers/{id}/services:
     get:
       operationId: listProviderServices
@@ -768,6 +804,146 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GebaeudecheckReconcileResult"
+
+  /foerderschiene/programme:
+    get:
+      operationId: listFoerderProgramme
+      tags: [foerderschiene]
+      summary: List all active funding programs (Förderprogramme)
+      responses:
+        "200":
+          description: List of funding programs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FoerderProgramm"
+
+  /foerderschiene/match:
+    post:
+      operationId: matchFoerderschiene
+      tags: [foerderschiene]
+      summary: Match a building profile to eligible funding programs + cost estimates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FoerderMatchInput"
+      responses:
+        "200":
+          description: Matched programs and recommended measures
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FoerderMatchResult"
+
+  /foerderschiene/report/checkout:
+    post:
+      operationId: createReportCheckout
+      tags: [foerderschiene]
+      summary: Create a Stripe Checkout Session to buy the detailed Gebäudereport PDF
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportCheckoutInput"
+      responses:
+        "200":
+          description: Checkout session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutSession"
+
+  /foerderschiene/report/reconcile:
+    post:
+      operationId: reconcileReport
+      tags: [foerderschiene]
+      summary: Unlock a paid report after the Checkout redirect (idempotent)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GebaeudecheckReconcileInput"
+      responses:
+        "200":
+          description: Reconcile result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FoerderschieneReport"
+
+  /foerderschiene/reports:
+    get:
+      operationId: listMyReports
+      tags: [foerderschiene]
+      summary: List the current user's saved Gebäudereports
+      responses:
+        "200":
+          description: List of reports
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FoerderschieneReport"
+
+  /foerderschiene/energieausweis/checkout:
+    post:
+      operationId: createEnergieausweisCheckout
+      tags: [foerderschiene]
+      summary: Create a paid Energieausweis order + Stripe Checkout Session (fulfilled by a certified Aussteller)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EnergieausweisOrderInput"
+      responses:
+        "200":
+          description: Checkout session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutSession"
+
+  /foerderschiene/energieausweis/reconcile:
+    post:
+      operationId: reconcileEnergieausweis
+      tags: [foerderschiene]
+      summary: Mark an Energieausweis order paid after the Checkout redirect (idempotent)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GebaeudecheckReconcileInput"
+      responses:
+        "200":
+          description: The order after reconcile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnergieausweisOrder"
+
+  /foerderschiene/energieausweis/orders:
+    get:
+      operationId: listMyEnergieausweisOrders
+      tags: [foerderschiene]
+      summary: List the current user's Energieausweis orders + their issuer status
+      responses:
+        "200":
+          description: List of orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EnergieausweisOrder"
 
   /offers/accept:
     post:
@@ -1390,6 +1566,23 @@ components:
       required: [isAdmin]
       properties:
         isAdmin: { type: boolean }
+
+    AccountRole:
+      type: object
+      required: [role]
+      properties:
+        role:
+          type: ["string", "null"]
+          enum: [customer, provider, null]
+          description: The role bound to this account, or null if none has been claimed.
+
+    ClaimRoleBody:
+      type: object
+      required: [role]
+      properties:
+        role:
+          type: string
+          enum: [customer, provider]
 
     Verwalter:
       type: object
@@ -2345,3 +2538,124 @@ components:
         serviceDescription:  { type: ["string", "null"] }
         status:              { type: string }
         hasPdf:              { type: boolean }
+
+    FoerderProgramm:
+      type: object
+      required: [id, titel, foerdergeber, ebene, art, foerderquoteText, maxBetragText, kurzbeschreibung, tags, region, aktiv]
+      properties:
+        id:               { type: string }
+        titel:            { type: string }
+        foerdergeber:     { type: string }
+        ebene:            { type: string }
+        art:              { type: string }
+        timing:           { type: string }
+        foerderquoteText: { type: string }
+        quoteMax:         { type: ["integer", "null"] }
+        maxBetragText:    { type: string }
+        maxBetragEur:     { type: ["integer", "null"] }
+        kurzbeschreibung: { type: string }
+        besonderheit:     { type: ["string", "null"] }
+        quelleUrl:        { type: ["string", "null"] }
+        erfolgsquote:     { type: ["integer", "null"] }
+        tags:
+          type: array
+          items: { type: string }
+        region:           { type: string }
+        aktiv:            { type: boolean }
+
+    FoerderMatchInput:
+      type: object
+      required: [baujahr, wohnflaeche, heizung]
+      properties:
+        baujahr:     { type: integer }
+        wohnflaeche: { type: number }
+        wohneinheiten: { type: ["integer", "null"] }
+        heizung:     { type: string, description: "Heating system key e.g. gas, oel, waermepumpe, fernwaerme, pellet" }
+        massnahmen:
+          type: array
+          description: "Selected measure tags the owner is interested in (heizung, daemmung, fenster, pv, komplett)"
+          items: { type: string }
+        selbstgenutzt: { type: ["boolean", "null"] }
+
+    MassnahmeEstimate:
+      type: object
+      required: [id, label, art, kostenMin, kostenMax, einsparung, beschreibung]
+      properties:
+        id:          { type: string }
+        label:       { type: string }
+        art:         { type: string, enum: [einzelmassnahme, komplettsanierung] }
+        kostenMin:   { type: integer }
+        kostenMax:   { type: integer }
+        einsparung:  { type: string }
+        beschreibung: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+
+    FoerderMatchResult:
+      type: object
+      required: [programme, massnahmen, geschaetzteFoerderungEur]
+      properties:
+        programme:
+          type: array
+          items:
+            $ref: "#/components/schemas/FoerderProgramm"
+        massnahmen:
+          type: array
+          items:
+            $ref: "#/components/schemas/MassnahmeEstimate"
+        geschaetzteFoerderungEur: { type: integer }
+
+    ReportCheckoutInput:
+      type: object
+      required: [profil]
+      properties:
+        adresse: { type: ["string", "null"] }
+        profil:
+          type: object
+          additionalProperties: true
+
+    FoerderschieneReport:
+      type: object
+      required: [id, userId, status, amountCents, profil, createdAt]
+      properties:
+        id:          { type: integer }
+        userId:      { type: string }
+        sessionId:   { type: ["string", "null"] }
+        status:      { type: string }
+        amountCents: { type: integer }
+        adresse:     { type: ["string", "null"] }
+        profil:
+          type: object
+          additionalProperties: true
+        createdAt:   { type: string, format: date-time }
+        paidAt:      { type: ["string", "null"], format: date-time }
+
+    EnergieausweisOrderInput:
+      type: object
+      required: [ausweisTyp, kontaktName, kontaktEmail, intake]
+      properties:
+        ausweisTyp:   { type: string, enum: [bedarf, verbrauch] }
+        kontaktName:  { type: string, minLength: 1 }
+        kontaktEmail: { type: string, minLength: 3 }
+        intake:
+          type: object
+          additionalProperties: true
+
+    EnergieausweisOrder:
+      type: object
+      required: [id, userId, ausweisTyp, status, amountCents, kontaktName, kontaktEmail, intake, createdAt]
+      properties:
+        id:           { type: integer }
+        userId:       { type: string }
+        sessionId:    { type: ["string", "null"] }
+        ausweisTyp:   { type: string }
+        status:       { type: string }
+        amountCents:  { type: integer }
+        kontaktName:  { type: string }
+        kontaktEmail: { type: string }
+        intake:
+          type: object
+          additionalProperties: true
+        createdAt:    { type: string, format: date-time }
+        paidAt:       { type: ["string", "null"], format: date-time }

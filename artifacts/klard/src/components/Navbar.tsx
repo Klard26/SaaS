@@ -1,7 +1,7 @@
 import { useClerk, useUser } from "@clerk/react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { useGetAdminMe, getGetAdminMeQueryKey, useGetMyProviderProfile, getGetMyProviderProfileQueryKey } from "@workspace/api-client-react";
+import { useGetAdminMe, getGetAdminMeQueryKey } from "@workspace/api-client-react";
 import { Shield } from "lucide-react";
 import {
   DropdownMenu,
@@ -27,10 +27,6 @@ export function Navbar() {
     query: { queryKey: getGetAdminMeQueryKey(), enabled: !!isSignedIn },
   });
   const isAdmin = !!adminMe?.isAdmin;
-  const { data: providerProfile } = useGetMyProviderProfile({
-    query: { queryKey: getGetMyProviderProfileQueryKey(), enabled: !!isSignedIn, retry: false },
-  });
-  const hasProvider = !!providerProfile?.id;
 
   const initials = user?.firstName
     ? `${user.firstName[0]}${user.lastName?.[0] ?? ""}`.toUpperCase()
@@ -71,12 +67,12 @@ export function Navbar() {
           <Link href="/search" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-search">
             Berater finden
           </Link>
-          <Link href="/gebaeudecheck" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-gebaeudecheck">
+          <a href="/foerderschiene/" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-gebaeudecheck">
             Gebäudecheck
-          </Link>
-          <Link href="/berater-werden" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-berater-werden">
+          </a>
+          <a href="/berater/" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-berater-werden">
             Für Berater
-          </Link>
+          </a>
         </nav>
 
         <div className="flex items-center gap-2 ml-auto lg:ml-0">
@@ -104,18 +100,6 @@ export function Navbar() {
                   <DropdownMenuItem onClick={() => setLocation("/admin")} data-testid="menu-item-admin">
                     <Shield className="h-4 w-4 mr-2" /> Plattform-Admin
                   </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">Beraterbereich</DropdownMenuLabel>
-                {hasProvider ? (
-                  <>
-                    <DropdownMenuItem onClick={() => setLocation("/dashboard")} data-testid="menu-item-dashboard">Berater-Dashboard</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setLocation("/provider/profile")} data-testid="menu-item-profile">Berater-Profil</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setLocation("/provider/services")} data-testid="menu-item-services">Meine Leistungen</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setLocation("/provider/availability")} data-testid="menu-item-availability">Verfügbarkeit</DropdownMenuItem>
-                  </>
-                ) : (
-                  <DropdownMenuItem onClick={() => setLocation("/berater-werden")} data-testid="menu-item-become-berater">Berater werden</DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -163,26 +147,14 @@ export function Navbar() {
         <div className="md:hidden border-t border-border bg-white">
           <nav className="flex flex-col px-4 py-3 gap-1">
             <Link href="/search" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Berater finden</Link>
-            <Link href="/gebaeudecheck" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Gebäudecheck</Link>
-            <Link href="/berater-werden" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Für Berater</Link>
+            <a href="/foerderschiene/" className="py-2 text-sm text-foreground">Gebäudecheck</a>
+            <a href="/berater/" className="py-2 text-sm text-foreground">Für Berater</a>
             {isSignedIn && (
               <>
                 <div className="mt-2 pt-2 border-t border-border" />
                 <p className="px-1 py-1 text-xs font-medium text-muted-foreground">Kundenbereich</p>
                 <Link href="/bookings" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Meine Buchungen</Link>
                 <Link href="/immobilien/onboarding" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Mein Kundenkonto</Link>
-                <div className="mt-2 pt-2 border-t border-border" />
-                <p className="px-1 py-1 text-xs font-medium text-muted-foreground">Beraterbereich</p>
-                {hasProvider ? (
-                  <>
-                    <Link href="/dashboard" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Berater-Dashboard</Link>
-                    <Link href="/provider/profile" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Berater-Profil</Link>
-                    <Link href="/provider/services" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Meine Leistungen</Link>
-                    <Link href="/provider/availability" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Verfügbarkeit</Link>
-                  </>
-                ) : (
-                  <Link href="/berater-werden" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Berater werden</Link>
-                )}
               </>
             )}
           </nav>

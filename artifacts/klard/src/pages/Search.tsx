@@ -209,14 +209,13 @@ export default function SearchPage() {
                   Marktwert und Klimarisiko — perfekt als Basis für Ihr Beratungsgespräch.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setLocation("/gebaeudecheck")}
+              <a
+                href="/foerderschiene/"
                 className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-[var(--klard-teal-d)] hover:bg-[var(--klard-teal)] text-white text-xs font-semibold px-3.5 py-1.5"
                 data-testid="button-banner-gebaeudecheck"
               >
                 Jetzt prüfen
-              </button>
+              </a>
             </div>
           )}
           <div className="flex items-center justify-between mb-5">

@@ -18,6 +18,7 @@ import type {
 
 import type {
   AcceptOfferInput,
+  AccountRole,
   AdminBookingRow,
   AdminCategoryRow,
   AdminCustomerRow,
@@ -36,10 +37,17 @@ import type {
   BookingStatusUpdate,
   Category,
   CheckoutSession,
+  ClaimRoleBody,
   ConnectOnboardingLink,
   ConnectStatus,
   DeleteMyAccount200,
   DeleteTimeSlotParams,
+  EnergieausweisOrder,
+  EnergieausweisOrderInput,
+  FoerderMatchInput,
+  FoerderMatchResult,
+  FoerderProgramm,
+  FoerderschieneReport,
   GebaeudecheckCheckoutInput,
   GebaeudecheckCredits,
   GebaeudecheckReconcileInput,
@@ -65,6 +73,7 @@ import type {
   ProviderInput,
   ProviderSummary,
   ProviderUpdate,
+  ReportCheckoutInput,
   Review,
   ReviewInput,
   Service,
@@ -942,6 +951,159 @@ export const useDeleteMyAccount = <
   TContext
 > => {
   return useMutation(getDeleteMyAccountMutationOptions(options));
+};
+
+/**
+ * @summary Get the current user's role (customer | provider), or null if none claimed yet
+ */
+export const getGetMyRoleUrl = () => {
+  return `/api/account/role`;
+};
+
+export const getMyRole = async (
+  options?: RequestInit,
+): Promise<AccountRole> => {
+  return customFetch<AccountRole>(getGetMyRoleUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMyRoleQueryKey = () => {
+  return [`/api/account/role`] as const;
+};
+
+export const getGetMyRoleQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMyRole>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getMyRole>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMyRoleQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyRole>>> = ({
+    signal,
+  }) => getMyRole({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMyRole>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMyRoleQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMyRole>>
+>;
+export type GetMyRoleQueryError = ErrorType<void>;
+
+/**
+ * @summary Get the current user's role (customer | provider), or null if none claimed yet
+ */
+
+export function useGetMyRole<
+  TData = Awaited<ReturnType<typeof getMyRole>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getMyRole>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMyRoleQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Claim a role for the current user (fails 409 if the other role is already held)
+ */
+export const getClaimMyRoleUrl = () => {
+  return `/api/account/role`;
+};
+
+export const claimMyRole = async (
+  claimRoleBody: ClaimRoleBody,
+  options?: RequestInit,
+): Promise<AccountRole> => {
+  return customFetch<AccountRole>(getClaimMyRoleUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(claimRoleBody),
+  });
+};
+
+export const getClaimMyRoleMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof claimMyRole>>,
+    TError,
+    { data: BodyType<ClaimRoleBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof claimMyRole>>,
+  TError,
+  { data: BodyType<ClaimRoleBody> },
+  TContext
+> => {
+  const mutationKey = ["claimMyRole"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof claimMyRole>>,
+    { data: BodyType<ClaimRoleBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return claimMyRole(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ClaimMyRoleMutationResult = NonNullable<
+  Awaited<ReturnType<typeof claimMyRole>>
+>;
+export type ClaimMyRoleMutationBody = BodyType<ClaimRoleBody>;
+export type ClaimMyRoleMutationError = ErrorType<void>;
+
+/**
+ * @summary Claim a role for the current user (fails 409 if the other role is already held)
+ */
+export const useClaimMyRole = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof claimMyRole>>,
+    TError,
+    { data: BodyType<ClaimRoleBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof claimMyRole>>,
+  TError,
+  { data: BodyType<ClaimRoleBody> },
+  TContext
+> => {
+  return useMutation(getClaimMyRoleMutationOptions(options));
 };
 
 /**
@@ -3567,6 +3729,667 @@ export const useReconcileGebaeudecheckOrder = <
 > => {
   return useMutation(getReconcileGebaeudecheckOrderMutationOptions(options));
 };
+
+/**
+ * @summary List all active funding programs (Förderprogramme)
+ */
+export const getListFoerderProgrammeUrl = () => {
+  return `/api/foerderschiene/programme`;
+};
+
+export const listFoerderProgramme = async (
+  options?: RequestInit,
+): Promise<FoerderProgramm[]> => {
+  return customFetch<FoerderProgramm[]>(getListFoerderProgrammeUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListFoerderProgrammeQueryKey = () => {
+  return [`/api/foerderschiene/programme`] as const;
+};
+
+export const getListFoerderProgrammeQueryOptions = <
+  TData = Awaited<ReturnType<typeof listFoerderProgramme>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listFoerderProgramme>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListFoerderProgrammeQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listFoerderProgramme>>
+  > = ({ signal }) => listFoerderProgramme({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listFoerderProgramme>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListFoerderProgrammeQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listFoerderProgramme>>
+>;
+export type ListFoerderProgrammeQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all active funding programs (Förderprogramme)
+ */
+
+export function useListFoerderProgramme<
+  TData = Awaited<ReturnType<typeof listFoerderProgramme>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listFoerderProgramme>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListFoerderProgrammeQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Match a building profile to eligible funding programs + cost estimates
+ */
+export const getMatchFoerderschieneUrl = () => {
+  return `/api/foerderschiene/match`;
+};
+
+export const matchFoerderschiene = async (
+  foerderMatchInput: FoerderMatchInput,
+  options?: RequestInit,
+): Promise<FoerderMatchResult> => {
+  return customFetch<FoerderMatchResult>(getMatchFoerderschieneUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(foerderMatchInput),
+  });
+};
+
+export const getMatchFoerderschieneMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof matchFoerderschiene>>,
+    TError,
+    { data: BodyType<FoerderMatchInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof matchFoerderschiene>>,
+  TError,
+  { data: BodyType<FoerderMatchInput> },
+  TContext
+> => {
+  const mutationKey = ["matchFoerderschiene"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof matchFoerderschiene>>,
+    { data: BodyType<FoerderMatchInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return matchFoerderschiene(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type MatchFoerderschieneMutationResult = NonNullable<
+  Awaited<ReturnType<typeof matchFoerderschiene>>
+>;
+export type MatchFoerderschieneMutationBody = BodyType<FoerderMatchInput>;
+export type MatchFoerderschieneMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Match a building profile to eligible funding programs + cost estimates
+ */
+export const useMatchFoerderschiene = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof matchFoerderschiene>>,
+    TError,
+    { data: BodyType<FoerderMatchInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof matchFoerderschiene>>,
+  TError,
+  { data: BodyType<FoerderMatchInput> },
+  TContext
+> => {
+  return useMutation(getMatchFoerderschieneMutationOptions(options));
+};
+
+/**
+ * @summary Create a Stripe Checkout Session to buy the detailed Gebäudereport PDF
+ */
+export const getCreateReportCheckoutUrl = () => {
+  return `/api/foerderschiene/report/checkout`;
+};
+
+export const createReportCheckout = async (
+  reportCheckoutInput: ReportCheckoutInput,
+  options?: RequestInit,
+): Promise<CheckoutSession> => {
+  return customFetch<CheckoutSession>(getCreateReportCheckoutUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(reportCheckoutInput),
+  });
+};
+
+export const getCreateReportCheckoutMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createReportCheckout>>,
+    TError,
+    { data: BodyType<ReportCheckoutInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createReportCheckout>>,
+  TError,
+  { data: BodyType<ReportCheckoutInput> },
+  TContext
+> => {
+  const mutationKey = ["createReportCheckout"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createReportCheckout>>,
+    { data: BodyType<ReportCheckoutInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createReportCheckout(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateReportCheckoutMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createReportCheckout>>
+>;
+export type CreateReportCheckoutMutationBody = BodyType<ReportCheckoutInput>;
+export type CreateReportCheckoutMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a Stripe Checkout Session to buy the detailed Gebäudereport PDF
+ */
+export const useCreateReportCheckout = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createReportCheckout>>,
+    TError,
+    { data: BodyType<ReportCheckoutInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createReportCheckout>>,
+  TError,
+  { data: BodyType<ReportCheckoutInput> },
+  TContext
+> => {
+  return useMutation(getCreateReportCheckoutMutationOptions(options));
+};
+
+/**
+ * @summary Unlock a paid report after the Checkout redirect (idempotent)
+ */
+export const getReconcileReportUrl = () => {
+  return `/api/foerderschiene/report/reconcile`;
+};
+
+export const reconcileReport = async (
+  gebaeudecheckReconcileInput: GebaeudecheckReconcileInput,
+  options?: RequestInit,
+): Promise<FoerderschieneReport> => {
+  return customFetch<FoerderschieneReport>(getReconcileReportUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(gebaeudecheckReconcileInput),
+  });
+};
+
+export const getReconcileReportMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reconcileReport>>,
+    TError,
+    { data: BodyType<GebaeudecheckReconcileInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof reconcileReport>>,
+  TError,
+  { data: BodyType<GebaeudecheckReconcileInput> },
+  TContext
+> => {
+  const mutationKey = ["reconcileReport"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof reconcileReport>>,
+    { data: BodyType<GebaeudecheckReconcileInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return reconcileReport(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ReconcileReportMutationResult = NonNullable<
+  Awaited<ReturnType<typeof reconcileReport>>
+>;
+export type ReconcileReportMutationBody = BodyType<GebaeudecheckReconcileInput>;
+export type ReconcileReportMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Unlock a paid report after the Checkout redirect (idempotent)
+ */
+export const useReconcileReport = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reconcileReport>>,
+    TError,
+    { data: BodyType<GebaeudecheckReconcileInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof reconcileReport>>,
+  TError,
+  { data: BodyType<GebaeudecheckReconcileInput> },
+  TContext
+> => {
+  return useMutation(getReconcileReportMutationOptions(options));
+};
+
+/**
+ * @summary List the current user's saved Gebäudereports
+ */
+export const getListMyReportsUrl = () => {
+  return `/api/foerderschiene/reports`;
+};
+
+export const listMyReports = async (
+  options?: RequestInit,
+): Promise<FoerderschieneReport[]> => {
+  return customFetch<FoerderschieneReport[]>(getListMyReportsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListMyReportsQueryKey = () => {
+  return [`/api/foerderschiene/reports`] as const;
+};
+
+export const getListMyReportsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listMyReports>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listMyReports>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListMyReportsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyReports>>> = ({
+    signal,
+  }) => listMyReports({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listMyReports>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListMyReportsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listMyReports>>
+>;
+export type ListMyReportsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List the current user's saved Gebäudereports
+ */
+
+export function useListMyReports<
+  TData = Awaited<ReturnType<typeof listMyReports>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listMyReports>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListMyReportsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a paid Energieausweis order + Stripe Checkout Session (fulfilled by a certified Aussteller)
+ */
+export const getCreateEnergieausweisCheckoutUrl = () => {
+  return `/api/foerderschiene/energieausweis/checkout`;
+};
+
+export const createEnergieausweisCheckout = async (
+  energieausweisOrderInput: EnergieausweisOrderInput,
+  options?: RequestInit,
+): Promise<CheckoutSession> => {
+  return customFetch<CheckoutSession>(getCreateEnergieausweisCheckoutUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(energieausweisOrderInput),
+  });
+};
+
+export const getCreateEnergieausweisCheckoutMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createEnergieausweisCheckout>>,
+    TError,
+    { data: BodyType<EnergieausweisOrderInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createEnergieausweisCheckout>>,
+  TError,
+  { data: BodyType<EnergieausweisOrderInput> },
+  TContext
+> => {
+  const mutationKey = ["createEnergieausweisCheckout"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createEnergieausweisCheckout>>,
+    { data: BodyType<EnergieausweisOrderInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createEnergieausweisCheckout(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateEnergieausweisCheckoutMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createEnergieausweisCheckout>>
+>;
+export type CreateEnergieausweisCheckoutMutationBody =
+  BodyType<EnergieausweisOrderInput>;
+export type CreateEnergieausweisCheckoutMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a paid Energieausweis order + Stripe Checkout Session (fulfilled by a certified Aussteller)
+ */
+export const useCreateEnergieausweisCheckout = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createEnergieausweisCheckout>>,
+    TError,
+    { data: BodyType<EnergieausweisOrderInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createEnergieausweisCheckout>>,
+  TError,
+  { data: BodyType<EnergieausweisOrderInput> },
+  TContext
+> => {
+  return useMutation(getCreateEnergieausweisCheckoutMutationOptions(options));
+};
+
+/**
+ * @summary Mark an Energieausweis order paid after the Checkout redirect (idempotent)
+ */
+export const getReconcileEnergieausweisUrl = () => {
+  return `/api/foerderschiene/energieausweis/reconcile`;
+};
+
+export const reconcileEnergieausweis = async (
+  gebaeudecheckReconcileInput: GebaeudecheckReconcileInput,
+  options?: RequestInit,
+): Promise<EnergieausweisOrder> => {
+  return customFetch<EnergieausweisOrder>(getReconcileEnergieausweisUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(gebaeudecheckReconcileInput),
+  });
+};
+
+export const getReconcileEnergieausweisMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reconcileEnergieausweis>>,
+    TError,
+    { data: BodyType<GebaeudecheckReconcileInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof reconcileEnergieausweis>>,
+  TError,
+  { data: BodyType<GebaeudecheckReconcileInput> },
+  TContext
+> => {
+  const mutationKey = ["reconcileEnergieausweis"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof reconcileEnergieausweis>>,
+    { data: BodyType<GebaeudecheckReconcileInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return reconcileEnergieausweis(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ReconcileEnergieausweisMutationResult = NonNullable<
+  Awaited<ReturnType<typeof reconcileEnergieausweis>>
+>;
+export type ReconcileEnergieausweisMutationBody =
+  BodyType<GebaeudecheckReconcileInput>;
+export type ReconcileEnergieausweisMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Mark an Energieausweis order paid after the Checkout redirect (idempotent)
+ */
+export const useReconcileEnergieausweis = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof reconcileEnergieausweis>>,
+    TError,
+    { data: BodyType<GebaeudecheckReconcileInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof reconcileEnergieausweis>>,
+  TError,
+  { data: BodyType<GebaeudecheckReconcileInput> },
+  TContext
+> => {
+  return useMutation(getReconcileEnergieausweisMutationOptions(options));
+};
+
+/**
+ * @summary List the current user's Energieausweis orders + their issuer status
+ */
+export const getListMyEnergieausweisOrdersUrl = () => {
+  return `/api/foerderschiene/energieausweis/orders`;
+};
+
+export const listMyEnergieausweisOrders = async (
+  options?: RequestInit,
+): Promise<EnergieausweisOrder[]> => {
+  return customFetch<EnergieausweisOrder[]>(
+    getListMyEnergieausweisOrdersUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListMyEnergieausweisOrdersQueryKey = () => {
+  return [`/api/foerderschiene/energieausweis/orders`] as const;
+};
+
+export const getListMyEnergieausweisOrdersQueryOptions = <
+  TData = Awaited<ReturnType<typeof listMyEnergieausweisOrders>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listMyEnergieausweisOrders>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListMyEnergieausweisOrdersQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listMyEnergieausweisOrders>>
+  > = ({ signal }) => listMyEnergieausweisOrders({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listMyEnergieausweisOrders>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListMyEnergieausweisOrdersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listMyEnergieausweisOrders>>
+>;
+export type ListMyEnergieausweisOrdersQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List the current user's Energieausweis orders + their issuer status
+ */
+
+export function useListMyEnergieausweisOrders<
+  TData = Awaited<ReturnType<typeof listMyEnergieausweisOrders>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listMyEnergieausweisOrders>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListMyEnergieausweisOrdersQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Customer legally accepts an offer (selected services) from a provider
