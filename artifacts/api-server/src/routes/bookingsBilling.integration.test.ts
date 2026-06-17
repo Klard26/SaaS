@@ -377,6 +377,52 @@ describe("POST /api/bookings", () => {
     expect(res.status).toBe(409);
     expect(String(res.body.error)).toContain("gerade gebucht");
   });
+
+  it("lets only ONE of N concurrent requests win the same open slot (real row-lock contention)", async () => {
+    authState.userId = customerId;
+    // One genuinely available slot, far in the future to avoid colliding with
+    // other tests' fixtures.
+    const slot = await createSlot(providerA.id, hourFromNow(500));
+
+    // Fire N truly simultaneous POSTs at the SAME open slot. The booking tx's
+    // `SELECT ... FOR UPDATE` must serialize them so exactly one inserts a row
+    // and flips the slot to unavailable; the rest must re-read it as taken.
+    const N = 8;
+    const results = await Promise.all(
+      Array.from({ length: N }, () =>
+        api("POST", "/api/bookings", {
+          providerId: providerA.id,
+          serviceId: serviceA.id,
+          slotId: slot.id,
+        }),
+      ),
+    );
+
+    const created = results.filter((r) => r.status === 201);
+    const conflicts = results.filter((r) => r.status === 409);
+
+    // Exactly one winner; everyone else gets a clean SLOT_TAKEN conflict.
+    expect(created.length).toBe(1);
+    expect(conflicts.length).toBe(N - 1);
+    for (const c of conflicts) {
+      expect(String(c.body.error)).toContain("gerade gebucht");
+    }
+
+    // The slot ends up unavailable...
+    const [slotAfter] = await db
+      .select()
+      .from(timeSlotsTable)
+      .where(eq(timeSlotsTable.id, slot.id));
+    expect(slotAfter?.isAvailable).toBe(false);
+
+    // ...with exactly one persisted booking row for it.
+    const bookingsForSlot = await db
+      .select()
+      .from(bookingsTable)
+      .where(eq(bookingsTable.slotId, slot.id));
+    expect(bookingsForSlot.length).toBe(1);
+    expect(bookingsForSlot[0]?.id).toBe(created[0]?.body.id);
+  });
 });
 
 describe("PATCH /api/bookings/:id/status", () => {
