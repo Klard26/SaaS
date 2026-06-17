@@ -162,9 +162,7 @@ function ClerkProviderWithRoutes() {
           <Route path="/sign-in/*?" component={SignInPage} />
           <Route path="/sign-up/*?" component={SignUpPage} />
           <Route path="/check" component={Gebaeudecheck} />
-          <Route path="/report">
-            {() => <AuthRoute component={ReportPage} />}
-          </Route>
+          <Route path="/report" component={ReportPage} />
           <Route path="/energieausweis">
             {() => <AuthRoute component={EnergieausweisPage} />}
           </Route>

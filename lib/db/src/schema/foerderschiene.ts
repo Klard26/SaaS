@@ -47,8 +47,11 @@ export type FoerderProgramm = typeof foerderProgrammeTable.$inferSelect;
  */
 export const foerderschieneReportsTable = pgTable("foerderschiene_reports", {
   id: serial("id").primaryKey(),
-  userId: text("user_id").notNull(),
+  // Nullable: a report can be bought as a guest (Express Checkout, no account).
+  userId: text("user_id"),
   sessionId: text("session_id"),
+  // Buyer email captured from the Stripe Checkout session (for the PDF link mail).
+  email: text("email"),
   status: text("status").notNull().default("pending"), // pending | paid
   amountCents: integer("amount_cents").notNull(),
   adresse: text("adresse"),

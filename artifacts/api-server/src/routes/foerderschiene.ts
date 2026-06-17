@@ -12,6 +12,7 @@ import {
   matchFoerderschiene,
   fulfillReport,
   fulfillEnergieausweis,
+  deliverReportReadyEmail,
   energieausweisPrice,
   REPORT_PRICE_CENTS,
   type MatchInput,
@@ -65,11 +66,9 @@ router.post("/foerderschiene/match", async (req, res): Promise<void> => {
 
 router.post("/foerderschiene/report/checkout", async (req, res): Promise<void> => {
   try {
+    // Guest Express-Checkout: a report can be bought without an account.
+    // If the buyer happens to be signed in we still attach their userId.
     const { userId } = getAuth(req);
-    if (!userId) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
     const body = (req.body ?? {}) as { adresse?: unknown; profil?: unknown };
     if (!body.profil || typeof body.profil !== "object") {
       res.status(400).json({ error: "profil ist erforderlich" });
@@ -87,7 +86,7 @@ router.post("/foerderschiene/report/checkout", async (req, res): Promise<void> =
     const [report] = await db
       .insert(foerderschieneReportsTable)
       .values({
-        userId,
+        userId: userId ?? null,
         status: "pending",
         amountCents: REPORT_PRICE_CENTS,
         adresse,
@@ -114,8 +113,8 @@ router.post("/foerderschiene/report/checkout", async (req, res): Promise<void> =
       cancel_url: `${baseUrl}/foerderschiene/report?status=cancelled`,
       metadata: {
         kind: "foerderschiene_report",
-        userId,
         reportId: String(report.id),
+        ...(userId ? { userId } : {}),
       },
     });
 
@@ -133,11 +132,8 @@ router.post("/foerderschiene/report/checkout", async (req, res): Promise<void> =
 
 router.post("/foerderschiene/report/reconcile", async (req, res): Promise<void> => {
   try {
-    const { userId } = getAuth(req);
-    if (!userId) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
+    // Guest flow: possession of the Checkout sessionId is the only credential
+    // needed to unlock + view the report (no account, no ownership check).
     const sessionId = String((req.body as { sessionId?: unknown })?.sessionId ?? "");
     if (!sessionId) {
       res.status(400).json({ error: "Missing sessionId" });
@@ -148,7 +144,7 @@ router.post("/foerderschiene/report/reconcile", async (req, res): Promise<void> 
       .from(foerderschieneReportsTable)
       .where(eq(foerderschieneReportsTable.sessionId, sessionId))
       .limit(1);
-    if (!report || report.userId !== userId) {
+    if (!report) {
       res.status(404).json({ error: "Report not found" });
       return;
     }
@@ -160,6 +156,7 @@ router.post("/foerderschiene/report/reconcile", async (req, res): Promise<void> 
     const session = await stripe.checkout.sessions.retrieve(sessionId);
     if (session.payment_status === "paid") {
       await fulfillReport(sessionId);
+      await deliverReportReadyEmail(session, getBaseUrl(req));
     }
     const [fresh] = await db
       .select()

@@ -7,7 +7,11 @@ import { getUncachableStripeClient } from "../lib/stripeClient";
 import { sendPaymentConfirmation, sendStripeActivated, sendPaymentFailed, wasEmailSent } from "../lib/email";
 import { issueInvoiceForBooking, sendInvoiceEmail } from "../lib/invoiceService";
 import { fulfillOrder } from "../lib/gebaeudecheck";
-import { fulfillReport, fulfillEnergieausweis } from "../lib/foerderschiene";
+import {
+  fulfillReport,
+  fulfillEnergieausweis,
+  deliverReportReadyEmail,
+} from "../lib/foerderschiene";
 
 const router: IRouter = Router();
 
@@ -90,6 +94,11 @@ router.post(
           } else if (kind === "foerderschiene_report") {
             if (session.payment_status === "paid") {
               await fulfillReport(session.id);
+              // Guarantee email delivery even if the buyer never returns to the
+              // success page (which is the only other place reconcile runs).
+              const proto = req.get("x-forwarded-proto") ?? req.protocol;
+              const baseUrl = `${proto}://${req.get("host")}`;
+              await deliverReportReadyEmail(session, baseUrl);
             }
           } else if (kind === "foerderschiene_energieausweis") {
             if (session.payment_status === "paid") {

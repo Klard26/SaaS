@@ -930,8 +930,9 @@ export const ReconcileReportBody = zod.object({
 
 export const ReconcileReportResponse = zod.object({
   id: zod.number(),
-  userId: zod.string(),
+  userId: zod.string().nullish(),
   sessionId: zod.string().nullish(),
+  email: zod.string().nullish(),
   status: zod.string(),
   amountCents: zod.number(),
   adresse: zod.string().nullish(),
@@ -945,8 +946,9 @@ export const ReconcileReportResponse = zod.object({
  */
 export const ListMyReportsResponseItem = zod.object({
   id: zod.number(),
-  userId: zod.string(),
+  userId: zod.string().nullish(),
   sessionId: zod.string().nullish(),
+  email: zod.string().nullish(),
   status: zod.string(),
   amountCents: zod.number(),
   adresse: zod.string().nullish(),

@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { useLocation } from "wouter";
 import { Link } from "wouter";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -9,14 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import {
   FileDown, ExternalLink, Loader2, ArrowRight, Building2, Landmark,
-  CheckCircle2, Hammer,
+  CheckCircle2, Hammer, Mail, XCircle, AlertTriangle,
 } from "lucide-react";
 import {
   calcEnergie, calcWert, calcValue, calcRestnutzung, calcRisk, calcESG,
   calcSolar, type BuildingInput,
 } from "@workspace/energie-calc";
 import {
-  useListMyReports, useReconcileReport, useMatchFoerderschiene,
+  useReconcileReport, useMatchFoerderschiene,
   type FoerderschieneReport, type FoerderMatchResult,
 } from "@workspace/api-client-react";
 import { printReport } from "@/lib/printReport";
@@ -32,51 +31,58 @@ function isPaid(status: string) {
   return status === "paid" || status === "bezahlt" || status === "completed";
 }
 
+type ViewState = "loading" | "ready" | "pending" | "error" | "cancelled" | "none";
+
 export default function ReportPage() {
   const { toast } = useToast();
-  const [location, setLocation] = useLocation();
   const reconcile = useReconcileReport();
-  const { data: reports = [], isLoading, refetch } = useListMyReports();
-  const [selected, setSelected] = useState<FoerderschieneReport | null>(null);
-  const reconciledRef = useRef(false);
+  const [report, setReport] = useState<FoerderschieneReport | null>(null);
+  const [state, setState] = useState<ViewState>("loading");
+  const ranRef = useRef(false);
 
   useEffect(() => {
-    if (reconciledRef.current) return;
+    if (ranRef.current) return;
+    ranRef.current = true;
     const params = new URLSearchParams(window.location.search);
-    if (params.get("status") === "success" && params.get("session_id")) {
-      reconciledRef.current = true;
-      const sessionId = params.get("session_id") as string;
-      reconcile
-        .mutateAsync({ data: { sessionId } })
-        .then(() => {
+    const status = params.get("status");
+    const sessionId = params.get("session_id");
+
+    if (status === "cancelled") {
+      setState("cancelled");
+      return;
+    }
+    if (!sessionId) {
+      setState("none");
+      return;
+    }
+    // Guest access: the Checkout sessionId in the URL is the only credential
+    // needed. We re-reconcile on every load so a reload or the emailed link
+    // continues to work without an account.
+    setState("loading");
+    reconcile
+      .mutateAsync({ data: { sessionId } })
+      .then((r) => {
+        setReport(r);
+        if (isPaid(r.status)) {
+          setState("ready");
           toast({
             title: "Zahlung bestätigt",
             description: "Ihr Gebäudereport wurde freigeschaltet.",
           });
-          refetch();
-        })
-        .catch(() => {
-          toast({
-            title: "Abgleich fehlgeschlagen",
-            description: "Die Zahlung konnte nicht bestätigt werden. Bitte später erneut prüfen.",
-            variant: "destructive",
-          });
-        })
-        .finally(() => {
-          setLocation(location.split("?")[0] || "/report", { replace: true });
+        } else {
+          setState("pending");
+        }
+      })
+      .catch(() => {
+        setState("error");
+        toast({
+          title: "Abgleich fehlgeschlagen",
+          description: "Die Zahlung konnte nicht bestätigt werden. Bitte später erneut prüfen.",
+          variant: "destructive",
         });
-    }
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const paidReports = reports.filter((r) => isPaid(r.status));
-
-  useEffect(() => {
-    if (!selected && paidReports.length > 0) {
-      setSelected(paidReports[0]);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reports]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -85,110 +91,124 @@ export default function ReportPage() {
       <section className="bg-[var(--klard-bg)] py-8 px-4 sm:px-8 border-b border-border">
         <div className="max-w-[1280px] mx-auto">
           <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-foreground mb-1">
-            Meine Gebäudereports
+            Ihr Gebäudereport
           </h1>
           <p className="text-muted-foreground text-sm">
-            Förderprogramme, geschätzte Förderhöhe und Sanierungskosten zu Ihren Objekten.
+            Förderprogramme, geschätzte Förderhöhe und Sanierungskosten zu Ihrem Objekt.
           </p>
         </div>
       </section>
 
       <section className="px-4 sm:px-8 py-8 max-w-[1280px] mx-auto w-full flex-1 space-y-8">
-        {/* Report list */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {isLoading && (
-            <div className="col-span-full flex items-center gap-2 text-muted-foreground text-sm py-8 justify-center">
-              <Loader2 className="h-4 w-4 animate-spin" /> Reports werden geladen…
+        {state === "loading" && (
+          <div className="flex items-center gap-2 text-muted-foreground text-sm py-16 justify-center">
+            <Loader2 className="h-4 w-4 animate-spin" /> Zahlung wird geprüft…
+          </div>
+        )}
+
+        {state === "none" && (
+          <StatusCard
+            icon={<Building2 className="h-8 w-8 mx-auto text-muted-foreground" />}
+            title="Noch kein Report vorhanden"
+            text="Starten Sie den kostenlosen Gebäudecheck und schalten Sie anschließend Ihren ausführlichen Gebäudereport frei."
+            ctaHref="/check"
+            ctaLabel="Zum Gebäudecheck"
+          />
+        )}
+
+        {state === "cancelled" && (
+          <StatusCard
+            icon={<XCircle className="h-8 w-8 mx-auto text-muted-foreground" />}
+            title="Zahlung abgebrochen"
+            text="Die Zahlung wurde abgebrochen. Sie können den Kauf jederzeit erneut starten."
+            ctaHref="/check"
+            ctaLabel="Zurück zum Gebäudecheck"
+          />
+        )}
+
+        {state === "error" && (
+          <StatusCard
+            icon={<AlertTriangle className="h-8 w-8 mx-auto text-amber-500" />}
+            title="Zahlung konnte nicht bestätigt werden"
+            text="Falls Sie bezahlt haben, kann es einen Moment dauern. Laden Sie die Seite über den Link aus Ihrer Bestätigungs-E-Mail erneut, oder starten Sie den Kauf neu."
+            ctaHref="/check"
+            ctaLabel="Zum Gebäudecheck"
+          />
+        )}
+
+        {state === "pending" && (
+          <StatusCard
+            icon={<Loader2 className="h-8 w-8 mx-auto text-muted-foreground animate-spin" />}
+            title="Zahlung wird verarbeitet"
+            text="Ihre Zahlung ist noch nicht abgeschlossen. Bitte laden Sie diese Seite in Kürze erneut."
+            ctaHref="/check"
+            ctaLabel="Zum Gebäudecheck"
+          />
+        )}
+
+        {state === "ready" && report && (
+          <>
+            <div className="rounded-lg bg-[var(--klard-teal-l)] border border-[var(--klard-teal)] p-4 flex items-start gap-3">
+              <Mail className="h-5 w-5 text-[var(--klard-teal-d)] shrink-0 mt-0.5" />
+              <div className="text-sm text-[var(--klard-ink)] leading-relaxed">
+                <span className="font-semibold">Report freigeschaltet.</span> Sie können ihn jetzt
+                ansehen und als PDF speichern. Den Link zu dieser Seite haben wir Ihnen
+                zusätzlich per E-Mail geschickt — bewahren Sie ihn auf, um den Report jederzeit
+                erneut zu öffnen.
+              </div>
             </div>
-          )}
-          {!isLoading && reports.length === 0 && (
-            <Card className="col-span-full border-dashed">
-              <CardContent className="py-12 text-center space-y-3">
-                <Building2 className="h-8 w-8 mx-auto text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
-                  Sie haben noch keinen Gebäudereport gekauft.
-                </p>
-                <Link href="/check">
-                  <Button className="bg-[var(--klard-teal)] hover:bg-[var(--klard-teal-d)] text-white" data-testid="button-to-check">
-                    Zum Gebäudecheck
+            <ReportDetail report={report} eurCents={eurCents} />
+
+            <Card className="bg-[var(--klard-ink)] border-0">
+              <CardContent className="py-8 px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-serif text-xl font-semibold text-white mb-1">
+                    Energieausweis benötigt?
+                  </h3>
+                  <p className="text-white/60 text-sm max-w-md">
+                    Bestellen Sie den rechtsgültigen Energieausweis — erstellt von einem
+                    zertifizierten Aussteller.
+                  </p>
+                </div>
+                <Link href="/energieausweis">
+                  <Button className="bg-[var(--klard-teal)] hover:bg-[var(--klard-teal-d)] text-white font-semibold shrink-0" data-testid="button-to-energieausweis">
+                    Energieausweis bestellen
+                    <ArrowRight className="ml-1 h-4 w-4" />
                   </Button>
                 </Link>
               </CardContent>
             </Card>
-          )}
-          {reports.map((r) => {
-            const paid = isPaid(r.status);
-            const active = selected?.id === r.id;
-            return (
-              <Card
-                key={r.id}
-                className={`cursor-pointer transition-colors ${active ? "ring-2 ring-[var(--klard-teal)]" : ""}`}
-                onClick={() => paid && setSelected(r)}
-                data-testid={`report-card-${r.id}`}
-              >
-                <CardContent className="p-4 space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="font-semibold text-sm text-foreground leading-snug">
-                      {r.adresse || "Gebäudereport"}
-                    </div>
-                    <Badge
-                      variant={paid ? "default" : "secondary"}
-                      className={paid ? "bg-green-600 hover:bg-green-600 text-white shrink-0" : "shrink-0"}
-                    >
-                      {paid ? "Bezahlt" : "Ausstehend"}
-                    </Badge>
-                  </div>
-                  <div className="text-xs text-muted-foreground">{dateFmt(r.createdAt)}</div>
-                  <div className="text-xs text-muted-foreground">{eurCents(r.amountCents)}</div>
-                  {paid && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full mt-1 text-xs"
-                      onClick={(e) => { e.stopPropagation(); setSelected(r); }}
-                      data-testid={`button-open-report-${r.id}`}
-                    >
-                      Report öffnen
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-
-        {/* Selected report detail */}
-        {selected && (
-          <ReportDetail
-            report={selected}
-            eurCents={eurCents}
-          />
+          </>
         )}
-
-        {/* CTA energieausweis */}
-        <Card className="bg-[var(--klard-ink)] border-0">
-          <CardContent className="py-8 px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div>
-              <h3 className="font-serif text-xl font-semibold text-white mb-1">
-                Energieausweis benötigt?
-              </h3>
-              <p className="text-white/60 text-sm max-w-md">
-                Bestellen Sie den rechtsgültigen Energieausweis — erstellt von einem
-                zertifizierten Aussteller.
-              </p>
-            </div>
-            <Link href="/energieausweis">
-              <Button className="bg-[var(--klard-teal)] hover:bg-[var(--klard-teal-d)] text-white font-semibold shrink-0" data-testid="button-to-energieausweis">
-                Energieausweis bestellen
-                <ArrowRight className="ml-1 h-4 w-4" />
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
       </section>
 
       <Footer />
     </div>
+  );
+}
+
+function StatusCard({
+  icon, title, text, ctaHref, ctaLabel,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  text: string;
+  ctaHref: string;
+  ctaLabel: string;
+}) {
+  return (
+    <Card className="border-dashed max-w-xl mx-auto w-full">
+      <CardContent className="py-12 text-center space-y-3">
+        {icon}
+        <h2 className="font-serif text-xl font-semibold text-foreground">{title}</h2>
+        <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">{text}</p>
+        <Link href={ctaHref}>
+          <Button className="bg-[var(--klard-teal)] hover:bg-[var(--klard-teal-d)] text-white" data-testid="button-to-check">
+            {ctaLabel}
+          </Button>
+        </Link>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -250,13 +270,18 @@ function ReportDetail({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
-        <h2 className="font-serif text-2xl font-semibold text-foreground">
-          {report.adresse || "Gebäudereport"}
-        </h2>
+        <div>
+          <h2 className="font-serif text-2xl font-semibold text-foreground">
+            {report.adresse || "Gebäudereport"}
+          </h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Gekauft am {dateFmt(report.createdAt)} · {eurCents(report.amountCents)}
+          </p>
+        </div>
         <Button
           onClick={handlePrint}
           variant="outline"
-          className="border-[1.5px] font-semibold"
+          className="border-[1.5px] font-semibold shrink-0"
           data-testid="button-print-report"
         >
           <FileDown className="h-4 w-4 mr-2" />

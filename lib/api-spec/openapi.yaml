@@ -2617,11 +2617,12 @@ components:
 
     FoerderschieneReport:
       type: object
-      required: [id, userId, status, amountCents, profil, createdAt]
+      required: [id, status, amountCents, profil, createdAt]
       properties:
         id:          { type: integer }
-        userId:      { type: string }
+        userId:      { type: ["string", "null"] }
         sessionId:   { type: ["string", "null"] }
+        email:       { type: ["string", "null"] }
         status:      { type: string }
         amountCents: { type: integer }
         adresse:     { type: ["string", "null"] }

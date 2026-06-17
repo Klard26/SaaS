@@ -9,9 +9,12 @@ import type { FoerderschieneReportProfil } from "./foerderschieneReportProfil";
 
 export interface FoerderschieneReport {
   id: number;
-  userId: string;
+  /** @nullable */
+  userId?: string | null;
   /** @nullable */
   sessionId?: string | null;
+  /** @nullable */
+  email?: string | null;
   status: string;
   amountCents: number;
   /** @nullable */

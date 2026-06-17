@@ -6,6 +6,7 @@ import {
   type FoerderProgramm,
 } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
+import { sendFoerderschieneReportReady, wasEmailSent } from "./email";
 
 /** One-time price for the detailed Gebäudereport PDF (in cents). */
 export const REPORT_PRICE_CENTS = 4900;
@@ -368,6 +369,45 @@ export async function fulfillReport(sessionId: string): Promise<boolean> {
     )
     .returning();
   return !!updated;
+}
+
+/**
+ * Send the "report ready" email for a paid Checkout session, idempotently.
+ * Captures the buyer's email from the Stripe session, persists it on the report
+ * row, and sends the PDF link exactly once (deduped via `wasEmailSent`). Safe to
+ * call from BOTH the success-page reconcile and the Stripe webhook so delivery
+ * does not depend on the buyer landing back on the success page.
+ */
+export async function deliverReportReadyEmail(
+  session: {
+    id: string;
+    customer_details?: { email?: string | null } | null;
+    customer_email?: string | null;
+  },
+  baseUrl: string,
+): Promise<void> {
+  const [report] = await db
+    .select()
+    .from(foerderschieneReportsTable)
+    .where(eq(foerderschieneReportsTable.sessionId, session.id))
+    .limit(1);
+  if (!report) return;
+  const email =
+    session.customer_details?.email ?? session.customer_email ?? report.email ?? null;
+  if (!email) return;
+  if (!report.email) {
+    await db
+      .update(foerderschieneReportsTable)
+      .set({ email })
+      .where(eq(foerderschieneReportsTable.id, report.id));
+  }
+  if (await wasEmailSent("foerderschiene_report_ready", report.id)) return;
+  await sendFoerderschieneReportReady({
+    email,
+    adresse: report.adresse,
+    reportUrl: `${baseUrl}/foerderschiene/report?status=success&session_id=${session.id}`,
+    relatedId: report.id,
+  });
 }
 
 /** Idempotently mark an Energieausweis order paid + queued for the issuer. */

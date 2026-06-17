@@ -15,6 +15,7 @@ import tplWelcomeCustomer from "../email-templates/welcome_customer.hbs";
 import tplStripeActivated from "../email-templates/stripe_activated.hbs";
 import tplPaymentFailed from "../email-templates/payment_failed.hbs";
 import tplReminder1h from "../email-templates/booking_reminder_1h.hbs";
+import tplFoerderschieneReportReady from "../email-templates/foerderschiene_report_ready.hbs";
 
 const APP_URL =
   process.env["APP_URL"] ??
@@ -241,6 +242,28 @@ export async function sendStripeActivated(p: {
     text: `Ihr Klard Premium-Abo ist aktiv, ${p.providerName}. Zum Dashboard: ${APP_URL}/dashboard`,
     templateId: "stripe_activated",
     relatedId: p.email,
+  });
+}
+
+export async function sendFoerderschieneReportReady(p: {
+  email: string;
+  reportUrl: string;
+  adresse?: string | null;
+  relatedId?: string | number | null;
+}): Promise<void> {
+  if (!p.email) return;
+  const adresseSatz = p.adresse ? ` für ${p.adresse}` : "";
+  const html = renderTemplate(tplFoerderschieneReportReady, {
+    reportUrl: p.reportUrl,
+    adresseSatz,
+  });
+  await send({
+    to: p.email,
+    subject: "Ihr Gebäudereport ist fertig",
+    html,
+    text: `Vielen Dank für Ihren Kauf. Ihr detaillierter Gebäudereport${adresseSatz} ist jetzt freigeschaltet. Ansehen und als PDF speichern: ${p.reportUrl}`,
+    templateId: "foerderschiene_report_ready",
+    relatedId: p.relatedId ?? p.email,
   });
 }
 
