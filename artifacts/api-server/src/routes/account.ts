@@ -12,6 +12,9 @@ import {
   offerAcceptancesTable,
   gebaeudecheckCreditsTable,
   gebaeudecheckOrdersTable,
+  foerderschieneReportsTable,
+  energieausweisOrdersTable,
+  userRolesTable,
 } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { getAuth, clerkClient } from "@clerk/express";
@@ -122,8 +125,13 @@ router.delete("/account/me", async (req, res): Promise<void> => {
       await tx.delete(assessmentsTable).where(eq(assessmentsTable.userId, userId));
       await tx.delete(gebaeudecheckOrdersTable).where(eq(gebaeudecheckOrdersTable.userId, userId));
       await tx.delete(gebaeudecheckCreditsTable).where(eq(gebaeudecheckCreditsTable.userId, userId));
+      // Förderschiene (Gebäudereport + Energieausweis) orders/reports.
+      await tx.delete(foerderschieneReportsTable).where(eq(foerderschieneReportsTable.userId, userId));
+      await tx.delete(energieausweisOrdersTable).where(eq(energieausweisOrdersTable.userId, userId));
       // Energiewechsel (WattWechsel) portfolio cascades off verwalter.
       await tx.delete(verwalterTable).where(eq(verwalterTable.clerkUserId, userId));
+      // Strict-role-separation record (claimed customer | provider role).
+      await tx.delete(userRolesTable).where(eq(userRolesTable.clerkUserId, userId));
     });
 
     // Finally, delete the Clerk login itself. The DB deletes above are
