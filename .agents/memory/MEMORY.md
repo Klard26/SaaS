@@ -1,5 +1,6 @@
 - [Klard frontend zod resolver mismatch](klard-zod-resolver.md) — pre-existing dual-zod (v3 pages vs v4 in @hookform/resolvers types); frontend `tsc` fails on all zodResolver pages, app still runs (Vite/esbuild skips typecheck).
 - [Klard Stripe v22 Connect split](klard-stripe-connect.md) — booking checkout payout split spread inline (no PaymentIntentData type); commission single source of truth.
+- [Förderpilot catalog](foerderpilot-catalog.md) — imported funding catalog in isolated `foerderpilot` schema + dedicated pg pool; SQL bundled via esbuild text loader; filter slug↔name gotcha.
 - [Tailwind v4 font @import order](tailwind-v4-font-import-order.md) — remote `@import url()` fonts must sit ABOVE `@import "tailwindcss"` or PostCSS drops them (silent system-font fallback).
 - [New-artifact port probe](artifact-port-reconciler.md) — fresh artifact workflow fails DIDNT_OPEN_A_PORT until a checkpoint runs the .replit port reconciler; finish code, end turn, then restart.
 - [Klard unified journey primitives](klard-journey-primitives.md) — shared lib/journey.ts + components/journey/* for status/tier/payment badges, stepper, empty state, guided header; don't re-roll local maps.

@@ -30,10 +30,12 @@
     "http-proxy-middleware": "^4.0.0",
     "node-ical": "^0.26.1",
     "pdfkit": "^0.18.0",
+    "pg": "^8.20.0",
     "pino": "^9",
     "pino-http": "^10",
     "resend": "4.0.0",
-    "stripe": "^22.1.1"
+    "stripe": "^22.1.1",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.10",
@@ -41,6 +43,7 @@
     "@types/express": "^5.0.6",
     "@types/node": "catalog:",
     "@types/pdfkit": "^0.17.6",
+    "@types/pg": "^8.18.0",
     "esbuild": "^0.27.3",
     "esbuild-plugin-pino": "^2.3.3",
     "pino-pretty": "^13",
