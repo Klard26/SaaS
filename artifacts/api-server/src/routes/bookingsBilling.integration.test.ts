@@ -607,6 +607,118 @@ describe("re-booking a slot freed by a cancellation", () => {
   });
 });
 
+describe("imported-calendar conflict race (blocked_slots vs booking)", () => {
+  // Mirror exactly how icalSync.ts records an external busy interval: a row in
+  // blocked_slots with source 'ical'. The booking transaction re-checks this
+  // table INSIDE its `SELECT ... FOR UPDATE` block, which is the only defense
+  // against an imported event landing concurrently with a booking.
+  async function insertIcalBlock(
+    providerId: number,
+    slotStart: Date,
+  ): Promise<void> {
+    await db.insert(blockedSlotsTable).values({
+      providerId,
+      // Fully covers the 1h slot (and overlaps generously) just like a synced
+      // external event would.
+      startTime: new Date(slotStart.getTime() - 30 * 60_000),
+      endTime: new Date(slotStart.getTime() + 90 * 60_000),
+      source: "ical",
+    });
+  }
+
+  it("rejects EVERY one of N concurrent bookings once the slot is blocked (re-check serializes, nothing slips through)", async () => {
+    authState.userId = customerId;
+    const start = hourFromNow(720);
+    const slot = await createSlot(providerA.id, start);
+    // The external busy interval is already committed before the bookings fire,
+    // so the FOR UPDATE re-check must see it for all of them.
+    await insertIcalBlock(providerA.id, start);
+
+    const N = 8;
+    const results = await Promise.all(
+      Array.from({ length: N }, () =>
+        api("POST", "/api/bookings", {
+          providerId: providerA.id,
+          serviceId: serviceA.id,
+          slotId: slot.id,
+        }),
+      ),
+    );
+
+    // Not a single booking may slip through a blocked slot.
+    for (const r of results) {
+      expect(r.status).toBe(409);
+      expect(String(r.body.error)).toContain("Kalender");
+    }
+
+    // The slot is untouched (still available) and zero bookings were persisted.
+    const [slotAfter] = await db
+      .select()
+      .from(timeSlotsTable)
+      .where(eq(timeSlotsTable.id, slot.id));
+    expect(slotAfter?.isAvailable).toBe(true);
+
+    const bookingsForSlot = await db
+      .select()
+      .from(bookingsTable)
+      .where(eq(bookingsTable.slotId, slot.id));
+    expect(bookingsForSlot.length).toBe(0);
+  });
+
+  it("stays consistent when a busy interval lands concurrently with a booking (block-vs-booking contention)", async () => {
+    authState.userId = customerId;
+
+    // Run many independent races. Each iteration uses a FRESH slot and fires the
+    // booking POST and the blocking-interval insert at the same time, so their
+    // commit order is non-deterministic — the real contention the FOR UPDATE
+    // re-check defends against. Whoever the DB serializes first, the persisted
+    // state must always agree with the HTTP result: a 409 leaves no booking and
+    // an open slot; a 201 leaves exactly one booking and an unavailable slot.
+    // The one thing that must NEVER happen: a booking persisted while the slot
+    // still reads available, or more than one booking on the slot.
+    const ITERATIONS = 12;
+    for (let i = 0; i < ITERATIONS; i++) {
+      const start = hourFromNow(800 + i * 5);
+      const slot = await createSlot(providerA.id, start);
+
+      const [bookingRes] = await Promise.all([
+        api("POST", "/api/bookings", {
+          providerId: providerA.id,
+          serviceId: serviceA.id,
+          slotId: slot.id,
+        }),
+        insertIcalBlock(providerA.id, start),
+      ]);
+
+      const [slotAfter] = await db
+        .select()
+        .from(timeSlotsTable)
+        .where(eq(timeSlotsTable.id, slot.id));
+      const bookingsForSlot = await db
+        .select()
+        .from(bookingsTable)
+        .where(eq(bookingsTable.slotId, slot.id));
+
+      // Only two consistent outcomes are allowed.
+      expect([201, 409]).toContain(bookingRes.status);
+
+      if (bookingRes.status === 201) {
+        // Booking won the race (block committed after the re-check). The slot
+        // MUST be flipped unavailable and back exactly one booking row.
+        expect(slotAfter?.isAvailable).toBe(false);
+        expect(bookingsForSlot.length).toBe(1);
+        expect(bookingsForSlot[0]?.id).toBe(bookingRes.body.id);
+      } else {
+        // The block won the race: rejected as SLOT_BLOCKED, no booking, slot
+        // still open. A booking must never be left on a blocked slot.
+        expect(String(bookingRes.body.error)).toContain("Kalender");
+        expect(slotAfter?.isAvailable).toBe(true);
+        expect(bookingsForSlot.length).toBe(0);
+      }
+    }
+  });
+});
+
 describe("POST /api/bookings/:id/payment/checkout (Stripe Connect split)", () => {
   async function insertBillableBooking(opts: {
     providerId: number;
