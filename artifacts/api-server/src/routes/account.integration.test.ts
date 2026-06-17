@@ -31,6 +31,7 @@ const clerkState = vi.hoisted(() => ({
   // "ok" → user deleted; "notfound" → 404 (already gone); "fail" → 500-style error.
   deleteUser: "ok" as "ok" | "notfound" | "fail",
 }));
+const clerkState2 = vi.hoisted(() => ({ primaryEmail: null as string | null }));
 const clerkSpies = vi.hoisted(() => ({
   deleteUser: vi.fn(async (_id: string) => {
     if (clerkState.deleteUser === "notfound") {
@@ -45,6 +46,12 @@ const clerkSpies = vi.hoisted(() => ({
     }
     return { id: _id };
   }),
+  getUser: vi.fn(async (_id: string) => ({
+    id: _id,
+    emailAddresses: clerkState2.primaryEmail
+      ? [{ emailAddress: clerkState2.primaryEmail }]
+      : [],
+  })),
 }));
 const stripeState = vi.hoisted(() => ({ cancelCalledWith: null as string | null }));
 
@@ -53,6 +60,7 @@ vi.mock("@clerk/express", () => ({
   clerkClient: {
     users: {
       deleteUser: clerkSpies.deleteUser,
+      getUser: clerkSpies.getUser,
     },
   },
   clerkMiddleware:
@@ -91,6 +99,7 @@ import {
   foerderschieneReportsTable,
   energieausweisOrdersTable,
   userRolesTable,
+  emailLogTable,
   verwalterTable,
   objektTable,
   zaehlpunktTable,
@@ -99,7 +108,7 @@ import {
   wechselvorgangTable,
   auditLogTable,
 } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, or, inArray } from "drizzle-orm";
 
 // Minimal app: only the account router, mirroring the real `/api` mount.
 function makeApp(): Express {
@@ -320,6 +329,43 @@ async function seedFullAccount(userId: string): Promise<{ providerId: number }> 
   // --- Strict role separation record -------------------------------------
   await db.insert(userRolesTable).values({ clerkUserId: userId, role: "provider" });
 
+  // --- email_log audit rows holding this user's personal data ------------
+  // email_log is keyed by recipient address + relatedId (booking id / invoice
+  // number / recipient email), NOT the Clerk user id. Seed one row per shape
+  // the deletion purge must reach: provider-email recipient, customer-email
+  // recipient, clerk-primary-email recipient (welcome_customer), booking-id
+  // relatedId, and invoice-number relatedId.
+  await db.insert(emailLogTable).values([
+    {
+      templateId: "welcome_provider",
+      recipient: "loesch-berater@example.com",
+      relatedId: "loesch-berater@example.com",
+      subject: "Willkommen bei Klard",
+      status: "sent",
+    },
+    {
+      templateId: "welcome_customer",
+      recipient: `${userId}@clerk.example.com`,
+      relatedId: `${userId}@clerk.example.com`,
+      subject: "Willkommen bei Klard",
+      status: "sent",
+    },
+    {
+      templateId: "booking_confirmation_customer",
+      recipient: "loesch-kunde@example.com",
+      relatedId: String(booking!.id),
+      subject: "Buchung bestätigt",
+      status: "sent",
+    },
+    {
+      templateId: "invoice_ready",
+      recipient: "loesch-kunde@example.com",
+      relatedId: `RE-${userId}`,
+      subject: "Ihre Rechnung",
+      status: "sent",
+    },
+  ]);
+
   return { providerId };
 }
 
@@ -348,6 +394,21 @@ async function countAllRows(userId: string, providerId: number): Promise<number>
   return checks.reduce((sum, rows) => sum + rows.length, 0);
 }
 
+/** Count email_log rows tied to this user (recipient address or relatedId). */
+async function countEmailLogRows(userId: string): Promise<number> {
+  const ids = [
+    "loesch-berater@example.com",
+    "loesch-kunde@example.com",
+    `${userId}@clerk.example.com`,
+    `RE-${userId}`,
+  ];
+  const rows = await db
+    .select({ id: emailLogTable.id })
+    .from(emailLogTable)
+    .where(or(inArray(emailLogTable.recipient, ids), inArray(emailLogTable.relatedId, ids)));
+  return rows.length;
+}
+
 /** Best-effort cleanup so a failed assertion never leaves test rows behind. */
 async function purge(userId: string, providerId: number | null): Promise<void> {
   if (providerId != null) {
@@ -370,6 +431,15 @@ async function purge(userId: string, providerId: number | null): Promise<void> {
   await db.delete(energieausweisOrdersTable).where(eq(energieausweisOrdersTable.userId, userId));
   await db.delete(verwalterTable).where(eq(verwalterTable.clerkUserId, userId));
   await db.delete(userRolesTable).where(eq(userRolesTable.clerkUserId, userId));
+  const emailIds = [
+    "loesch-berater@example.com",
+    "loesch-kunde@example.com",
+    `${userId}@clerk.example.com`,
+    `RE-${userId}`,
+  ];
+  await db
+    .delete(emailLogTable)
+    .where(or(inArray(emailLogTable.recipient, emailIds), inArray(emailLogTable.relatedId, emailIds)));
 }
 
 let server2: Server | undefined;
@@ -377,8 +447,10 @@ let server2: Server | undefined;
 beforeEach(async () => {
   authState.userId = null;
   clerkState.deleteUser = "ok";
+  clerkState2.primaryEmail = null;
   stripeState.cancelCalledWith = null;
   clerkSpies.deleteUser.mockClear();
+  clerkSpies.getUser.mockClear();
   server = makeApp().listen(0);
   await new Promise<void>((resolve) => server.once("listening", () => resolve()));
   baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
@@ -399,10 +471,15 @@ describe("DELETE /api/account/me — orphan protection", () => {
 
   it("removes EVERY user-keyed row across both roles, then deletes the Clerk login", async () => {
     const userId = uid();
+    // The Clerk account's primary email is the recipient of the customer
+    // welcome mail and only discoverable via Clerk, so make it match the seed.
+    clerkState2.primaryEmail = `${userId}@clerk.example.com`;
     const { providerId } = await seedFullAccount(userId);
     try {
       // Pre-condition: there is data to delete.
       expect(await countAllRows(userId, providerId)).toBeGreaterThan(0);
+      // Pre-condition: email_log holds this user's personal data.
+      expect(await countEmailLogRows(userId)).toBeGreaterThan(0);
 
       authState.userId = userId;
       const res = await deleteAccount();
@@ -412,6 +489,12 @@ describe("DELETE /api/account/me — orphan protection", () => {
       // Every user-keyed table (incl. cascade-only invoices/blocked_slots and the
       // verwalter-cascaded WattWechsel portfolio) is now empty for this user.
       expect(await countAllRows(userId, providerId)).toBe(0);
+
+      // GDPR: every email_log row holding this user's email address (recipient)
+      // or referencing their bookings/invoices (relatedId) is purged too —
+      // including the Clerk-primary-email welcome row only reachable via Clerk.
+      expect(await countEmailLogRows(userId)).toBe(0);
+      expect(clerkSpies.getUser).toHaveBeenCalledWith(userId);
 
       // WattWechsel portfolio rows cascaded away with the verwalter.
       const [verw] = await db

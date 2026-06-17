@@ -15,8 +15,10 @@ import {
   foerderschieneReportsTable,
   energieausweisOrdersTable,
   userRolesTable,
+  invoicesTable,
+  emailLogTable,
 } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, or, inArray } from "drizzle-orm";
 import { getAuth, clerkClient } from "@clerk/express";
 import { getUncachableStripeClient } from "../lib/stripeClient";
 import { getRole, claimRole, RoleConflictError, type UserRole } from "../lib/userRole";
@@ -92,6 +94,69 @@ router.delete("/account/me", async (req, res): Promise<void> => {
       .where(eq(providersTable.clerkUserId, userId))
       .limit(1);
 
+    // Collect every email_log identifier tied to this user BEFORE the rows it
+    // references are deleted. email_log is keyed by recipient address +
+    // relatedId (booking id / invoice number / recipient email), NOT by the
+    // Clerk user id, so for a GDPR-clean deletion we gather the set of the
+    // user's email addresses and domain ids, then purge matching audit rows
+    // inside the deletion transaction below.
+    const emailLogIdentifiers = new Set<string>();
+    const addIdentifier = (value: string | number | null | undefined): void => {
+      if (value == null) return;
+      const s = String(value).trim();
+      if (s) emailLogIdentifiers.add(s);
+    };
+
+    // The user's own email addresses (recipients of welcome / activation /
+    // booking / invoice mail). welcome_* templates also key relatedId on the
+    // recipient email, so the same value covers both columns.
+    addIdentifier(provider?.email);
+
+    // Best-effort: the Clerk account's primary/verified email addresses, which
+    // are the recipient of the customer welcome mail and may not appear in any
+    // local table. Never block deletion on a Clerk lookup failure.
+    try {
+      const clerkUser = await clerkClient.users.getUser(userId);
+      for (const e of clerkUser.emailAddresses ?? []) addIdentifier(e?.emailAddress);
+    } catch (err) {
+      req.log.warn({ err }, "Clerk email lookup for email_log purge failed; continuing");
+    }
+
+    // Bookings the user made (as customer): booking ids + the customer email
+    // recorded on each (relatedId of booking/reminder mail, recipient of it).
+    const customerBookings = await db
+      .select({ id: bookingsTable.id, email: bookingsTable.customerEmail })
+      .from(bookingsTable)
+      .where(eq(bookingsTable.customerId, userId));
+    for (const b of customerBookings) {
+      addIdentifier(b.id);
+      addIdentifier(b.email);
+    }
+
+    if (provider) {
+      // Bookings received by the provider: booking ids (relatedId of the
+      // provider-facing booking/reminder mail; recipient is provider.email).
+      const providerBookings = await db
+        .select({ id: bookingsTable.id })
+        .from(bookingsTable)
+        .where(eq(bookingsTable.providerId, provider.id));
+      for (const b of providerBookings) addIdentifier(b.id);
+
+      // Invoice numbers (relatedId of invoice-ready / payment mail).
+      const providerInvoices = await db
+        .select({ invoiceNumber: invoicesTable.invoiceNumber })
+        .from(invoicesTable)
+        .where(eq(invoicesTable.providerId, provider.id));
+      for (const inv of providerInvoices) addIdentifier(inv.invoiceNumber);
+    }
+
+    // Energieausweis order contact email (recipient of any related mail).
+    const energieausweisContacts = await db
+      .select({ email: energieausweisOrdersTable.kontaktEmail })
+      .from(energieausweisOrdersTable)
+      .where(eq(energieausweisOrdersTable.userId, userId));
+    for (const o of energieausweisContacts) addIdentifier(o.email);
+
     // Best-effort: stop any active Stripe subscription immediately so the user
     // is not billed after deletion. Never block account deletion on Stripe.
     if (provider?.stripeSubscriptionId) {
@@ -132,6 +197,15 @@ router.delete("/account/me", async (req, res): Promise<void> => {
       await tx.delete(verwalterTable).where(eq(verwalterTable.clerkUserId, userId));
       // Strict-role-separation record (claimed customer | provider role).
       await tx.delete(userRolesTable).where(eq(userRolesTable.clerkUserId, userId));
+      // GDPR: purge email_log audit rows holding this user's personal data
+      // (recipient address) or referencing their now-deleted bookings/invoices
+      // (relatedId). Keyed by value, not user id, hence the gathered set above.
+      if (emailLogIdentifiers.size > 0) {
+        const ids = Array.from(emailLogIdentifiers);
+        await tx
+          .delete(emailLogTable)
+          .where(or(inArray(emailLogTable.recipient, ids), inArray(emailLogTable.relatedId, ids)));
+      }
     });
 
     // Finally, delete the Clerk login itself. The DB deletes above are
