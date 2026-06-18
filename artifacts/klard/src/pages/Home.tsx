@@ -5,7 +5,7 @@ import { Footer } from "@/components/Footer";
 import { useListCategories, useListProviders, useGetPlatformStats } from "@workspace/api-client-react";
 import {
   Search, MapPin, Briefcase, Star,
-  CalendarCheck, UserPlus, ShieldCheck,
+  CalendarCheck, ShieldCheck,
   Calculator, Zap, Scale, TrendingUp, Home as HomeIcon, Monitor,
   Megaphone, Users, Shield, Building, Target, FileSignature, ClipboardCheck,
   Compass, Rocket, Coins, Newspaper, Laptop, Lock, ShieldCheck as ShieldCheck2,
@@ -68,7 +68,7 @@ export default function Home() {
 
           <p className="text-white/75 text-base md:text-[1rem] font-light leading-[1.75] max-w-[560px] mx-auto mb-10">
             Energieberater, Architekten, Statiker, Bauberater und weitere Bau- &
-            Energieexperten – echte Festpreise, verifizierte Profile, Direktbuchung wie beim Arzt.
+            Energieexperten – echte Festpreise, verifizierte Profile, Termine in Echtzeit buchen.
           </p>
 
           {/* 3-field hero search */}
@@ -121,34 +121,6 @@ export default function Home() {
             <Stat n={stats?.totalCategories ? `${stats.totalCategories}` : "47"} l="Branchen" />
             <Stat n="∅ 23%" l="Kundensparnis" />
             <Stat n="30 Sek." l="KI-Angebot" />
-          </div>
-        </div>
-      </section>
-
-      {/* GEBÄUDECHECK & FÖRDERUNG */}
-      <section className="bg-[var(--klard-bg)] py-12 px-4 sm:px-8 border-b border-border">
-        <div className="max-w-[1100px] mx-auto">
-          <div className="text-center mb-6">
-            <span className="inline-block bg-[var(--klard-teal-l)] text-[var(--klard-teal-d)] text-[0.7rem] font-bold tracking-wider uppercase px-3 py-1 rounded-full mb-3">
-              Kostenlos · ohne Anmeldung
-            </span>
-            <h2 className="font-serif text-3xl font-semibold text-foreground">
-              Wie effizient ist Ihr Gebäude?
-            </h2>
-            <p className="text-muted-foreground text-sm mt-2 max-w-lg mx-auto leading-relaxed">
-              Mit der Förderschiene erhalten Sie eine Schnelleinschätzung der
-              Energieklasse, passende Förderprogramme und konkrete Sanierungs­empfehlungen
-              — danach den passenden Energieberater in Ihrer Nähe direkt buchen.
-            </p>
-          </div>
-          <div className="text-center">
-            <a
-              href="/foerderschiene/"
-              className="inline-flex items-center gap-2 rounded-full bg-[var(--klard-teal-d)] hover:bg-[var(--klard-teal)] text-white text-sm font-semibold px-6 py-3 transition-colors"
-              data-testid="button-home-foerderschiene"
-            >
-              Zum Gebäudecheck & Förderung
-            </a>
           </div>
         </div>
       </section>
@@ -255,7 +227,7 @@ export default function Home() {
             So funktioniert Klard
           </span>
           <h2 className="font-serif text-3xl md:text-4xl font-semibold text-foreground">
-            Buchen wie beim Arzt – für alle Berater
+            Termine in Echtzeit – für alle Berater
           </h2>
           <p className="text-muted-foreground text-sm mt-3 max-w-md mx-auto leading-relaxed">
             Kein Anruf. Kein Warten auf Angebote. Einfach suchen, vergleichen und direkt buchen.
@@ -280,7 +252,7 @@ export default function Home() {
 
       {/* TRUST / CTA STRIP */}
       <section className="bg-[var(--klard-teal-p)] border-y border-[var(--klard-teal-l)] py-12 px-4 sm:px-8">
-        <div className="max-w-[1100px] mx-auto grid md:grid-cols-3 gap-8 text-center md:text-left">
+        <div className="max-w-[760px] mx-auto grid md:grid-cols-2 gap-8 text-center md:text-left">
           <div className="flex md:flex-row flex-col items-center md:items-start gap-3">
             <div className="w-11 h-11 rounded-full bg-white border border-[var(--klard-teal-l)] flex items-center justify-center shrink-0">
               <ShieldCheck className="h-5 w-5 text-[var(--klard-teal-d)]" />
@@ -297,24 +269,6 @@ export default function Home() {
             <div>
               <h4 className="font-sans font-bold text-sm text-foreground mb-1">Live-Kalender</h4>
               <p className="text-xs text-[var(--klard-mid)] leading-relaxed">Verfügbare Termine in Echtzeit – inkl. iCal-Sync.</p>
-            </div>
-          </div>
-          <div className="flex md:flex-row flex-col items-center md:items-start gap-3">
-            <div className="w-11 h-11 rounded-full bg-white border border-[var(--klard-teal-l)] flex items-center justify-center shrink-0">
-              <UserPlus className="h-5 w-5 text-[var(--klard-teal-d)]" />
-            </div>
-            <div>
-              <h4 className="font-sans font-bold text-sm text-foreground mb-1">Anbieter werden</h4>
-              <p className="text-xs text-[var(--klard-mid)] leading-relaxed">
-                Kostenlos starten – nur 9 % Vermittlungsgebühr.{" "}
-                <a
-                  href="/berater/"
-                  className="text-primary font-semibold hover:underline"
-                  data-testid="link-become-provider"
-                >
-                  Jetzt registrieren →
-                </a>
-              </p>
             </div>
           </div>
         </div>

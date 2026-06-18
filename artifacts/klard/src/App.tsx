@@ -10,6 +10,7 @@ import {
   useGetMyRole,
   getGetMyRoleQueryKey,
   useClaimMyRole,
+  useGetMyCustomerProfile,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/toaster";
@@ -23,6 +24,7 @@ import BookingConfirmation from "./pages/BookingConfirmation";
 import MyBookings from "./pages/MyBookings";
 import Admin from "./pages/Admin";
 import ImmobilienKundeOnboarding from "./pages/ImmobilienKundeOnboarding";
+import CustomerOnboarding from "./pages/CustomerOnboarding";
 import Impressum from "./pages/legal/Impressum";
 import AGB from "./pages/legal/AGB";
 import Datenschutz from "./pages/legal/Datenschutz";
@@ -135,11 +137,15 @@ function SignInPage() {
 
 function SignUpPage() {
   // Klard is customer-only. Berater register in the dedicated provider app
-  // (/berater/). New customers go to where they were headed (a deep-linked
-  // booking via ?redirect=) or to the search — no forced account-type chooser.
+  // (/berater/). New customers are sent to the required /willkommen onboarding,
+  // carrying any booking deep-link (?redirect=) through to resume afterwards.
   const [cfg] = useState(() => {
     const redirect = readRedirectParam();
-    const redirectUrl = redirect ? `${basePath}${redirect}` : `${basePath}/search`;
+    // New customers always pass through the required onboarding (/willkommen),
+    // which collects the postal address before resuming any booking deep-link.
+    const redirectUrl = `${basePath}/willkommen${
+      redirect ? `?redirect=${encodeURIComponent(redirect)}` : ""
+    }`;
     return {
       redirectUrl,
       signInUrl: `${basePath}/sign-in${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ""}`,
@@ -247,12 +253,47 @@ function CustomerRoleGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Ensures the signed-in customer has completed the required registration
+// profile (postal address). If not, bounces to the /willkommen onboarding,
+// preserving the intended destination so booking deep-links resume afterwards.
+function CustomerProfileGate({ children }: { children: React.ReactNode }) {
+  const [location] = useLocation();
+  const { data: profile, isLoading, isError, refetch, isFetching } =
+    useGetMyCustomerProfile();
+
+  if (isLoading) return <FullscreenLoader />;
+  // Fail CLOSED: the profile is required, so an API error must block access (with
+  // a retry) rather than silently letting the user through without one.
+  if (isError) {
+    return (
+      <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 bg-background px-4 text-center">
+        <p className="max-w-sm text-sm text-muted-foreground">
+          Ihr Profil konnte nicht geladen werden. Bitte versuchen Sie es erneut.
+        </p>
+        <Button onClick={() => refetch()} disabled={isFetching}>
+          {isFetching ? "Wird geladen…" : "Erneut versuchen"}
+        </Button>
+      </div>
+    );
+  }
+  if (profile == null) {
+    const redirectTo =
+      location && location !== "/"
+        ? `/willkommen?redirect=${encodeURIComponent(location)}`
+        : "/willkommen";
+    return <Redirect to={redirectTo} />;
+  }
+  return <>{children}</>;
+}
+
 function HomeRedirect() {
   return (
     <>
       <Show when="signed-in">
         <CustomerRoleGate>
-          <Redirect to="/search" />
+          <CustomerProfileGate>
+            <Redirect to="/search" />
+          </CustomerProfileGate>
         </CustomerRoleGate>
       </Show>
       <Show when="signed-out">
@@ -266,6 +307,30 @@ function AuthRoute({ component: Component }: { component: React.ComponentType })
   const [location] = useLocation();
   // Preserve the intended destination so a deep-linked booking returns the
   // customer exactly where they were after signing in.
+  const redirectTo =
+    location && location !== "/"
+      ? `/sign-in?redirect=${encodeURIComponent(location)}`
+      : "/sign-in";
+  return (
+    <>
+      <Show when="signed-in">
+        <CustomerRoleGate>
+          <CustomerProfileGate>
+            <Component />
+          </CustomerProfileGate>
+        </CustomerRoleGate>
+      </Show>
+      <Show when="signed-out">
+        <Redirect to={redirectTo} />
+      </Show>
+    </>
+  );
+}
+
+// Like AuthRoute but WITHOUT the profile gate — used by /willkommen itself so
+// the onboarding page never redirects to itself.
+function ProfilelessAuthRoute({ component: Component }: { component: React.ComponentType }) {
+  const [location] = useLocation();
   const redirectTo =
     location && location !== "/"
       ? `/sign-in?redirect=${encodeURIComponent(location)}`
@@ -319,6 +384,9 @@ function ClerkProviderWithRoutes() {
           </Route>
           <Route path="/admin">
             {() => <AuthRoute component={Admin} />}
+          </Route>
+          <Route path="/willkommen">
+            {() => <ProfilelessAuthRoute component={CustomerOnboarding} />}
           </Route>
           <Route path="/immobilien/onboarding">
             {() => <AuthRoute component={ImmobilienKundeOnboarding} />}

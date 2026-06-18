@@ -67,9 +67,6 @@ export function Navbar() {
           <Link href="/search" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-search">
             Berater finden
           </Link>
-          <a href="/foerderschiene/" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-gebaeudecheck">
-            Gebäudecheck
-          </a>
           <a href="/berater/" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-berater-werden">
             Für Berater
           </a>
@@ -147,7 +144,6 @@ export function Navbar() {
         <div className="md:hidden border-t border-border bg-white">
           <nav className="flex flex-col px-4 py-3 gap-1">
             <Link href="/search" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Berater finden</Link>
-            <a href="/foerderschiene/" className="py-2 text-sm text-foreground">Gebäudecheck</a>
             <a href="/berater/" className="py-2 text-sm text-foreground">Für Berater</a>
             {isSignedIn && (
               <>

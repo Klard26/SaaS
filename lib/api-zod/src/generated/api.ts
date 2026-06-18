@@ -1140,6 +1140,54 @@ export const UpsertMyImmobilienKundeResponse = zod.object({
 });
 
 /**
+ * @summary Current user's basic customer profile (address + preferences)
+ */
+export const GetMyCustomerProfileResponse = zod.union([
+  zod.object({
+    userId: zod.string(),
+    strasse: zod.string(),
+    hausnummer: zod.string(),
+    plz: zod.string(),
+    ort: zod.string(),
+    interessen: zod.array(zod.string()),
+    quelle: zod.string().nullish(),
+    createdAt: zod.coerce.date(),
+    updatedAt: zod.coerce.date(),
+  }),
+  zod.null(),
+]);
+
+/**
+ * @summary Create or update the current user's basic customer profile
+ */
+
+export const upsertMyCustomerProfileBodyInteressenMax = 3;
+
+export const UpsertMyCustomerProfileBody = zod.object({
+  strasse: zod.string().min(1),
+  hausnummer: zod.string().min(1),
+  plz: zod.string().min(1),
+  ort: zod.string().min(1),
+  interessen: zod
+    .array(zod.string())
+    .max(upsertMyCustomerProfileBodyInteressenMax)
+    .optional(),
+  quelle: zod.string().nullish(),
+});
+
+export const UpsertMyCustomerProfileResponse = zod.object({
+  userId: zod.string(),
+  strasse: zod.string(),
+  hausnummer: zod.string(),
+  plz: zod.string(),
+  ort: zod.string(),
+  interessen: zod.array(zod.string()),
+  quelle: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
  * @summary Get the authenticated provider's invoice settings
  */
 export const GetMyInvoiceSettingsResponse = zod.object({

@@ -40,6 +40,8 @@ import type {
   ClaimRoleBody,
   ConnectOnboardingLink,
   ConnectStatus,
+  CustomerProfile,
+  CustomerProfileInput,
   DeleteMyAccount200,
   DeleteTimeSlotParams,
   EnergieausweisOrder,
@@ -4712,6 +4714,168 @@ export const useUpsertMyImmobilienKunde = <
   TContext
 > => {
   return useMutation(getUpsertMyImmobilienKundeMutationOptions(options));
+};
+
+/**
+ * @summary Current user's basic customer profile (address + preferences)
+ */
+export const getGetMyCustomerProfileUrl = () => {
+  return `/api/customer-profile/me`;
+};
+
+export const getMyCustomerProfile = async (
+  options?: RequestInit,
+): Promise<CustomerProfile | null> => {
+  return customFetch<CustomerProfile | null>(getGetMyCustomerProfileUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMyCustomerProfileQueryKey = () => {
+  return [`/api/customer-profile/me`] as const;
+};
+
+export const getGetMyCustomerProfileQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMyCustomerProfile>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMyCustomerProfile>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMyCustomerProfileQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getMyCustomerProfile>>
+  > = ({ signal }) => getMyCustomerProfile({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMyCustomerProfile>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMyCustomerProfileQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMyCustomerProfile>>
+>;
+export type GetMyCustomerProfileQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Current user's basic customer profile (address + preferences)
+ */
+
+export function useGetMyCustomerProfile<
+  TData = Awaited<ReturnType<typeof getMyCustomerProfile>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMyCustomerProfile>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMyCustomerProfileQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create or update the current user's basic customer profile
+ */
+export const getUpsertMyCustomerProfileUrl = () => {
+  return `/api/customer-profile/me`;
+};
+
+export const upsertMyCustomerProfile = async (
+  customerProfileInput: CustomerProfileInput,
+  options?: RequestInit,
+): Promise<CustomerProfile> => {
+  return customFetch<CustomerProfile>(getUpsertMyCustomerProfileUrl(), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(customerProfileInput),
+  });
+};
+
+export const getUpsertMyCustomerProfileMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof upsertMyCustomerProfile>>,
+    TError,
+    { data: BodyType<CustomerProfileInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof upsertMyCustomerProfile>>,
+  TError,
+  { data: BodyType<CustomerProfileInput> },
+  TContext
+> => {
+  const mutationKey = ["upsertMyCustomerProfile"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof upsertMyCustomerProfile>>,
+    { data: BodyType<CustomerProfileInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return upsertMyCustomerProfile(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpsertMyCustomerProfileMutationResult = NonNullable<
+  Awaited<ReturnType<typeof upsertMyCustomerProfile>>
+>;
+export type UpsertMyCustomerProfileMutationBody =
+  BodyType<CustomerProfileInput>;
+export type UpsertMyCustomerProfileMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create or update the current user's basic customer profile
+ */
+export const useUpsertMyCustomerProfile = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof upsertMyCustomerProfile>>,
+    TError,
+    { data: BodyType<CustomerProfileInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof upsertMyCustomerProfile>>,
+  TError,
+  { data: BodyType<CustomerProfileInput> },
+  TContext
+> => {
+  return useMutation(getUpsertMyCustomerProfileMutationOptions(options));
 };
 
 /**

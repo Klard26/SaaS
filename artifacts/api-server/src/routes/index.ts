@@ -21,6 +21,7 @@ import gebaeudecheckRouter from "./gebaeudecheck";
 import foerderschieneRouter from "./foerderschiene";
 import foerderpilotRouter from "./foerderpilot";
 import immobilienKundeRouter from "./immobilienKunde";
+import customerProfileRouter from "./customerProfile";
 import offersRouter from "./offers";
 import accountRouter from "./account";
 
@@ -48,6 +49,7 @@ router.use(gebaeudecheckRouter);
 router.use(foerderschieneRouter);
 router.use(foerderpilotRouter);
 router.use(immobilienKundeRouter);
+router.use(customerProfileRouter);
 router.use(offersRouter);
 router.use(accountRouter);
 

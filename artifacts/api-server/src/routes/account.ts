@@ -7,6 +7,7 @@ import {
   bookingsTable,
   reviewsTable,
   immobilienKundeTable,
+  customerProfileTable,
   verwalterTable,
   assessmentsTable,
   offerAcceptancesTable,
@@ -186,6 +187,7 @@ router.delete("/account/me", async (req, res): Promise<void> => {
       await tx.delete(reviewsTable).where(eq(reviewsTable.customerId, userId));
       await tx.delete(bookingsTable).where(eq(bookingsTable.customerId, userId));
       await tx.delete(immobilienKundeTable).where(eq(immobilienKundeTable.userId, userId));
+      await tx.delete(customerProfileTable).where(eq(customerProfileTable.userId, userId));
       await tx.delete(offerAcceptancesTable).where(eq(offerAcceptancesTable.userId, userId));
       await tx.delete(assessmentsTable).where(eq(assessmentsTable.userId, userId));
       await tx.delete(gebaeudecheckOrdersTable).where(eq(gebaeudecheckOrdersTable.userId, userId));

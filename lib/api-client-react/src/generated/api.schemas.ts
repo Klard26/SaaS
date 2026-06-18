@@ -1172,6 +1172,34 @@ export interface ImmobilienKunde {
   updatedAt: string;
 }
 
+export interface CustomerProfileInput {
+  /** @minLength 1 */
+  strasse: string;
+  /** @minLength 1 */
+  hausnummer: string;
+  /** @minLength 1 */
+  plz: string;
+  /** @minLength 1 */
+  ort: string;
+  /** @maxItems 3 */
+  interessen?: string[];
+  /** @nullable */
+  quelle?: string | null;
+}
+
+export interface CustomerProfile {
+  userId: string;
+  strasse: string;
+  hausnummer: string;
+  plz: string;
+  ort: string;
+  interessen: string[];
+  /** @nullable */
+  quelle?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface InvoiceSettings {
   kleinunternehmer: boolean;
   /** Numeric percentage as string (e.g. '19.00') */

@@ -48,6 +48,8 @@ export * from "./claimRoleBody";
 export * from "./claimRoleBodyRole";
 export * from "./connectOnboardingLink";
 export * from "./connectStatus";
+export * from "./customerProfile";
+export * from "./customerProfileInput";
 export * from "./deleteMyAccount200";
 export * from "./deleteTimeSlotParams";
 export * from "./energieausweisOrder";

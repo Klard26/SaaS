@@ -1011,6 +1011,38 @@ paths:
               schema:
                 $ref: "#/components/schemas/ImmobilienKunde"
 
+  /customer-profile/me:
+    get:
+      operationId: getMyCustomerProfile
+      tags: [customerProfile]
+      summary: Current user's basic customer profile (address + preferences)
+      responses:
+        "200":
+          description: The profile, or null if none exists
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/CustomerProfile"
+                  - type: "null"
+    put:
+      operationId: upsertMyCustomerProfile
+      tags: [customerProfile]
+      summary: Create or update the current user's basic customer profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerProfileInput"
+      responses:
+        "200":
+          description: The saved profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerProfile"
+
   /providers/me/invoice-settings:
     get:
       operationId: getMyInvoiceSettings
@@ -2484,6 +2516,36 @@ components:
         wohneinheitenGesamt: { type: ["integer", "null"] }
         createdAt:       { type: string, format: date-time }
         updatedAt:       { type: string, format: date-time }
+
+    CustomerProfileInput:
+      type: object
+      required: [strasse, hausnummer, plz, ort]
+      properties:
+        strasse:    { type: string, minLength: 1 }
+        hausnummer: { type: string, minLength: 1 }
+        plz:        { type: string, minLength: 1 }
+        ort:        { type: string, minLength: 1 }
+        interessen:
+          type: array
+          maxItems: 3
+          items: { type: string }
+        quelle:     { type: ["string", "null"] }
+
+    CustomerProfile:
+      type: object
+      required: [userId, strasse, hausnummer, plz, ort, interessen, createdAt, updatedAt]
+      properties:
+        userId:     { type: string }
+        strasse:    { type: string }
+        hausnummer: { type: string }
+        plz:        { type: string }
+        ort:        { type: string }
+        interessen:
+          type: array
+          items: { type: string }
+        quelle:     { type: ["string", "null"] }
+        createdAt:  { type: string, format: date-time }
+        updatedAt:  { type: string, format: date-time }
 
     InvoiceSettings:
       type: object
