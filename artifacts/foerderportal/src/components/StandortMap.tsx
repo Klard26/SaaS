@@ -23,7 +23,7 @@ export function StandortMap({ lat, lng, label, zoom = 16, className }: Props) {
       zoom,
       scrollWheelZoom: false,
     });
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    L.tileLayer("/api/geo/tiles/{z}/{x}/{y}", {
       maxZoom: 19,
       attribution: "&copy; OpenStreetMap-Mitwirkende",
     }).addTo(map);

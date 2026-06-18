@@ -12,42 +12,6 @@ export interface AddressResult {
   label: string;
 }
 
-interface PhotonFeature {
-  geometry: { coordinates: [number, number] };
-  properties: {
-    name?: string;
-    street?: string;
-    housenumber?: string;
-    postcode?: string;
-    city?: string;
-    district?: string;
-    state?: string;
-    country?: string;
-    countrycode?: string;
-    osm_value?: string;
-  };
-}
-
-function buildLabel(p: PhotonFeature["properties"]): string {
-  const streetPart = [p.street ?? p.name, p.housenumber].filter(Boolean).join(" ");
-  const cityPart = [p.postcode, p.city ?? p.district].filter(Boolean).join(" ");
-  return [streetPart, cityPart].filter(Boolean).join(", ");
-}
-
-function toResult(f: PhotonFeature): AddressResult {
-  const p = f.properties;
-  const [lng, lat] = f.geometry.coordinates;
-  return {
-    strasse: p.street ?? (p.osm_value === "residential" ? p.name : undefined),
-    hausnummer: p.housenumber,
-    plz: p.postcode,
-    city: p.city ?? p.district,
-    lat,
-    lng,
-    label: buildLabel(p),
-  };
-}
-
 interface Props {
   value: string;
   onChange: (text: string) => void;
@@ -79,19 +43,11 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder, te
     const ctrl = new AbortController();
     const t = setTimeout(async () => {
       try {
-        const url =
-          "https://photon.komoot.io/api/?lang=de&limit=6&lat=51.16&lon=10.45&q=" +
-          encodeURIComponent(q);
+        const url = "/api/geo/search?limit=6&q=" + encodeURIComponent(q);
         const res = await fetch(url, { signal: ctrl.signal });
-        if (!res.ok) throw new Error(`Photon ${res.status}`);
-        const json = (await res.json()) as { features?: PhotonFeature[] };
-        const feats = (json.features ?? []).filter(
-          (f) =>
-            f.properties.countrycode === "DE" ||
-            f.properties.country === "Deutschland" ||
-            f.properties.country === "Germany",
-        );
-        const mapped = feats.map(toResult).filter((r) => r.label.length > 0);
+        if (!res.ok) throw new Error(`Geo search ${res.status}`);
+        const json = (await res.json()) as { results?: AddressResult[] };
+        const mapped = (json.results ?? []).filter((r) => r.label.length > 0);
         setResults(mapped);
         setOpen(mapped.length > 0);
         setActive(-1);

@@ -1,13 +1,16 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { EnergyBar } from "@/components/EnergieSchnellcheck";
 import { ReportPreviewDemo } from "@/components/ReportPreviewDemo";
+import { AddressAutocomplete, type AddressResult } from "@/components/AddressAutocomplete";
+import { StandortMap } from "@/components/StandortMap";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft, ArrowRight, Check, Loader2, Lock, ShieldCheck, Mail, FileDown,
+  MapPin,
 } from "lucide-react";
 import {
   AGE, BT, HT, INS, WI, ZUSTAND, ageBand,
@@ -173,11 +176,18 @@ export default function Gebaeudecheck() {
   const { toast } = useToast();
   const checkout = useCreateReportCheckout();
   const [d, setD] = useState<BuildingInput>(DEFAULT);
+  const [adresse, setAdresse] = useState("");
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  // Synchronous mirror of the last selected address label, so editing the text
+  // after a selection reliably clears the (now stale) selection.
+  const selectedLabelRef = useRef("");
+  // step 0 = Standort (Adresse + Karte), steps 1..STEPS.length = Optionsschritte.
   const [step, setStep] = useState(0);
   const [pending, setPending] = useState(false);
 
-  const onResult = step >= STEPS.length;
-  const total = STEPS.length;
+  const total = STEPS.length + 1;
+  const onResult = step > STEPS.length;
+  const onStandort = step === 0;
   const progress = onResult ? 100 : Math.round((step / total) * 100);
 
   const energie = useMemo(() => (onResult ? calcEnergie(d) : null), [d, onResult]);
@@ -187,12 +197,42 @@ export default function Gebaeudecheck() {
     setStep((s) => s + 1);
   }
 
+  function onAddressSelect(r: AddressResult) {
+    selectedLabelRef.current = r.label;
+    setD((p) => ({
+      ...p,
+      plz: r.plz ?? "",
+      city: r.city ?? "",
+      strasse: r.strasse ?? "",
+      hausnummer: r.hausnummer ?? "",
+    }));
+    setCoords({ lat: r.lat, lng: r.lng });
+  }
+
+  function onAddressChange(text: string) {
+    setAdresse(text);
+    // If the user edits the text after picking a suggestion, the selection is no
+    // longer valid — drop it so "Weiter" stays gated until they re-select.
+    if (text !== selectedLabelRef.current && (coords !== null || d.plz !== "")) {
+      selectedLabelRef.current = "";
+      setCoords(null);
+      setD((p) => ({ ...p, plz: "", city: "", strasse: "", hausnummer: "" }));
+    }
+  }
+
+  function buildAdresseString(): string | null {
+    const street = [d.strasse, d.hausnummer].filter(Boolean).join(" ");
+    const city = [d.plz, d.city].filter(Boolean).join(" ");
+    const full = [street, city].filter(Boolean).join(", ");
+    return full.length > 0 ? full : adresse.trim() || null;
+  }
+
   async function handleBuy() {
     setPending(true);
     try {
       const res = await checkout.mutateAsync({
         data: {
-          adresse: null,
+          adresse: buildAdresseString(),
           profil: d as unknown as Record<string, unknown>,
         },
       });
@@ -227,9 +267,10 @@ export default function Gebaeudecheck() {
             Energieklasse Ihrer Immobilie — in unter einer Minute
           </h1>
           <p className="text-muted-foreground text-sm max-w-2xl leading-relaxed">
-            Beantworten Sie ein paar einfache Fragen per Klick — kein Tippen, keine
-            Anmeldung. Am Ende sehen Sie Ihre Energieklasse kostenlos. Den ausführlichen
-            Gebäudereport als PDF erhalten Sie anschließend ganz ohne Konto.
+            Geben Sie die Anschrift des Gebäudes ein und beantworten Sie ein paar
+            einfache Fragen per Klick — keine Anmeldung. Am Ende sehen Sie Ihre
+            Energieklasse kostenlos. Den ausführlichen Gebäudereport als PDF erhalten
+            Sie anschließend ganz ohne Konto.
           </p>
         </div>
       </section>
@@ -257,12 +298,23 @@ export default function Gebaeudecheck() {
             energie={energie!}
             pending={pending}
             onBuy={handleBuy}
-            onBack={() => setStep(STEPS.length - 1)}
+            onBack={() => setStep(STEPS.length)}
+          />
+        ) : onStandort ? (
+          <StandortView
+            value={adresse}
+            coords={coords}
+            selected={d.plz !== "" || coords !== null}
+            label={[d.strasse, d.hausnummer].filter(Boolean).join(" ")}
+            city={[d.plz, d.city].filter(Boolean).join(" ")}
+            onChange={onAddressChange}
+            onSelect={onAddressSelect}
+            onNext={() => setStep(1)}
           />
         ) : (
           <StepView
-            step={STEPS[step]!}
-            current={STEPS[step]!.selectedId(d)}
+            step={STEPS[step - 1]!}
+            current={STEPS[step - 1]!.selectedId(d)}
             canGoBack={step > 0}
             onBack={() => setStep((s) => Math.max(0, s - 1))}
             onPick={pick}
@@ -271,6 +323,84 @@ export default function Gebaeudecheck() {
       </section>
 
       <Footer />
+    </div>
+  );
+}
+
+function StandortView({
+  value, coords, selected, label, city, onChange, onSelect, onNext,
+}: {
+  value: string;
+  coords: { lat: number; lng: number } | null;
+  selected: boolean;
+  label: string;
+  city: string;
+  onChange: (text: string) => void;
+  onSelect: (r: AddressResult) => void;
+  onNext: () => void;
+}) {
+  return (
+    <div>
+      <h2 className="font-serif text-2xl font-semibold text-foreground mb-1">
+        Wo steht das Gebäude?
+      </h2>
+      <p className="text-sm text-muted-foreground mb-6">
+        Geben Sie die Anschrift ein und wählen Sie den passenden Vorschlag. Der
+        Standort fließt über die Klimazone (Heizgradtage) in die Energieberechnung ein.
+      </p>
+
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-1.5">
+            Anschrift des Gebäudes
+          </label>
+          <AddressAutocomplete
+            value={value}
+            onChange={onChange}
+            onSelect={onSelect}
+            placeholder="Straße und Hausnummer eingeben…"
+            testId="input-adresse"
+          />
+        </div>
+
+        {coords && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm text-foreground">
+              <MapPin className="h-4 w-4 text-[var(--klard-teal-d)] shrink-0" />
+              <span className="font-medium">
+                {[label, city].filter(Boolean).join(", ") || "Standort ausgewählt"}
+              </span>
+            </div>
+            <StandortMap
+              lat={coords.lat}
+              lng={coords.lng}
+              label={[label, city].filter(Boolean).join(", ") || undefined}
+              className="h-[280px] w-full rounded-lg border border-border"
+            />
+            <p className="text-xs text-muted-foreground">
+              Standortanalyse über unsere eigene Karten-API — datenschonend und
+              unabhängig von externen Diensten.
+            </p>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-6 flex items-center justify-between">
+        <span className="text-xs text-muted-foreground">
+          {selected
+            ? "Adresse erkannt — weiter zu den Gebäudefragen"
+            : "Bitte wählen Sie eine Adresse aus der Vorschlagsliste"}
+        </span>
+        <Button
+          onClick={onNext}
+          disabled={!selected}
+          data-testid="button-standort-next"
+          className="bg-[var(--klard-teal)] hover:bg-[var(--klard-teal-d)] text-white"
+        >
+          Weiter
+          <ArrowRight className="h-4 w-4 ml-1.5" />
+        </Button>
+      </div>
     </div>
   );
 }

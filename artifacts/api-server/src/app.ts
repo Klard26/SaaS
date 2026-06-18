@@ -10,6 +10,7 @@ import {
 } from "./middlewares/clerkProxyMiddleware";
 import { apiLimiter } from "./middlewares/rateLimit";
 import router from "./routes";
+import geoRouter from "./routes/geo";
 import webhookRouter from "./routes/webhook";
 import { logger } from "./lib/logger";
 
@@ -48,6 +49,10 @@ app.use("/api", webhookRouter);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Map tile + geocoding proxy. Mounted BEFORE the global API limiter because a
+// single map view fetches many tiles; it carries its own generous limiter.
+app.use("/api", geoRouter);
 
 app.use(
   clerkMiddleware((req) => ({
