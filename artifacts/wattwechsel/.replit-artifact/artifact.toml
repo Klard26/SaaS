@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/wattwechsel/"
-title = "WattWechsel – Energiewechsel-Cockpit"
+title = "enerwatt24 – Energiewechsel-Cockpit"
 version = "1.0.0"
 id = "artifacts/wattwechsel"
 router = "path"

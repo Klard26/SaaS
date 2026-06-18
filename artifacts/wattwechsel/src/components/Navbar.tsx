@@ -31,7 +31,7 @@ export function Navbar() {
           <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-[var(--klard-green)]">
             <Zap className="h-4 w-4 text-white" aria-hidden="true" />
           </span>
-          <span className="klard-logo text-xl">Watt<span>Wechsel</span></span>
+          <span className="klard-logo text-xl">ener<span>watt24</span></span>
         </Link>
 
         <nav className="hidden lg:flex items-center gap-5 text-sm font-medium ml-auto">

@@ -17,7 +17,7 @@ const FEATURES = [
   {
     icon: ScanSearch,
     title: "KI-Tarifanalyse",
-    text: "Für jeden Zählpunkt vergleicht WattWechsel den Altvertrag mit dem gesamten Markt und ermittelt die realisierbare Ersparnis – neutral und nachvollziehbar.",
+    text: "Für jeden Zählpunkt vergleicht enerwatt24 den Altvertrag mit dem gesamten Markt und ermittelt die realisierbare Ersparnis – neutral und nachvollziehbar.",
   },
   {
     icon: FileSignature,
@@ -38,7 +38,7 @@ const FEATURES = [
 
 const STEPS = [
   { n: "1", title: "Portfolio anlegen", text: "Objekte, Zählpunkte und laufende Verträge erfassen – manuell oder per Import." },
-  { n: "2", title: "Vollmacht festlegen", text: "Pro Objekt entscheiden Sie, ob WattWechsel nur vorschlägt oder selbst wechselt." },
+  { n: "2", title: "Vollmacht festlegen", text: "Pro Objekt entscheiden Sie, ob enerwatt24 nur vorschlägt oder selbst wechselt." },
   { n: "3", title: "KI analysiert", text: "Neutrale Marktanalyse je Zählpunkt mit konkreter Euro-Ersparnis und Begründung." },
   { n: "4", title: "Sie behalten die Kontrolle", text: "Freigeben, ablehnen oder widersprechen – alles dokumentiert im Cockpit." },
 ];
@@ -58,14 +58,14 @@ export default function EnergieLanding() {
         <div className="max-w-[1100px] mx-auto px-4 sm:px-8 py-16 sm:py-24">
           <div className="inline-flex items-center gap-2 rounded-full bg-[var(--klard-green-l)] px-3 py-1 text-xs font-semibold text-[var(--klard-green)] mb-5">
             <Zap className="h-3.5 w-3.5" aria-hidden="true" />
-            WattWechsel für die Wohnungswirtschaft
+            enerwatt24 für die Wohnungswirtschaft
           </div>
           <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-foreground max-w-3xl leading-[1.1]">
             Energiekosten senken für Ihr gesamtes Portfolio –{" "}
             <span className="text-[var(--klard-green)]">KI-gestützt und neutral.</span>
           </h1>
           <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-2xl leading-relaxed">
-            WattWechsel ist die neutrale Energiewechsel-Plattform für Hausverwalter und
+            enerwatt24 ist die neutrale Energiewechsel-Plattform für Hausverwalter und
             Bestandshalter. Analysieren, freigeben, wechseln – rechtssicher per Vollmacht,
             mit lückenlosem Audit-Trail für jeden Zählpunkt.
           </p>
@@ -116,7 +116,7 @@ export default function EnergieLanding() {
       {/* How it works */}
       <section className="bg-[var(--klard-bg)] border-y border-border">
         <div className="max-w-[1100px] mx-auto px-4 sm:px-8 py-16 w-full">
-          <h2 className="text-2xl font-bold text-foreground text-center">So funktioniert WattWechsel</h2>
+          <h2 className="text-2xl font-bold text-foreground text-center">So funktioniert enerwatt24</h2>
           <p className="mt-2 text-center text-muted-foreground max-w-xl mx-auto">
             In vier Schritten vom unübersichtlichen Vertragsbestand zum optimierten Portfolio.
           </p>

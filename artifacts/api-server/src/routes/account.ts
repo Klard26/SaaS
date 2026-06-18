@@ -75,7 +75,7 @@ router.post("/account/role", async (req, res): Promise<void> => {
 /**
  * Permanently delete the authenticated user's entire Klard account — provider
  * profile (Berater), customer profile (Kunde), all bookings, reviews and the
- * Energiewechsel (WattWechsel) portfolio — and the Clerk auth user.
+ * Energiewechsel (enerwatt24) portfolio — and the Clerk auth user.
  *
  * This is the standard self-service "Konto löschen" flow: it removes every
  * trace of the user across roles, then deletes the login itself so they are
@@ -195,7 +195,7 @@ router.delete("/account/me", async (req, res): Promise<void> => {
       // Förderschiene (Gebäudereport + Energieausweis) orders/reports.
       await tx.delete(foerderschieneReportsTable).where(eq(foerderschieneReportsTable.userId, userId));
       await tx.delete(energieausweisOrdersTable).where(eq(energieausweisOrdersTable.userId, userId));
-      // Energiewechsel (WattWechsel) portfolio cascades off verwalter.
+      // Energiewechsel (enerwatt24) portfolio cascades off verwalter.
       await tx.delete(verwalterTable).where(eq(verwalterTable.clerkUserId, userId));
       // Strict-role-separation record (claimed customer | provider role).
       await tx.delete(userRolesTable).where(eq(userRolesTable.clerkUserId, userId));

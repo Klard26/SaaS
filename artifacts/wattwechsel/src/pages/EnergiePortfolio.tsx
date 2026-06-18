@@ -63,7 +63,7 @@ export default function EnergiePortfolio() {
             <div>
               <h1 className="text-2xl font-bold text-foreground" data-testid="text-firma">{verwalter.firma}</h1>
               <p className="text-sm text-muted-foreground">
-                WattWechsel Cockpit ·{" "}
+                enerwatt24 Cockpit ·{" "}
                 {VERWALTER_TYP_LABELS[verwalter.typ as VerwalterTyp] ?? verwalter.typ}
               </p>
             </div>

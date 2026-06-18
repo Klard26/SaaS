@@ -51,7 +51,7 @@ export function VollmachtenTab({ objekte }: { objekte: PortfolioObjekt[] }) {
         <div>
           <h2 className="text-lg font-semibold text-foreground">Vollmachten</h2>
           <p className="text-sm text-muted-foreground">
-            Legen Sie fest, in welchem Umfang WattWechsel für Sie handeln darf. Jederzeit widerrufbar.
+            Legen Sie fest, in welchem Umfang enerwatt24 für Sie handeln darf. Jederzeit widerrufbar.
           </p>
         </div>
         <VollmachtDialog objekte={objekte} />

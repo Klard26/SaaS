@@ -9,7 +9,7 @@ import {
 import { eq } from "drizzle-orm";
 
 /**
- * Seeds the WattWechsel demo: a realistic tariff feed (stands in for the
+ * Seeds the enerwatt24 demo: a realistic tariff feed (stands in for the
  * live 300+ supplier feed) plus an optional demo portfolio.
  *
  * Usage:

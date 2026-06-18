@@ -1,5 +1,5 @@
 /**
- * WattWechsel – gemeinsame Typen für Energiewechsel-Logik.
+ * enerwatt24 – gemeinsame Typen für Energiewechsel-Logik.
  * Compliance-kritische Status & Modi an einer Stelle definiert.
  */
 

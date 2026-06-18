@@ -13,7 +13,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
 /**
- * WattWechsel – Energiewechsel für die Wohnungswirtschaft.
+ * enerwatt24 – Energiewechsel für die Wohnungswirtschaft.
  * Portfolio-Logik: Verwalter → Objekt → Zählpunkt → Vertrag.
  * Compliance-by-Design: Vollmacht granular, widerrufbar, auditierbar.
  */

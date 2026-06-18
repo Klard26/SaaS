@@ -288,7 +288,7 @@ async function seedFullAccount(userId: string): Promise<{ providerId: number }> 
     intake: { x: 1 },
   });
 
-  // --- Energiewechsel (WattWechsel) portfolio (cascades off verwalter) ----
+  // --- Energiewechsel (enerwatt24) portfolio (cascades off verwalter) ----
   const [verwalter] = await db
     .insert(verwalterTable)
     .values({ clerkUserId: userId, firma: "Lösch Hausverwaltung" })
@@ -487,7 +487,7 @@ describe("DELETE /api/account/me — orphan protection", () => {
       expect(res.body).toEqual({ deleted: true });
 
       // Every user-keyed table (incl. cascade-only invoices/blocked_slots and the
-      // verwalter-cascaded WattWechsel portfolio) is now empty for this user.
+      // verwalter-cascaded enerwatt24 portfolio) is now empty for this user.
       expect(await countAllRows(userId, providerId)).toBe(0);
 
       // GDPR: every email_log row holding this user's email address (recipient)
@@ -496,7 +496,7 @@ describe("DELETE /api/account/me — orphan protection", () => {
       expect(await countEmailLogRows(userId)).toBe(0);
       expect(clerkSpies.getUser).toHaveBeenCalledWith(userId);
 
-      // WattWechsel portfolio rows cascaded away with the verwalter.
+      // enerwatt24 portfolio rows cascaded away with the verwalter.
       const [verw] = await db
         .select()
         .from(verwalterTable)

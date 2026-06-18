@@ -11,7 +11,7 @@ export function Footer() {
               <Zap className="h-4 w-4 text-white" aria-hidden="true" />
             </span>
             <span className="klard-logo text-[1.3rem] text-white">
-              Watt<span className="text-[var(--klard-green)]">Wechsel</span>
+              ener<span className="text-[var(--klard-green)]">watt24</span>
             </span>
           </div>
           <p className="text-[0.78rem] leading-[1.7] max-w-[280px]">
@@ -36,7 +36,7 @@ export function Footer() {
       </div>
 
       <div className="max-w-[1100px] mx-auto border-t border-white/10 pt-6 text-center text-[0.7rem]">
-        © {new Date().getFullYear()} WattWechsel · Neutrale Energiewechsel-Plattform
+        © {new Date().getFullYear()} enerwatt24 · Neutrale Energiewechsel-Plattform
       </div>
     </footer>
   );

@@ -39,7 +39,7 @@ tags:
   - name: admin
     description: Platform operator admin dashboard
   - name: energie
-    description: WattWechsel energy-switching for property managers (Hausverwalter/Bestandshalter)
+    description: enerwatt24 energy-switching for property managers (Hausverwalter/Bestandshalter)
 
 paths:
   /healthz:

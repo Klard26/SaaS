@@ -87,7 +87,7 @@ export default function EnergieOnboarding() {
         },
       });
       qc.invalidateQueries({ queryKey: getGetMyVerwalterQueryKey() });
-      toast({ title: "Willkommen bei WattWechsel!", description: "Ihr Konto wurde angelegt." });
+      toast({ title: "Willkommen bei enerwatt24!", description: "Ihr Konto wurde angelegt." });
       setLocation("/portfolio");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Konto konnte nicht erstellt werden.";
@@ -115,7 +115,7 @@ export default function EnergieOnboarding() {
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[var(--klard-green-l)] mb-4">
             <Zap className="h-7 w-7 text-[var(--klard-green)]" aria-hidden="true" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">WattWechsel einrichten</h1>
+          <h1 className="text-2xl font-bold text-foreground">enerwatt24 einrichten</h1>
           <p className="text-muted-foreground mt-2">
             Legen Sie Ihr Verwalter-Konto an, um Ihr Energieportfolio zu verwalten.
           </p>

@@ -227,7 +227,7 @@ function AnalyseDialog({ objekte }: { objekte: PortfolioObjekt[] }) {
         <DialogHeader>
           <DialogTitle>KI-Tarifanalyse</DialogTitle>
           <DialogDescription>
-            Wählen Sie einen Zählpunkt. WattWechsel vergleicht den Markt und erstellt eine neutrale Empfehlung.
+            Wählen Sie einen Zählpunkt. enerwatt24 vergleicht den Markt und erstellt eine neutrale Empfehlung.
           </DialogDescription>
         </DialogHeader>
         {options.length === 0 ? (
