@@ -56,6 +56,18 @@ export const foerderschieneReportsTable = pgTable("foerderschiene_reports", {
   amountCents: integer("amount_cents").notNull(),
   adresse: text("adresse"),
   profil: jsonb("profil").notNull(),
+  // ── Förder-Affiliate consent (SEPARATE, timestamped GDPR opt-in) ──
+  // Captured at report checkout, independent of the report purchase itself. A
+  // finance lead is ONLY ever created/shared while financeConsent is true AND
+  // financeConsentRevokedAt is null. Revoking stops future sharing but preserves
+  // the consent proof already snapshotted onto existing leads.
+  financeConsent: boolean("finance_consent").notNull().default(false),
+  financeConsentAt: timestamp("finance_consent_at"),
+  financeConsentVersion: text("finance_consent_version"),
+  financeConsentText: text("finance_consent_text"),
+  financeConsentRevokedAt: timestamp("finance_consent_revoked_at"),
+  // Set once the lead-matching pass has run for this report (idempotency guard).
+  financeLeadProcessedAt: timestamp("finance_lead_processed_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   paidAt: timestamp("paid_at"),
 });

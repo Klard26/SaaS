@@ -926,6 +926,12 @@ export const CreateReportCheckoutBody = zod.object({
     .describe(
       "Optionale Personalien des Käufers (für Registrierung \/ Zuordnung des Reports). Alle Felder optional; die E-Mail wird im Stripe-Checkout vorausgefüllt.",
     ),
+  financeConsent: zod
+    .boolean()
+    .optional()
+    .describe(
+      "Förder-Affiliate: separate, freiwillige Einwilligung des Käufers, unverbindliche Finanzierungsangebote passender Finanzierungspartner zu erhalten. Nur ein literal `true` zählt als Einwilligung. Der Nachweis (Version + Wortlaut + Zeitstempel) wird serverseitig festgehalten — Client-Werte werden nicht akzeptiert.",
+    ),
 });
 
 export const CreateReportCheckoutResponse = zod.object({

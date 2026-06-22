@@ -16,3 +16,4 @@ export * from "./blockedSlots";
 export * from "./emailLog";
 export * from "./userRoles";
 export * from "./foerderschiene";
+export * from "./financeAffiliate";

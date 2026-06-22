@@ -16,6 +16,7 @@ import tplStripeActivated from "../email-templates/stripe_activated.hbs";
 import tplPaymentFailed from "../email-templates/payment_failed.hbs";
 import tplReminder1h from "../email-templates/booking_reminder_1h.hbs";
 import tplFoerderschieneReportReady from "../email-templates/foerderschiene_report_ready.hbs";
+import tplFinanceLeadPartner from "../email-templates/finance_lead_partner.hbs";
 
 const APP_URL =
   process.env["APP_URL"] ??
@@ -264,6 +265,48 @@ export async function sendFoerderschieneReportReady(p: {
     text: `Vielen Dank für Ihren Kauf. Ihr detaillierter Gebäudereport${adresseSatz} ist jetzt freigeschaltet. Ansehen und als PDF speichern: ${p.reportUrl}`,
     templateId: "foerderschiene_report_ready",
     relatedId: p.relatedId ?? p.email,
+  });
+}
+
+/**
+ * Förder-Affiliate — notify a finance partner of a new, consented lead. Sent
+ * once per lead (deduped by the caller via `wasEmailSent("finance_lead_partner",
+ * leadId)`). Contains only the data the partner needs to follow up; the buyer
+ * already gave a separate, timestamped consent to be contacted.
+ */
+export async function sendFinanceLeadToPartner(p: {
+  partnerEmail: string;
+  partnerName: string;
+  buyerEmail: string | null;
+  adresse: string | null;
+  postalCode: string | null;
+  estimatedInvestmentCents: number | null;
+  massnahmen: Array<{ label: string }>;
+  leadId: number | string;
+}): Promise<void> {
+  if (!p.partnerEmail) return;
+  const investitionEur =
+    p.estimatedInvestmentCents != null
+      ? eur(p.estimatedInvestmentCents / 100)
+      : "keine Angabe";
+  const massnahmenListe = p.massnahmen.length
+    ? p.massnahmen.map((m) => m.label).join(" · ")
+    : "Siehe Gebäudereport";
+  const html = renderTemplate(tplFinanceLeadPartner, {
+    partnerName: p.partnerName,
+    buyerEmail: p.buyerEmail ?? "—",
+    adresse: p.adresse ?? "—",
+    postalCode: p.postalCode ?? "—",
+    investitionEur,
+    massnahmenListe,
+  });
+  await send({
+    to: p.partnerEmail,
+    subject: "Neue Finanzierungsanfrage – Förderschiene",
+    html,
+    text: `Neue Finanzierungsanfrage (Einwilligung liegt vor). Kontakt: ${p.buyerEmail ?? "—"}. Objekt: ${p.adresse ?? "—"}. Geschätztes Investitionsvolumen: ${investitionEur}. Maßnahmen: ${massnahmenListe}.`,
+    templateId: "finance_lead_partner",
+    relatedId: p.leadId,
   });
 }
 

@@ -2688,6 +2688,14 @@ components:
             email:     { type: string }
             telefon:   { type: string }
             anschrift: { type: string }
+        financeConsent:
+          description: >-
+            Förder-Affiliate: separate, freiwillige Einwilligung des Käufers,
+            unverbindliche Finanzierungsangebote passender Finanzierungspartner
+            zu erhalten. Nur ein literal `true` zählt als Einwilligung. Der
+            Nachweis (Version + Wortlaut + Zeitstempel) wird serverseitig
+            festgehalten — Client-Werte werden nicht akzeptiert.
+          type: boolean
 
     FoerderschieneReport:
       type: object

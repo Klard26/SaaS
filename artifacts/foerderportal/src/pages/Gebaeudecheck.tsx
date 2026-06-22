@@ -190,6 +190,8 @@ export default function Gebaeudecheck() {
     vorname: "", nachname: "", email: "", telefon: "", anschrift: "",
   });
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  // Förder-Affiliate: SEPARATE, opt-in financing-offer consent (never pre-checked).
+  const [financeConsent, setFinanceConsent] = useState(false);
   // Synchronous mirror of the last selected address label, so editing the text
   // after a selection reliably clears the (now stale) selection.
   const selectedLabelRef = useRef("");
@@ -259,6 +261,7 @@ export default function Gebaeudecheck() {
           ...(hasKontakt
             ? { kontakt: { ...k, anschrift: k.anschrift || buildAdresseString() || "" } }
             : {}),
+          ...(financeConsent ? { financeConsent: true } : {}),
         },
       });
       if (res?.url) {
@@ -325,6 +328,8 @@ export default function Gebaeudecheck() {
             kontakt={kontakt}
             onKontaktChange={(patch) => setKontakt((p) => ({ ...p, ...patch }))}
             adressePlaceholder={buildAdresseString() ?? ""}
+            financeConsent={financeConsent}
+            onFinanceConsentChange={setFinanceConsent}
             onBuy={handleBuy}
             onBack={() => setStep(STEPS.length)}
           />
@@ -501,7 +506,8 @@ function StepView({
 }
 
 function ResultView({
-  d, energie, pending, kontakt, onKontaktChange, adressePlaceholder, onBuy, onBack,
+  d, energie, pending, kontakt, onKontaktChange, adressePlaceholder,
+  financeConsent, onFinanceConsentChange, onBuy, onBack,
 }: {
   d: BuildingInput;
   energie: ReturnType<typeof calcEnergie>;
@@ -509,6 +515,8 @@ function ResultView({
   kontakt: Kontakt;
   onKontaktChange: (patch: Partial<Kontakt>) => void;
   adressePlaceholder: string;
+  financeConsent: boolean;
+  onFinanceConsentChange: (v: boolean) => void;
   onBuy: () => void;
   onBack: () => void;
 }) {
@@ -651,6 +659,27 @@ function ResultView({
               Zusätzlich erhalten Sie den Report-Link per E-Mail
             </li>
           </ul>
+
+          <label
+            className="flex items-start gap-3 rounded-lg border border-[var(--klard-teal-l)] bg-card/70 p-3 cursor-pointer"
+            data-testid="label-finance-consent"
+          >
+            <input
+              type="checkbox"
+              checked={financeConsent}
+              onChange={(e) => onFinanceConsentChange(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--klard-teal)]"
+              data-testid="checkbox-finance-consent"
+            />
+            <span className="text-xs text-muted-foreground leading-relaxed">
+              <span className="font-medium text-foreground">Optional:</span> Ich
+              möchte unverbindliche Finanzierungsangebote passender Partner
+              (Banken, Modernisierungs- und Sanierungskredite) erhalten und
+              willige ein, dass meine Kontakt- und Gebäudedaten zu diesem Zweck
+              weitergegeben werden. Freiwillig und jederzeit mit Wirkung für die
+              Zukunft widerrufbar.
+            </span>
+          </label>
 
           <Button
             className="w-full bg-[var(--klard-teal)] hover:bg-[var(--klard-teal-d)] text-white font-semibold h-11"

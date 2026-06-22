@@ -17,8 +17,18 @@ import {
   REPORT_PRICE_CENTS,
   type MatchInput,
 } from "../lib/foerderschiene";
+import { createFinanceLeadsForPaidReport } from "../lib/financeAffiliate";
 
 const router: IRouter = Router();
+
+/**
+ * Förder-Affiliate consent defaults — used when the client opts in but does not
+ * send its own version/text. Bump the version whenever the wording changes so
+ * each lead's snapshot proves exactly which consent the buyer agreed to.
+ */
+const FINANCE_CONSENT_VERSION = "1.0";
+const FINANCE_CONSENT_TEXT =
+  "Ich willige ein, dass meine Kontakt- und Gebäudedaten zur Erstellung unverbindlicher Finanzierungsangebote an passende Finanzierungspartner (Banken/Kreditinstitute) weitergegeben werden. Diese Einwilligung ist freiwillig und jederzeit mit Wirkung für die Zukunft widerrufbar.";
 
 function getBaseUrl(req: import("express").Request): string {
   const host = req.get("host");
@@ -73,6 +83,7 @@ router.post("/foerderschiene/report/checkout", async (req, res): Promise<void> =
       adresse?: unknown;
       profil?: unknown;
       kontakt?: unknown;
+      financeConsent?: unknown;
     };
     if (!body.profil || typeof body.profil !== "object") {
       res.status(400).json({ error: "profil ist erforderlich" });
@@ -98,6 +109,13 @@ router.post("/foerderschiene/report/checkout", async (req, res): Promise<void> =
     const kontaktName = [kontakt.vorname, kontakt.nachname]
       .filter(Boolean)
       .join(" ");
+    // Förder-Affiliate: a SEPARATE, opt-in financing-offer consent. Only a
+    // literal `true` counts. The consent proof (version + text + timestamp) is
+    // snapshotted from SERVER-side constants only — client-supplied version/text
+    // are never trusted, so the proof cannot be forged for a lawful audit record.
+    const financeConsent = body.financeConsent === true;
+    const financeConsentVersion = financeConsent ? FINANCE_CONSENT_VERSION : null;
+    const financeConsentText = financeConsent ? FINANCE_CONSENT_TEXT : null;
     const stripe = await getUncachableStripeClient();
     if (!stripe) {
       res.status(503).json({
@@ -115,6 +133,11 @@ router.post("/foerderschiene/report/checkout", async (req, res): Promise<void> =
         amountCents: REPORT_PRICE_CENTS,
         adresse,
         profil: body.profil,
+        email: kontakt.email ?? null,
+        financeConsent,
+        financeConsentAt: financeConsent ? new Date() : null,
+        financeConsentVersion,
+        financeConsentText,
       })
       .returning();
 
@@ -185,6 +208,15 @@ router.post("/foerderschiene/report/reconcile", async (req, res): Promise<void> 
     if (session.payment_status === "paid") {
       await fulfillReport(sessionId);
       await deliverReportReadyEmail(session, getBaseUrl(req));
+      // Förder-Affiliate: create + email consented finance leads (idempotent,
+      // fire-and-forget). Runs after the report email so the buyer email is
+      // persisted first; never blocks the reconcile response.
+      void createFinanceLeadsForPaidReport(report.id).catch((err) =>
+        req.log.error(
+          { err, reportId: report.id },
+          "finance lead creation (reconcile) failed",
+        ),
+      );
     }
     const [fresh] = await db
       .select()

@@ -17,7 +17,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, FolderKanban, Building2, Plus, Loader2, MessageSquare } from "lucide-react";
+import { Shield, FolderKanban, Building2, Plus, Loader2, MessageSquare, Landmark, HandCoins } from "lucide-react";
 import {
   vorgangApi, VORGANG_STATUS, VORGANG_STATUS_LABEL, VORGANG_STATUS_BADGE, useIsAdmin,
   type VorgangStatus,
@@ -25,6 +25,8 @@ import {
 import { fetchProgramme, type Programm } from "@/lib/foerderpilotApi";
 import { VorgangDetailDialog } from "@/components/vorgang/VorgangDetailDialog";
 import { ExposePanel } from "@/components/vorgang/ExposePanel";
+import { FinanzpartnerPanel } from "@/components/finance/FinanzpartnerPanel";
+import { FoerderLeadsPanel } from "@/components/finance/FoerderLeadsPanel";
 
 function dt(s: string): string {
   return new Date(s).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" });
@@ -109,6 +111,12 @@ function VerwaltungContent() {
           <TabsTrigger value="expose" data-testid="tab-expose">
             <Building2 className="mr-1.5 h-4 w-4" /> Exposés
           </TabsTrigger>
+          <TabsTrigger value="finanzpartner" data-testid="tab-finanzpartner">
+            <Landmark className="mr-1.5 h-4 w-4" /> Finanzpartner
+          </TabsTrigger>
+          <TabsTrigger value="foerder-leads" data-testid="tab-foerder-leads">
+            <HandCoins className="mr-1.5 h-4 w-4" /> Förder-Leads
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="vorgaenge" className="mt-4">
@@ -117,6 +125,14 @@ function VerwaltungContent() {
 
         <TabsContent value="expose" className="mt-4">
           <ExposePanel />
+        </TabsContent>
+
+        <TabsContent value="finanzpartner" className="mt-4">
+          <FinanzpartnerPanel />
+        </TabsContent>
+
+        <TabsContent value="foerder-leads" className="mt-4">
+          <FoerderLeadsPanel />
         </TabsContent>
       </Tabs>
 

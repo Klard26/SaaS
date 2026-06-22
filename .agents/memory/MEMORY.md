@@ -10,3 +10,4 @@
 - [Klard registration flow](klard-registration-flow.md) — customer signup goes straight to /search (no forced chooser; booking needs no immobilien_kunde); Berater via ?intent=berater; booking intent preserved via guarded ?redirect=.
 - [Vitest integration gotchas](vitest-integration-gotchas.md) — api-server route tests under Vitest hang on pino-pretty worker + Proxy-mock `then` trap; mount a minimal app, mock explicit named exports.
 - [api-server dev serves stale routes](api-server-dev-stale.md) — after editing api-server route files, restart the workflow before curl-smoke; dev process can serve pre-edit code (e.g. old auth walls).
+- [Förderschiene fulfillment dual-fire](foerderschiene-fulfillment-dual-fire.md) — paid-report side effects run from BOTH webhook + success reconcile concurrently; need DB unique + atomic CAS claim for emails, not read-only dedup.

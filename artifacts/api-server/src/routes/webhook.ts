@@ -12,6 +12,7 @@ import {
   fulfillEnergieausweis,
   deliverReportReadyEmail,
 } from "../lib/foerderschiene";
+import { createFinanceLeadsForPaidReport } from "../lib/financeAffiliate";
 
 const router: IRouter = Router();
 
@@ -99,6 +100,18 @@ router.post(
               const proto = req.get("x-forwarded-proto") ?? req.protocol;
               const baseUrl = `${proto}://${req.get("host")}`;
               await deliverReportReadyEmail(session, baseUrl);
+              // Förder-Affiliate: create + email consented finance leads. Runs
+              // after the report email so the buyer email is persisted first;
+              // fire-and-forget + idempotent, so it never blocks the ack.
+              const reportId = Number(session.metadata?.["reportId"]);
+              if (Number.isFinite(reportId)) {
+                void createFinanceLeadsForPaidReport(reportId).catch((err) =>
+                  req.log.error(
+                    { err, reportId },
+                    "finance lead creation (webhook) failed",
+                  ),
+                );
+              }
             }
           } else if (kind === "foerderschiene_energieausweis") {
             if (session.payment_status === "paid") {
