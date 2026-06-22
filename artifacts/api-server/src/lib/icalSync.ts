@@ -1,6 +1,6 @@
 import { db } from "@workspace/db";
-import { providersTable, blockedSlotsTable } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { providersTable, blockedSlotsTable, bookingsTable, timeSlotsTable } from "@workspace/db";
+import { eq, and, ne } from "drizzle-orm";
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 import * as nodeIcal from "node-ical";
@@ -152,19 +152,85 @@ export async function syncProviderIcal(provider: {
 
   const busy = parseIcalBusy(icsText);
 
+  return reconcileProviderIcalBlocks(provider.id, busy);
+}
+
+/**
+ * Full-refresh a provider's `source = 'ical'` blocked_slots from the parsed
+ * busy intervals of their external feed, while protecting existing Klard
+ * bookings. The Klard booking always wins: any imported busy interval that
+ * overlaps an active (non-cancelled) Klard booking is SKIPPED (never stored)
+ * and surfaced via a warning log, so an external calendar can never silently
+ * double-claim a time the customer already booked through Klard. Runs in a
+ * single transaction. Returns the number of busy intervals actually stored.
+ */
+export async function reconcileProviderIcalBlocks(
+  providerId: number,
+  busy: ParsedBusy[],
+): Promise<number> {
+  let stored = 0;
   await db.transaction(async (tx) => {
     await tx
       .delete(blockedSlotsTable)
       .where(
         and(
-          eq(blockedSlotsTable.providerId, provider.id),
+          eq(blockedSlotsTable.providerId, providerId),
           eq(blockedSlotsTable.source, "ical"),
         ),
       );
-    if (busy.length > 0) {
+
+    // Load the provider's active (non-cancelled) Klard bookings with their slot
+    // windows so an imported busy interval can never silently double-claim a
+    // time the customer already booked through Klard.
+    const activeBookings = await tx
+      .select({
+        bookingId: bookingsTable.id,
+        start: timeSlotsTable.startTime,
+        end: timeSlotsTable.endTime,
+      })
+      .from(bookingsTable)
+      .innerJoin(timeSlotsTable, eq(bookingsTable.slotId, timeSlotsTable.id))
+      .where(
+        and(
+          eq(bookingsTable.providerId, providerId),
+          ne(bookingsTable.status, "cancelled"),
+        ),
+      );
+
+    const toStore: ParsedBusy[] = [];
+    const skipped: Array<{ busy: ParsedBusy; bookingId: number }> = [];
+    for (const b of busy) {
+      // Half-open overlap predicate, identical to the booking-time re-check.
+      const clash = activeBookings.find(
+        (bk) => bk.start < b.end && bk.end > b.start,
+      );
+      if (clash) {
+        skipped.push({ busy: b, bookingId: clash.bookingId });
+      } else {
+        toStore.push(b);
+      }
+    }
+
+    if (skipped.length > 0) {
+      logger.warn(
+        {
+          providerId,
+          skipped: skipped.map((s) => ({
+            bookingId: s.bookingId,
+            start: s.busy.start,
+            end: s.busy.end,
+            uid: s.busy.uid,
+            summary: s.busy.summary,
+          })),
+        },
+        "External iCal busy interval overlaps an existing Klard booking; import skipped (Klard booking wins)",
+      );
+    }
+
+    if (toStore.length > 0) {
       await tx.insert(blockedSlotsTable).values(
-        busy.map((b) => ({
-          providerId: provider.id,
+        toStore.map((b) => ({
+          providerId,
           startTime: b.start,
           endTime: b.end,
           source: "ical" as const,
@@ -173,9 +239,10 @@ export async function syncProviderIcal(provider: {
         })),
       );
     }
+    stored = toStore.length;
   });
 
-  return busy.length;
+  return stored;
 }
 
 async function tick(): Promise<void> {

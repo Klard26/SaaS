@@ -84,6 +84,7 @@ vi.mock("../lib/invoiceService", () => ({
 import express, { type Express } from "express";
 import bookingsRouter from "./bookings";
 import billingRouter from "./billing";
+import { reconcileProviderIcalBlocks } from "../lib/icalSync";
 import {
   db,
   providersTable,
@@ -817,5 +818,90 @@ describe("POST /api/bookings/:id/payment/checkout (Stripe Connect split)", () =>
 
     const res = await api("POST", `/api/bookings/${id}/payment/checkout`);
     expect(res.status).toBe(400);
+  });
+});
+
+describe("iCal import vs existing Klard booking (reconcileProviderIcalBlocks)", () => {
+  // Create a real Klard booking for providerA at a fresh slot, then run the
+  // external-feed reconcile with a busy interval that overlaps it. The Klard
+  // booking must win: the overlapping interval is NOT stored as a blocked_slot,
+  // while non-overlapping intervals from the same feed still are.
+  async function makeBookingAt(start: Date): Promise<{
+    bookingId: number;
+    slotStart: Date;
+    slotEnd: Date;
+  }> {
+    authState.userId = customerId;
+    const slot = await createSlot(providerA.id, start);
+    const res = await api("POST", "/api/bookings", {
+      providerId: providerA.id,
+      serviceId: serviceA.id,
+      slotId: slot.id,
+    });
+    expect(res.status).toBe(201);
+    return {
+      bookingId: res.body.id as number,
+      slotStart: slot.startTime,
+      slotEnd: slot.endTime,
+    };
+  }
+
+  async function icalBlocks(providerId: number) {
+    return db
+      .select()
+      .from(blockedSlotsTable)
+      .where(eq(blockedSlotsTable.providerId, providerId));
+  }
+
+  it("skips an imported busy interval that overlaps an active booking (Klard wins)", async () => {
+    const { slotStart } = await makeBookingAt(hourFromNow(1200));
+
+    // One interval fully overlaps the booked slot; one is safely after it.
+    const overlap = {
+      start: new Date(slotStart.getTime() - 30 * 60_000),
+      end: new Date(slotStart.getTime() + 90 * 60_000),
+      uid: "overlap-uid",
+      summary: "Externer Termin (Konflikt)",
+    };
+    const safeStart = new Date(slotStart.getTime() + 5 * 3600_000);
+    const safe = {
+      start: safeStart,
+      end: new Date(safeStart.getTime() + 3600_000),
+      uid: "safe-uid",
+      summary: "Externer Termin (ok)",
+    };
+
+    const stored = await reconcileProviderIcalBlocks(providerA.id, [overlap, safe]);
+
+    // Only the non-conflicting interval is stored.
+    expect(stored).toBe(1);
+    const blocks = await icalBlocks(providerA.id);
+    expect(blocks.length).toBe(1);
+    expect(blocks[0]?.externalUid).toBe("safe-uid");
+    // The conflicting interval is absent — the slot the customer booked through
+    // Klard is never double-claimed by the import.
+    expect(blocks.some((b) => b.externalUid === "overlap-uid")).toBe(false);
+  });
+
+  it("still imports an interval overlapping a CANCELLED booking", async () => {
+    const { bookingId, slotStart } = await makeBookingAt(hourFromNow(1300));
+
+    authState.userId = customerId;
+    const cancelled = await api("PATCH", `/api/bookings/${bookingId}/status`, {
+      status: "cancelled",
+    });
+    expect(cancelled.status).toBe(200);
+
+    const overlap = {
+      start: new Date(slotStart.getTime() - 30 * 60_000),
+      end: new Date(slotStart.getTime() + 90 * 60_000),
+      uid: "over-cancelled-uid",
+      summary: "Externer Termin",
+    };
+
+    const stored = await reconcileProviderIcalBlocks(providerA.id, [overlap]);
+    expect(stored).toBe(1);
+    const blocks = await icalBlocks(providerA.id);
+    expect(blocks.some((b) => b.externalUid === "over-cancelled-uid")).toBe(true);
   });
 });
