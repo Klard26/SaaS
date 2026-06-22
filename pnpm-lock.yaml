@@ -69,9 +69,6 @@ catalogs:
     wouter:
       specifier: ^3.3.5
       version: 3.9.0
-    zod:
-      specifier: ^3.25.76
-      version: 3.25.76
 
 overrides:
   zod: ^3.25.76
@@ -160,6 +157,10 @@ overrides:
 importers:
 
   .:
+    dependencies:
+      pdfkit:
+        specifier: ^0.18.0
+        version: 0.18.0
     devDependencies:
       prettier:
         specifier: ^3.8.1
@@ -240,7 +241,7 @@ importers:
         specifier: ^22.1.1
         version: 22.1.1(@types/node@25.3.5)
       zod:
-        specifier: 'catalog:'
+        specifier: ^3.25.76
         version: 3.25.76
     devDependencies:
       '@types/cookie-parser':
