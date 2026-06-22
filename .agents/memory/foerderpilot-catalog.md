@@ -47,3 +47,19 @@ Fastify backend and ported into the shared api-server + foerderportal frontend.
 - Pages: `/foerderung` (Finder, with ebene/art/kategorie/zielgruppe/region filters),
   `/foerderung/:id` (Detail), and `/schnellcheck` (no-login profile → `POST /match`
   → result cards), all in foerderportal + linked from the Navbar.
+
+## Vorgang/Dokument/Exposé extension (case management)
+- A 4th SQL file extends the schema (Facilioo/PLANFLUX-style: organisation/objekt/vorgang/
+  nachricht/dokument/expose + a `v_vorgang_uebersicht` view), depending on the base tables.
+- Unlike the base catalog (skip-when-populated), the extension runs on EVERY boot via its own
+  setup step — it is fully idempotent (IF NOT EXISTS / guarded enums / ADD COLUMN IF NOT
+  EXISTS / CREATE OR REPLACE / seed guarded by `IF NOT EXISTS organisation`), so re-running
+  self-heals a partial earlier run.
+  **Why:** do NOT "optimize" it to skip-when-present — that reintroduces the partial-run
+  hazard the base loader only avoids because its import is one atomic txn.
+- Its routes (under `/api/foerderpilot/*`, plain fetch like the rest of the integration) are
+  gated by `requireAdmin` (fail-closed).
+  **Why:** they create/read PII + business data (Vorgänge, Nachrichten, Dokument-Metadaten,
+  Exposés) and `foerderpilot.nutzer` has NO Clerk↔user mapping, so per-tenant ownership is
+  impossible. Do NOT make these public; only relax once a real B2B2C role + ownership model
+  exists. This is a deliberate deviation from the reference, whose endpoints were public.
