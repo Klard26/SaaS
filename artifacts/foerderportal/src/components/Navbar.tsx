@@ -3,10 +3,13 @@ import { Link, useLocation } from "wouter";
 import { Show, UserButton } from "@clerk/react";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
+import { useIsAdmin } from "@/lib/vorgangApi";
 
 export function Navbar() {
   const [, setLocation] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { data: adminMe } = useIsAdmin();
+  const isAdmin = !!adminMe?.isAdmin;
 
   return (
     <header
@@ -56,6 +59,15 @@ export function Navbar() {
               Meine Reports
             </Link>
           </Show>
+          {isAdmin && (
+            <Link
+              href="/verwaltung"
+              className="font-semibold text-[var(--klard-teal-d)] hover:text-[var(--klard-teal)] transition-colors"
+              data-testid="link-verwaltung"
+            >
+              Verwaltung
+            </Link>
+          )}
         </nav>
 
         <div className="flex items-center gap-2 ml-auto lg:ml-0">
@@ -114,6 +126,16 @@ export function Navbar() {
                 Meine Reports
               </Link>
             </Show>
+            {isAdmin && (
+              <Link
+                href="/verwaltung"
+                className="py-2 text-sm font-semibold text-[var(--klard-teal-d)]"
+                onClick={() => setMobileOpen(false)}
+                data-testid="link-verwaltung-mobile"
+              >
+                Verwaltung
+              </Link>
+            )}
           </nav>
         </div>
       )}
