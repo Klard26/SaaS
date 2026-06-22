@@ -1,11 +1,22 @@
 import { db } from "@workspace/db";
 import { bookingsTable, providersTable, timeSlotsTable } from "@workspace/db";
 import { and, eq, gt, lt, lte, isNull, inArray } from "drizzle-orm";
-import { sendBookingReminder, sendBookingReminder1h, wasEmailSent } from "./email";
+import {
+  sendBookingReminder,
+  sendBookingReminder1h,
+  wasEmailSent,
+  purgeOldEmailLogs,
+} from "./email";
 import { issueInvoiceForBooking, sendInvoiceEmail } from "./invoiceService";
 import { logger } from "./logger";
 
 const CHECK_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+
+// The email_log purge only needs to run occasionally — once a day is plenty to
+// keep the table within its retention window. Throttle so the 15-minute tick
+// doesn't fire a pointless DELETE every time.
+const EMAIL_LOG_PURGE_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
+let lastEmailLogPurgeAt = 0;
 
 // 24h reminder window: send between 24h and 25h before the appointment.
 const H24_LOWER = 24;
@@ -172,6 +183,14 @@ async function tick(): Promise<void> {
     await autoCompleteBookings(now);
   } catch (err) {
     logger.error({ err }, "Auto-complete tick failed");
+  }
+  if (now.getTime() - lastEmailLogPurgeAt >= EMAIL_LOG_PURGE_INTERVAL_MS) {
+    lastEmailLogPurgeAt = now.getTime();
+    try {
+      await purgeOldEmailLogs(now);
+    } catch (err) {
+      logger.error({ err }, "email_log purge tick failed");
+    }
   }
 }
 

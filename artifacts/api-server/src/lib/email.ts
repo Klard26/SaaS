@@ -2,7 +2,7 @@ import { getUncachableResendClient } from "./resendClient";
 import { logger } from "./logger";
 import { db } from "@workspace/db";
 import { emailLogTable } from "@workspace/db";
-import { and, eq, desc } from "drizzle-orm";
+import { and, eq, desc, lt } from "drizzle-orm";
 
 import tplWelcomeProvider from "../email-templates/welcome_provider.hbs";
 import tplBookingConfirmCustomer from "../email-templates/booking_confirmation_customer.hbs";
@@ -153,6 +153,38 @@ export async function wasEmailSent(templateId: string, relatedId?: string | numb
     .orderBy(desc(emailLogTable.sentAt))
     .limit(1);
   return !!row;
+}
+
+/**
+ * Data-minimization retention window for the `email_log` audit table. Rows hold
+ * a recipient email address, so we age them out on a schedule rather than keep
+ * them forever. Twelve months is far longer than any reminder/idempotency
+ * dedupe horizon (`wasEmailSent` only matters around a booking's appointment
+ * date, weeks at most), so purging older rows never breaks dedupe.
+ */
+export const EMAIL_LOG_RETENTION_DAYS = 365;
+
+/**
+ * Deletes `email_log` rows older than the retention window. Returns the number
+ * of rows removed. Safe to run repeatedly (idempotent — already-purged rows are
+ * simply gone). Uses the existing `sent_at` index for the range scan.
+ */
+export async function purgeOldEmailLogs(
+  now: Date = new Date(),
+  retentionDays: number = EMAIL_LOG_RETENTION_DAYS,
+): Promise<number> {
+  const cutoff = new Date(now.getTime() - retentionDays * 24 * 60 * 60 * 1000);
+  const deleted = await db
+    .delete(emailLogTable)
+    .where(lt(emailLogTable.sentAt, cutoff))
+    .returning({ id: emailLogTable.id });
+  if (deleted.length > 0) {
+    logger.info(
+      { count: deleted.length, cutoff: cutoff.toISOString(), retentionDays },
+      "Purged old email_log rows",
+    );
+  }
+  return deleted.length;
 }
 
 async function send(args: SendArgs): Promise<void> {
