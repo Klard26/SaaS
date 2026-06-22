@@ -122,6 +122,7 @@ const customerId = `${sfx}_customer`;
 const otherUserId = `${sfx}_other`;
 const providerAUser = `${sfx}_providerA`;
 const providerBUser = `${sfx}_providerB`;
+const providerCUser = `${sfx}_providerC`;
 const categorySlug = `${sfx}_cat`;
 
 let server: Server;
@@ -129,8 +130,10 @@ let baseUrl: string;
 
 let providerA: typeof providersTable.$inferSelect;
 let providerB: typeof providersTable.$inferSelect;
+let providerC: typeof providersTable.$inferSelect;
 let serviceA: typeof servicesTable.$inferSelect;
 let serviceB: typeof servicesTable.$inferSelect;
+let serviceC: typeof servicesTable.$inferSelect;
 
 function hourFromNow(hours: number): Date {
   return new Date(Date.now() + hours * 3600_000);
@@ -219,6 +222,25 @@ beforeAll(async () => {
     .returning();
   providerB = pB!;
 
+  const [pC] = await db
+    .insert(providersTable)
+    .values({
+      clerkUserId: providerCUser,
+      displayName: "Berater C (itest)",
+      email: "beraterC@example.com",
+      category: "Integration Test Kategorie",
+      categorySlug,
+      city: "München",
+      zip: "80331",
+      // C has connected an Express account but NEVER finished onboarding
+      // (stripeOnboardedAt is null) → NOT split-eligible. The split must not be
+      // attempted against a non-onboarded account.
+      stripeAccountId: "acct_test_not_onboarded",
+      subscriptionTier: "basic",
+    })
+    .returning();
+  providerC = pC!;
+
   const [sA] = await db
     .insert(servicesTable)
     .values({
@@ -240,10 +262,21 @@ beforeAll(async () => {
     })
     .returning();
   serviceB = sB!;
+
+  const [sC] = await db
+    .insert(servicesTable)
+    .values({
+      providerId: providerC.id,
+      name: "Erstberatung C",
+      price: 150,
+      durationMinutes: 60,
+    })
+    .returning();
+  serviceC = sC!;
 });
 
 afterAll(async () => {
-  const providerIds = [providerA?.id, providerB?.id].filter(
+  const providerIds = [providerA?.id, providerB?.id, providerC?.id].filter(
     (x): x is number => typeof x === "number",
   );
   await db
@@ -767,6 +800,36 @@ describe("POST /api/bookings/:id/payment/checkout (Stripe Connect split)", () =>
     const args = stripeState.lastSessionArgs!;
     expect(args.mode).toBe("payment");
     const pid = args.payment_intent_data as Record<string, unknown>;
+    expect(pid.application_fee_amount).toBeUndefined();
+    expect(pid.transfer_data).toBeUndefined();
+
+    const [persisted] = await db
+      .select()
+      .from(bookingsTable)
+      .where(eq(bookingsTable.id, id));
+    expect(persisted?.stripeCheckoutSessionId).toBe("cs_test_integration_123");
+  });
+
+  it("creates a Checkout session WITHOUT a split when the provider has a Stripe account but never finished onboarding", async () => {
+    authState.userId = customerId;
+    const id = await insertBillableBooking({
+      providerId: providerC.id, // has stripeAccountId but no stripeOnboardedAt
+      serviceId: serviceC.id,
+      serviceName: serviceC.name,
+      providerName: providerC.displayName,
+      totalPrice: 150,
+    });
+
+    const res = await api("POST", `/api/bookings/${id}/payment/checkout`);
+    expect(res.status).toBe(200);
+    expect(res.body.sessionId).toBe("cs_test_integration_123");
+
+    // A connected-but-not-onboarded account must never receive a destination
+    // transfer or be charged an application fee — the platform collects in full.
+    const pid = stripeState.lastSessionArgs!.payment_intent_data as Record<
+      string,
+      unknown
+    >;
     expect(pid.application_fee_amount).toBeUndefined();
     expect(pid.transfer_data).toBeUndefined();
 
