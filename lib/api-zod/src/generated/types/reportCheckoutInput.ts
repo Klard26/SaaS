@@ -5,10 +5,13 @@
  * Klard – Booking platform for consultants
  * OpenAPI spec version: 0.1.0
  */
+import type { ReportCheckoutInputKontakt } from "./reportCheckoutInputKontakt";
 import type { ReportCheckoutInputProfil } from "./reportCheckoutInputProfil";
 
 export interface ReportCheckoutInput {
   /** @nullable */
   adresse?: string | null;
   profil: ReportCheckoutInputProfil;
+  /** Optionale Personalien des Käufers (für Registrierung / Zuordnung des Reports). Alle Felder optional; die E-Mail wird im Stripe-Checkout vorausgefüllt. */
+  kontakt?: ReportCheckoutInputKontakt;
 }

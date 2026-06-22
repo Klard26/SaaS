@@ -107,6 +107,7 @@ export * from "./providerUpdate";
 export * from "./providerUpdateConsultationMode";
 export * from "./providerUpdateQualifications";
 export * from "./reportCheckoutInput";
+export * from "./reportCheckoutInputKontakt";
 export * from "./reportCheckoutInputProfil";
 export * from "./review";
 export * from "./reviewInput";

@@ -914,6 +914,18 @@ export const MatchFoerderschieneResponse = zod.object({
 export const CreateReportCheckoutBody = zod.object({
   adresse: zod.string().nullish(),
   profil: zod.record(zod.string(), zod.unknown()),
+  kontakt: zod
+    .object({
+      vorname: zod.string().optional(),
+      nachname: zod.string().optional(),
+      email: zod.string().optional(),
+      telefon: zod.string().optional(),
+      anschrift: zod.string().optional(),
+    })
+    .optional()
+    .describe(
+      "Optionale Personalien des Käufers (für Registrierung \/ Zuordnung des Reports). Alle Felder optional; die E-Mail wird im Stripe-Checkout vorausgefüllt.",
+    ),
 });
 
 export const CreateReportCheckoutResponse = zod.object({

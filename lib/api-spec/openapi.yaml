@@ -2676,6 +2676,18 @@ components:
         profil:
           type: object
           additionalProperties: true
+        kontakt:
+          description: >-
+            Optionale Personalien des Käufers (für Registrierung / Zuordnung des
+            Reports). Alle Felder optional; die E-Mail wird im Stripe-Checkout
+            vorausgefüllt.
+          type: object
+          properties:
+            vorname:   { type: string }
+            nachname:  { type: string }
+            email:     { type: string }
+            telefon:   { type: string }
+            anschrift: { type: string }
 
     FoerderschieneReport:
       type: object

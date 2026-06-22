@@ -1341,10 +1341,23 @@ export interface FoerderMatchResult {
 
 export type ReportCheckoutInputProfil = { [key: string]: unknown };
 
+/**
+ * Optionale Personalien des Käufers (für Registrierung / Zuordnung des Reports). Alle Felder optional; die E-Mail wird im Stripe-Checkout vorausgefüllt.
+ */
+export type ReportCheckoutInputKontakt = {
+  vorname?: string;
+  nachname?: string;
+  email?: string;
+  telefon?: string;
+  anschrift?: string;
+};
+
 export interface ReportCheckoutInput {
   /** @nullable */
   adresse?: string | null;
   profil: ReportCheckoutInputProfil;
+  /** Optionale Personalien des Käufers (für Registrierung / Zuordnung des Reports). Alle Felder optional; die E-Mail wird im Stripe-Checkout vorausgefüllt. */
+  kontakt?: ReportCheckoutInputKontakt;
 }
 
 export type FoerderschieneReportProfil = { [key: string]: unknown };

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft, ArrowRight, Check, Loader2, Lock, ShieldCheck, Mail, FileDown,
-  MapPin,
+  MapPin, UserRound,
 } from "lucide-react";
 import {
   AGE, BT, HT, INS, WI, ZUSTAND, ageBand,
@@ -47,6 +47,14 @@ const TYP_UNITS: Record<string, { wohneinheiten: number; geschosse: number }> = 
   mfh_s: { wohneinheiten: 4, geschosse: 3 },
   mfh_m: { wohneinheiten: 9, geschosse: 4 },
   mfh_l: { wohneinheiten: 16, geschosse: 5 },
+};
+
+type Kontakt = {
+  vorname: string;
+  nachname: string;
+  email: string;
+  telefon: string;
+  anschrift: string;
 };
 
 type Opt = {
@@ -177,6 +185,10 @@ export default function Gebaeudecheck() {
   const checkout = useCreateReportCheckout();
   const [d, setD] = useState<BuildingInput>(DEFAULT);
   const [adresse, setAdresse] = useState("");
+  // Optional Personalien (for registration / report assignment) — never required.
+  const [kontakt, setKontakt] = useState<Kontakt>({
+    vorname: "", nachname: "", email: "", telefon: "", anschrift: "",
+  });
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   // Synchronous mirror of the last selected address label, so editing the text
   // after a selection reliably clears the (now stale) selection.
@@ -230,10 +242,23 @@ export default function Gebaeudecheck() {
   async function handleBuy() {
     setPending(true);
     try {
+      const k = {
+        vorname: kontakt.vorname.trim(),
+        nachname: kontakt.nachname.trim(),
+        email: kontakt.email.trim(),
+        telefon: kontakt.telefon.trim(),
+        anschrift: kontakt.anschrift.trim(),
+      };
+      // Only attach kontakt when the buyer actually entered personal data —
+      // the auto-derived building address must NOT make the optional form "filled".
+      const hasKontakt = Object.values(k).some((v) => v.length > 0);
       const res = await checkout.mutateAsync({
         data: {
           adresse: buildAdresseString(),
           profil: d as unknown as Record<string, unknown>,
+          ...(hasKontakt
+            ? { kontakt: { ...k, anschrift: k.anschrift || buildAdresseString() || "" } }
+            : {}),
         },
       });
       if (res?.url) {
@@ -297,6 +322,9 @@ export default function Gebaeudecheck() {
             d={d}
             energie={energie!}
             pending={pending}
+            kontakt={kontakt}
+            onKontaktChange={(patch) => setKontakt((p) => ({ ...p, ...patch }))}
+            adressePlaceholder={buildAdresseString() ?? ""}
             onBuy={handleBuy}
             onBack={() => setStep(STEPS.length)}
           />
@@ -473,11 +501,14 @@ function StepView({
 }
 
 function ResultView({
-  d, energie, pending, onBuy, onBack,
+  d, energie, pending, kontakt, onKontaktChange, adressePlaceholder, onBuy, onBack,
 }: {
   d: BuildingInput;
   energie: ReturnType<typeof calcEnergie>;
   pending: boolean;
+  kontakt: Kontakt;
+  onKontaktChange: (patch: Partial<Kontakt>) => void;
+  adressePlaceholder: string;
   onBuy: () => void;
   onBack: () => void;
 }) {
@@ -523,22 +554,72 @@ function ResultView({
         </Card>
       </div>
 
-      {/* Report preview teaser */}
-      <div>
-        <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-3">
-          So sieht Ihr ausführlicher Report aus
-        </div>
-        <div className="rounded-xl border border-border bg-[var(--klard-bg)]/40 p-4 sm:p-8">
-          <ReportPreviewDemo />
-          <p className="mx-auto mt-5 max-w-xl text-center text-sm text-muted-foreground leading-relaxed">
-            Energiebilanz, passende Förderprogramme, geschätzte Förderhöhe und ein
-            konkreter Sanierungsfahrplan mit Kosten — kompakt auf einen Blick und als
-            PDF speicherbar.
-          </p>
-        </div>
-      </div>
+      {/* Optional Personalien — for registration / report assignment */}
+      <Card>
+        <CardContent className="p-5 sm:p-6 space-y-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <UserRound className="h-4 w-4 text-[var(--klard-teal-d)]" />
+              <h3 className="font-serif text-lg font-semibold text-foreground">
+                Persönliche Daten <span className="text-muted-foreground font-normal text-sm">(optional)</span>
+              </h3>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
+              Möchten Sie sich registrieren und Ihren Report Ihrem Konto zuordnen?
+              Hinterlassen Sie optional Ihre Personalien. Sie können den Report auch
+              ganz ohne Angabe als Gast kaufen.
+            </p>
+          </div>
 
-      {/* Guest express checkout */}
+          <div className="grid sm:grid-cols-2 gap-3">
+            <Field
+              label="Vorname"
+              value={kontakt.vorname}
+              onChange={(v) => onKontaktChange({ vorname: v })}
+              placeholder="Max"
+              testId="input-kontakt-vorname"
+            />
+            <Field
+              label="Nachname"
+              value={kontakt.nachname}
+              onChange={(v) => onKontaktChange({ nachname: v })}
+              placeholder="Mustermann"
+              testId="input-kontakt-nachname"
+            />
+            <Field
+              label="E-Mail"
+              type="email"
+              value={kontakt.email}
+              onChange={(v) => onKontaktChange({ email: v })}
+              placeholder="max@beispiel.de"
+              testId="input-kontakt-email"
+            />
+            <Field
+              label="Telefonnummer"
+              type="tel"
+              value={kontakt.telefon}
+              onChange={(v) => onKontaktChange({ telefon: v })}
+              placeholder="0151 23456789"
+              testId="input-kontakt-telefon"
+            />
+            <div className="sm:col-span-2">
+              <Field
+                label="Anschrift"
+                value={kontakt.anschrift}
+                onChange={(v) => onKontaktChange({ anschrift: v })}
+                placeholder={adressePlaceholder || "Straße, Hausnummer, PLZ Ort"}
+                testId="input-kontakt-anschrift"
+              />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Ihre Angaben sind freiwillig und dienen ausschließlich der Zuordnung und
+            optionalen Registrierung. Die Zahlung selbst erfolgt sicher im Checkout.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Guest express checkout — placed ABOVE the preview */}
       <Card className="bg-[var(--klard-teal-p)] border-[var(--klard-teal-l)]">
         <CardContent className="py-6 px-6 space-y-4">
           <div className="flex items-center gap-2">
@@ -589,6 +670,46 @@ function ResultView({
           </p>
         </CardContent>
       </Card>
+
+      {/* Report preview teaser — placed BELOW the buy button */}
+      <div>
+        <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-3">
+          So kann Ihr Gebäudereport aussehen
+        </div>
+        <div className="rounded-xl border border-border bg-[var(--klard-bg)]/40 p-4 sm:p-8">
+          <ReportPreviewDemo />
+          <p className="mx-auto mt-5 max-w-xl text-center text-sm text-muted-foreground leading-relaxed">
+            Energiebilanz, passende Förderprogramme, geschätzte Förderhöhe und ein
+            konkreter Sanierungsfahrplan mit Kosten — kompakt auf einen Blick und als
+            PDF speicherbar.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Field({
+  label, value, onChange, placeholder, type = "text", testId,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  type?: string;
+  testId?: string;
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-foreground mb-1.5">{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        data-testid={testId}
+        className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-[var(--klard-teal)] focus:outline-none focus:ring-1 focus:ring-[var(--klard-teal)]"
+      />
     </div>
   );
 }

@@ -69,11 +69,35 @@ router.post("/foerderschiene/report/checkout", async (req, res): Promise<void> =
     // Guest Express-Checkout: a report can be bought without an account.
     // If the buyer happens to be signed in we still attach their userId.
     const { userId } = getAuth(req);
-    const body = (req.body ?? {}) as { adresse?: unknown; profil?: unknown };
+    const body = (req.body ?? {}) as {
+      adresse?: unknown;
+      profil?: unknown;
+      kontakt?: unknown;
+    };
     if (!body.profil || typeof body.profil !== "object") {
       res.status(400).json({ error: "profil ist erforderlich" });
       return;
     }
+    // Optional buyer Personalien (for registration / report assignment). All
+    // fields optional; only used to prefill Stripe + store as metadata.
+    const k =
+      body.kontakt && typeof body.kontakt === "object"
+        ? (body.kontakt as Record<string, unknown>)
+        : {};
+    const str = (v: unknown) => {
+      const s = v != null ? String(v).trim() : "";
+      return s.length > 0 ? s : undefined;
+    };
+    const kontakt = {
+      vorname: str(k.vorname),
+      nachname: str(k.nachname),
+      email: str(k.email),
+      telefon: str(k.telefon),
+      anschrift: str(k.anschrift),
+    };
+    const kontaktName = [kontakt.vorname, kontakt.nachname]
+      .filter(Boolean)
+      .join(" ");
     const stripe = await getUncachableStripeClient();
     if (!stripe) {
       res.status(503).json({
@@ -111,10 +135,14 @@ router.post("/foerderschiene/report/checkout", async (req, res): Promise<void> =
       ],
       success_url: `${baseUrl}/foerderschiene/report?status=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/foerderschiene/report?status=cancelled`,
+      ...(kontakt.email ? { customer_email: kontakt.email } : {}),
       metadata: {
         kind: "foerderschiene_report",
         reportId: String(report.id),
         ...(userId ? { userId } : {}),
+        ...(kontaktName ? { kontaktName } : {}),
+        ...(kontakt.telefon ? { kontaktTelefon: kontakt.telefon } : {}),
+        ...(kontakt.anschrift ? { kontaktAnschrift: kontakt.anschrift } : {}),
       },
     });
 
