@@ -100,7 +100,7 @@ async function send1hReminders(now: Date): Promise<void> {
   if (sent > 0) logger.info({ count: sent }, "Sent 1h booking reminders");
 }
 
-async function autoCompleteBookings(now: Date): Promise<void> {
+export async function autoCompleteBookings(now: Date): Promise<void> {
   // A booking is complete once its time slot has fully ended. Join the slot to
   // get the real end time rather than guessing a fixed duration.
   const past = await db
