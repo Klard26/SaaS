@@ -1,0 +1,235 @@
+<!-- ═══════════════════════════════════════════════════════════════
+     KLARD — Dashboard-Tabs "Anfragen" & "Tarif"
+     Einbindung in klard-plattform.html:
+       1. Die zwei <button> in deine Tab-Leiste einfügen (siehe unten)
+       2. Die zwei <div class="tab-pane"> in den Dashboard-Modal-Body einfügen
+       3. Das <style>- und <script>-Segment vor </body> einfügen
+     Farbschema passt zu Bestand: #0f172a / #14b8a6 / #f59e0b
+     ═══════════════════════════════════════════════════════════════ -->
+
+<!-- ─── 1. TAB-BUTTONS (in bestehende Tab-Leiste einfügen) ─────────── -->
+<!--
+<button class="dash-tab" data-tab="anfragen" onclick="klardSwitchTab('anfragen')">Anfragen</button>
+<button class="dash-tab" data-tab="tarif" onclick="klardSwitchTab('tarif')">Tarif</button>
+-->
+
+<!-- ─── 2a. TAB-PANE: ANFRAGEN ─────────────────────────────────────── -->
+<div class="tab-pane" id="tab-anfragen" style="display:none;">
+  <div class="kl-section-head">
+    <div>
+      <h3 class="kl-h3">Eingehende Anfragen</h3>
+      <p class="kl-sub">Antworten Sie schnell — frühe Angebote gewinnen häufiger.</p>
+    </div>
+    <div class="kl-lead-balance" id="kl-wallet-box">
+      <span class="kl-balance-label">Lead-Guthaben</span>
+      <span class="kl-balance-value" id="kl-balance">– €</span>
+      <button class="kl-btn-ghost" onclick="klardTopup()">Aufladen</button>
+    </div>
+  </div>
+
+  <!-- Free-Tier Limit-Hinweis (dynamisch eingeblendet) -->
+  <div class="kl-limit-banner" id="kl-limit-banner" style="display:none;">
+    <span id="kl-limit-text"></span>
+    <button class="kl-btn-amber" onclick="klardSwitchTab('tarif')">Auf Plus upgraden</button>
+  </div>
+
+  <div class="kl-request-list" id="kl-request-list">
+    <div class="kl-empty" id="kl-req-empty">Noch keine passenden Anfragen. Sobald eine eingeht, erscheint sie hier.</div>
+  </div>
+</div>
+
+<!-- ─── 2b. TAB-PANE: TARIF ────────────────────────────────────────── -->
+<div class="tab-pane" id="tab-tarif" style="display:none;">
+  <div class="kl-section-head">
+    <div>
+      <h3 class="kl-h3">Ihr Tarif</h3>
+      <p class="kl-sub">Mehr Leads, bessere Platzierung, geringere Lead-Gebühren.</p>
+    </div>
+    <div class="kl-current-tier" id="kl-current-tier">Aktuell: <strong>Free</strong></div>
+  </div>
+
+  <div class="kl-plan-grid" id="kl-plan-grid">
+    <!-- wird per JS gefüllt -->
+  </div>
+</div>
+
+<!-- ─── 3. STYLES ──────────────────────────────────────────────────── -->
+<style>
+  .kl-section-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;gap:16px;flex-wrap:wrap;}
+  .kl-h3{font-size:18px;font-weight:700;color:#0f172a;margin:0 0 4px;}
+  .kl-sub{font-size:13px;color:#64748b;margin:0;}
+  .kl-lead-balance{display:flex;align-items:center;gap:10px;background:#0f172a;border-radius:10px;padding:10px 16px;}
+  .kl-balance-label{font-size:12px;color:#94a3b8;}
+  .kl-balance-value{font-size:18px;font-weight:700;color:#fff;}
+  .kl-btn-ghost{background:transparent;border:1px solid #14b8a6;color:#14b8a6;border-radius:7px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;}
+  .kl-btn-ghost:hover{background:#14b8a6;color:#fff;}
+  .kl-btn-amber{background:#f59e0b;border:none;color:#fff;border-radius:7px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;}
+  .kl-limit-banner{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 18px;margin-bottom:20px;font-size:14px;color:#92400e;}
+  .kl-request-list{display:flex;flex-direction:column;gap:14px;}
+  .kl-empty{text-align:center;color:#94a3b8;font-size:14px;padding:40px 20px;background:#f8fafc;border-radius:10px;border:1px dashed #e2e8f0;}
+  .kl-req-card{border:1px solid #e2e8f0;border-radius:12px;padding:18px 20px;background:#fff;transition:box-shadow .15s;}
+  .kl-req-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.06);}
+  .kl-req-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
+  .kl-req-title{font-size:16px;font-weight:600;color:#0f172a;margin:0 0 6px;}
+  .kl-req-meta{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:#64748b;margin-bottom:10px;}
+  .kl-badge-fund{background:#ecfdf5;color:#065f46;font-size:12px;font-weight:600;padding:3px 9px;border-radius:20px;}
+  .kl-lead-price{font-size:13px;color:#475569;background:#f1f5f9;padding:4px 10px;border-radius:7px;white-space:nowrap;}
+  .kl-req-actions{display:flex;gap:10px;margin-top:14px;}
+  .kl-btn-teal{background:#14b8a6;border:none;color:#fff;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer;}
+  .kl-btn-teal:hover{background:#0d9488;}
+  .kl-btn-teal:disabled{background:#cbd5e1;cursor:not-allowed;}
+  .kl-plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;}
+  .kl-plan{border:2px solid #e2e8f0;border-radius:14px;padding:24px 20px;background:#fff;display:flex;flex-direction:column;}
+  .kl-plan.featured{border-color:#14b8a6;position:relative;}
+  .kl-plan.featured::before{content:"Empfohlen";position:absolute;top:-11px;left:20px;background:#14b8a6;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;}
+  .kl-plan-name{font-size:16px;font-weight:700;color:#0f172a;}
+  .kl-plan-price{font-size:30px;font-weight:800;color:#0f172a;margin:8px 0 2px;}
+  .kl-plan-price span{font-size:14px;font-weight:500;color:#64748b;}
+  .kl-plan-feats{list-style:none;padding:0;margin:18px 0;flex:1;}
+  .kl-plan-feats li{font-size:13px;color:#475569;padding:6px 0;border-bottom:1px solid #f1f5f9;}
+  .kl-plan-feats li::before{content:"✓ ";color:#14b8a6;font-weight:700;}
+  .kl-plan-cta{margin-top:auto;}
+  .kl-plan-current{text-align:center;font-size:13px;color:#94a3b8;font-weight:600;padding:11px;}
+</style>
+
+<!-- ─── 4. SCRIPT (Demo-fähig + API-ready) ─────────────────────────── -->
+<script>
+// API-Basis & aktueller Anbieter — im echten Betrieb aus Session
+const KLARD_API = window.KLARD_API || "/api";
+const KLARD_PROVIDER_ID = window.KLARD_PROVIDER_ID || "demo-provider";
+
+function klardSwitchTab(name){
+  document.querySelectorAll('.tab-pane').forEach(p=>p.style.display='none');
+  document.querySelectorAll('.dash-tab').forEach(b=>b.classList.remove('active'));
+  const pane=document.getElementById('tab-'+name);
+  if(pane) pane.style.display='block';
+  const btn=document.querySelector('.dash-tab[data-tab="'+name+'"]');
+  if(btn) btn.classList.add('active');
+  if(name==='anfragen') klardLoadRequests();
+  if(name==='tarif') klardLoadPlans();
+}
+
+async function klardLoadRequests(){
+  // Wallet-Stand
+  try{
+    const w=await fetch(`${KLARD_API}/providers/${KLARD_PROVIDER_ID}/subscription`).then(r=>r.json());
+    // Entitlements für Limit-Banner
+    const ent=w.entitlements;
+    if(ent && ent.max_leads_month!==null){
+      // optional: Verbrauch separat laden
+    }
+  }catch(e){/* Demo-Modus */}
+
+  const list=document.getElementById('kl-request-list');
+  const empty=document.getElementById('kl-req-empty');
+  let requests=[];
+  try{
+    requests=await fetch(`${KLARD_API}/providers/${KLARD_PROVIDER_ID}/requests`).then(r=>r.json());
+  }catch(e){
+    requests=KLARD_DEMO_REQUESTS; // Fallback für Vorschau
+  }
+  if(!requests || !requests.length){ empty.style.display='block'; return; }
+  empty.style.display='none';
+  list.innerHTML=requests.map(klardRequestCard).join('');
+}
+
+function klardRequestCard(r){
+  const fund=r.funding_relevant?'<span class="kl-badge-fund">BAFA/KfW</span>':'';
+  const price=r.lead_price?`Lead-Gebühr: ${r.lead_price} €`:'Lead-Gebühr wird berechnet';
+  return `<div class="kl-req-card">
+    <div class="kl-req-top">
+      <div>
+        <p class="kl-req-title">${r.title} ${fund}</p>
+        <div class="kl-req-meta">
+          <span>📍 ${r.postal_code||''} ${r.city||''}</span>
+          <span>🕒 ${r.urgency||'flexibel'}</span>
+          ${r.budget_max?`<span>💶 bis ${r.budget_max} €</span>`:''}
+        </div>
+        <p style="font-size:14px;color:#475569;margin:0;">${r.description||''}</p>
+      </div>
+      <span class="kl-lead-price">${price}</span>
+    </div>
+    <div class="kl-req-actions">
+      <button class="kl-btn-teal" onclick="klardOpenOffer('${r.id}')">Angebot senden</button>
+    </div>
+  </div>`;
+}
+
+function klardOpenOffer(id){
+  // Hook für dein Angebots-Formular-Modal → POST /api/requests/:id/offers
+  alert('Angebots-Formular für Anfrage '+id+' öffnen (POST /api/requests/'+id+'/offers).');
+}
+
+async function klardLoadPlans(){
+  let plans=[];
+  try{ plans=(await fetch(`${KLARD_API}/plans`).then(r=>r.json())).plans; }
+  catch(e){ plans=KLARD_DEMO_PLANS; }
+  let currentTier='free';
+  try{
+    const sub=await fetch(`${KLARD_API}/providers/${KLARD_PROVIDER_ID}/subscription`).then(r=>r.json());
+    currentTier=sub.entitlements?.tier||'free';
+  }catch(e){}
+  document.getElementById('kl-current-tier').innerHTML=
+    'Aktuell: <strong>'+currentTier.charAt(0).toUpperCase()+currentTier.slice(1)+'</strong>';
+  const grid=document.getElementById('kl-plan-grid');
+  grid.innerHTML=plans.map(p=>klardPlanCard(p,currentTier)).join('');
+}
+
+function klardPlanCard(p,current){
+  const featured=p.tier==='plus';
+  const isCurrent=p.tier===current;
+  const feats=[];
+  feats.push(p.max_leads_month===null?'Unbegrenzte Anfragen':`${p.max_leads_month} Anfragen / Monat`);
+  if(Number(p.lead_discount_pct)>0) feats.push(`${p.lead_discount_pct}% Rabatt auf Lead-Gebühren`);
+  if(p.verified_badge) feats.push('Verifiziert-Badge');
+  if(p.ranking_boost>0) feats.push('Bevorzugtes Ranking');
+  if(p.multi_location) feats.push('Mehrere Standorte');
+  if(p.api_access) feats.push('API-Zugang');
+  if(p.priority_support) feats.push('Priorisierter Support');
+  const cta=isCurrent
+    ? '<div class="kl-plan-current">Ihr aktueller Tarif</div>'
+    : (p.tier==='free'
+        ? '<div class="kl-plan-current">Basis</div>'
+        : `<button class="kl-btn-teal" style="width:100%" onclick="klardCheckout('${p.tier}')">Auf ${p.name} wechseln</button>`);
+  return `<div class="kl-plan ${featured?'featured':''}">
+    <div class="kl-plan-name">${p.name}</div>
+    <div class="kl-plan-price">${Number(p.price_monthly)===0?'0 €':p.price_monthly+' €'}<span>/Monat</span></div>
+    <ul class="kl-plan-feats">${feats.map(f=>'<li>'+f+'</li>').join('')}</ul>
+    <div class="kl-plan-cta">${cta}</div>
+  </div>`;
+}
+
+async function klardCheckout(tier){
+  try{
+    const res=await fetch(`${KLARD_API}/subscriptions/checkout`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({provider_id:KLARD_PROVIDER_ID,tier})
+    }).then(r=>r.json());
+    if(res.url) window.location.href=res.url;
+    else alert(res.error||'Fehler beim Checkout.');
+  }catch(e){ alert('Checkout im Demo-Modus nicht verfügbar.'); }
+}
+
+async function klardTopup(){
+  const amount=prompt('Betrag aufladen (€):','50');
+  if(!amount) return;
+  try{
+    const res=await fetch(`${KLARD_API}/wallet/topup`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({provider_id:KLARD_PROVIDER_ID,amount:Number(amount)})
+    }).then(r=>r.json());
+    if(res.url) window.location.href=res.url;
+  }catch(e){ alert('Aufladen im Demo-Modus nicht verfügbar.'); }
+}
+
+// ─── Demo-Daten für Vorschau ohne Backend ───────────────────────
+const KLARD_DEMO_REQUESTS=[
+  {id:'1',title:'Energieberatung Einfamilienhaus (iSFP)',postal_code:'10115',city:'Berlin',urgency:'2_wochen',budget_max:2500,funding_relevant:true,lead_price:'10.90',description:'Sanierungsfahrplan für Baujahr 1962 gewünscht.'},
+  {id:'2',title:'Statische Berechnung Dachausbau',postal_code:'12047',city:'Berlin',urgency:'1_monat',budget_max:1800,funding_relevant:false,lead_price:'10.90',description:'Prüfstatik für Gauben-Einbau.'}
+];
+const KLARD_DEMO_PLANS=[
+  {tier:'free',name:'Klard Free',price_monthly:'0.00',max_leads_month:3,lead_discount_pct:'0',verified_badge:false,ranking_boost:0,multi_location:false,api_access:false,priority_support:false},
+  {tier:'plus',name:'Klard Plus',price_monthly:'29.00',max_leads_month:null,lead_discount_pct:'10',verified_badge:true,ranking_boost:10,multi_location:false,api_access:false,priority_support:false},
+  {tier:'pro',name:'Klard Pro',price_monthly:'79.00',max_leads_month:null,lead_discount_pct:'20',verified_badge:true,ranking_boost:25,multi_location:true,api_access:true,priority_support:true}
+];
+</script>
