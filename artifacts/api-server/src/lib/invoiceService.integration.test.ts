@@ -306,6 +306,72 @@ describe("issueInvoiceForBooking — a fresh paid booking", () => {
   });
 });
 
+describe("issueInvoiceForBooking — concurrent contention (no duplicate numbers)", () => {
+  it("assigns unique, contiguous invoice numbers to N simultaneous issuances", async () => {
+    const N = 8;
+    // N distinct paid bookings, all for the SAME provider — so they all race
+    // for that provider's invoice-number counter.
+    const bookingIds = await Promise.all(
+      Array.from({ length: N }, () => insertBooking({ totalPrice: 120 })),
+    );
+
+    // Capture the provider's next number BEFORE the race, so we know the exact
+    // contiguous block these issuances must occupy (earlier tests already
+    // consumed some numbers, so we can't assume it starts at 0001).
+    const [before] = await db
+      .select({ next: providersTable.nextInvoiceNumber })
+      .from(providersTable)
+      .where(eq(providersTable.id, provider.id));
+    const startNum = before!.next;
+
+    // Fire all N issuances truly simultaneously. reserveInvoiceNumber's single
+    // atomic `UPDATE ... RETURNING` must serialize the increments so no two
+    // handlers ever read back the same number (the real-contention pattern from
+    // the slot row-lock test in bookingsBilling.integration.test.ts).
+    const results = await Promise.all(
+      bookingIds.map((bookingId) => issueInvoiceForBooking({ bookingId })),
+    );
+
+    // Every call created a fresh invoice (none skipped or idempotent-hit).
+    for (const r of results) {
+      expect(r).not.toBeNull();
+      expect(r!.created).toBe(true);
+    }
+
+    // Extract the numeric component of each assigned invoice number.
+    const nums = results
+      .map((r) => r!.invoice.invoiceNumber)
+      .map((s) => {
+        const m = s.match(/-(\d+)$/);
+        return Number(m![1]);
+      })
+      .sort((a, b) => a - b);
+
+    // No two issuances grabbed the same number.
+    expect(new Set(nums).size).toBe(N);
+
+    // The numbers form a gap-free, contiguous block: startNum .. startNum+N-1.
+    const expected = Array.from({ length: N }, (_, i) => startNum + i);
+    expect(nums).toEqual(expected);
+
+    // The provider's counter advanced by exactly N — no lost or double increments.
+    const [after] = await db
+      .select({ next: providersTable.nextInvoiceNumber })
+      .from(providersTable)
+      .where(eq(providersTable.id, provider.id));
+    expect(after!.next).toBe(startNum + N);
+
+    // The DB holds exactly N invoice rows for these bookings, all with distinct
+    // numbers — proving the uniqueness survives the round-trip to Postgres.
+    const persisted = await db
+      .select({ invoiceNumber: invoicesTable.invoiceNumber })
+      .from(invoicesTable)
+      .where(inArray(invoicesTable.bookingId, bookingIds));
+    expect(persisted.length).toBe(N);
+    expect(new Set(persisted.map((p) => p.invoiceNumber)).size).toBe(N);
+  });
+});
+
 describe("issueInvoiceForBooking — idempotency", () => {
   it("does not create a second invoice when re-issued for the same booking", async () => {
     const bookingId = await insertBooking({ totalPrice: 120 });
