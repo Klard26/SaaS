@@ -18,6 +18,7 @@ import type {
 
 import type {
   AcceptOfferInput,
+  AcceptRequestOfferInput,
   AccountRole,
   AdminBookingRow,
   AdminCategoryRow,
@@ -40,6 +41,8 @@ import type {
   ClaimRoleBody,
   ConnectOnboardingLink,
   ConnectStatus,
+  CreateOfferResult,
+  CreateRequestResult,
   CustomerProfile,
   CustomerProfileInput,
   DeleteMyAccount200,
@@ -61,6 +64,8 @@ import type {
   Invoice,
   InvoiceSettings,
   InvoiceSettingsUpdate,
+  LeadRefundInput,
+  LeadRefundResult,
   ListAdminBookingsParams,
   ListProvidersParams,
   ListServiceTemplatesParams,
@@ -73,11 +78,18 @@ import type {
   Provider,
   ProviderDashboard,
   ProviderInput,
+  ProviderOfferInput,
   ProviderSummary,
   ProviderUpdate,
   ReportCheckoutInput,
+  RequestAccessInput,
+  RequestInput,
+  RequestWithOffers,
   Review,
   ReviewInput,
+  RfqOffer,
+  RfqRequest,
+  RfqRequestForProvider,
   Service,
   ServiceInput,
   ServiceTemplate,
@@ -95,6 +107,8 @@ import type {
   Vollmacht,
   VollmachtInput,
   VollmachtStatusUpdate,
+  WalletStatus,
+  WalletTopupInput,
   Wechselvorgang,
   Zaehlpunkt,
   ZaehlpunktInput,
@@ -4553,6 +4567,842 @@ export function useListMyOffers<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Post an open request (Anfrage). Public — works for guests and logged-in customers.
+ */
+export const getCreateRequestUrl = () => {
+  return `/api/requests`;
+};
+
+export const createRequest = async (
+  requestInput: RequestInput,
+  options?: RequestInit,
+): Promise<CreateRequestResult> => {
+  return customFetch<CreateRequestResult>(getCreateRequestUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(requestInput),
+  });
+};
+
+export const getCreateRequestMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createRequest>>,
+    TError,
+    { data: BodyType<RequestInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createRequest>>,
+  TError,
+  { data: BodyType<RequestInput> },
+  TContext
+> => {
+  const mutationKey = ["createRequest"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createRequest>>,
+    { data: BodyType<RequestInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createRequest(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateRequestMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createRequest>>
+>;
+export type CreateRequestMutationBody = BodyType<RequestInput>;
+export type CreateRequestMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Post an open request (Anfrage). Public — works for guests and logged-in customers.
+ */
+export const useCreateRequest = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createRequest>>,
+    TError,
+    { data: BodyType<RequestInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createRequest>>,
+  TError,
+  { data: BodyType<RequestInput> },
+  TContext
+> => {
+  return useMutation(getCreateRequestMutationOptions(options));
+};
+
+/**
+ * @summary List the logged-in customer's own requests
+ */
+export const getListMyRequestsUrl = () => {
+  return `/api/requests/mine`;
+};
+
+export const listMyRequests = async (
+  options?: RequestInit,
+): Promise<RfqRequest[]> => {
+  return customFetch<RfqRequest[]>(getListMyRequestsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListMyRequestsQueryKey = () => {
+  return [`/api/requests/mine`] as const;
+};
+
+export const getListMyRequestsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listMyRequests>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listMyRequests>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListMyRequestsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyRequests>>> = ({
+    signal,
+  }) => listMyRequests({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listMyRequests>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListMyRequestsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listMyRequests>>
+>;
+export type ListMyRequestsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List the logged-in customer's own requests
+ */
+
+export function useListMyRequests<
+  TData = Awaited<ReturnType<typeof listMyRequests>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listMyRequests>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListMyRequestsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Fetch a single request together with its received offers. Works for the owning logged-in customer, or for a guest who presents the one-time access token (passed in the body, never the query string, so it is not logged).
+ */
+export const getAccessRequestUrl = () => {
+  return `/api/requests/access`;
+};
+
+export const accessRequest = async (
+  requestAccessInput: RequestAccessInput,
+  options?: RequestInit,
+): Promise<RequestWithOffers> => {
+  return customFetch<RequestWithOffers>(getAccessRequestUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(requestAccessInput),
+  });
+};
+
+export const getAccessRequestMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof accessRequest>>,
+    TError,
+    { data: BodyType<RequestAccessInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof accessRequest>>,
+  TError,
+  { data: BodyType<RequestAccessInput> },
+  TContext
+> => {
+  const mutationKey = ["accessRequest"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof accessRequest>>,
+    { data: BodyType<RequestAccessInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return accessRequest(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AccessRequestMutationResult = NonNullable<
+  Awaited<ReturnType<typeof accessRequest>>
+>;
+export type AccessRequestMutationBody = BodyType<RequestAccessInput>;
+export type AccessRequestMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Fetch a single request together with its received offers. Works for the owning logged-in customer, or for a guest who presents the one-time access token (passed in the body, never the query string, so it is not logged).
+ */
+export const useAccessRequest = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof accessRequest>>,
+    TError,
+    { data: BodyType<RequestAccessInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof accessRequest>>,
+  TError,
+  { data: BodyType<RequestAccessInput> },
+  TContext
+> => {
+  return useMutation(getAccessRequestMutationOptions(options));
+};
+
+/**
+ * @summary Customer accepts a provider's offer (owning customer, or a guest who presents the access token in the body)
+ */
+export const getAcceptRequestOfferUrl = (id: number) => {
+  return `/api/request-offers/${id}/accept`;
+};
+
+export const acceptRequestOffer = async (
+  id: number,
+  acceptRequestOfferInput?: AcceptRequestOfferInput,
+  options?: RequestInit,
+): Promise<RfqOffer> => {
+  return customFetch<RfqOffer>(getAcceptRequestOfferUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(acceptRequestOfferInput),
+  });
+};
+
+export const getAcceptRequestOfferMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof acceptRequestOffer>>,
+    TError,
+    { id: number; data: BodyType<AcceptRequestOfferInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof acceptRequestOffer>>,
+  TError,
+  { id: number; data: BodyType<AcceptRequestOfferInput> },
+  TContext
+> => {
+  const mutationKey = ["acceptRequestOffer"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof acceptRequestOffer>>,
+    { id: number; data: BodyType<AcceptRequestOfferInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return acceptRequestOffer(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AcceptRequestOfferMutationResult = NonNullable<
+  Awaited<ReturnType<typeof acceptRequestOffer>>
+>;
+export type AcceptRequestOfferMutationBody = BodyType<AcceptRequestOfferInput>;
+export type AcceptRequestOfferMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Customer accepts a provider's offer (owning customer, or a guest who presents the access token in the body)
+ */
+export const useAcceptRequestOffer = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof acceptRequestOffer>>,
+    TError,
+    { id: number; data: BodyType<AcceptRequestOfferInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof acceptRequestOffer>>,
+  TError,
+  { id: number; data: BodyType<AcceptRequestOfferInput> },
+  TContext
+> => {
+  return useMutation(getAcceptRequestOfferMutationOptions(options));
+};
+
+/**
+ * @summary Matched requests for the signed-in provider (contact anonymized until an offer is sent)
+ */
+export const getListProviderRequestsUrl = () => {
+  return `/api/providers/me/requests`;
+};
+
+export const listProviderRequests = async (
+  options?: RequestInit,
+): Promise<RfqRequestForProvider[]> => {
+  return customFetch<RfqRequestForProvider[]>(getListProviderRequestsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListProviderRequestsQueryKey = () => {
+  return [`/api/providers/me/requests`] as const;
+};
+
+export const getListProviderRequestsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listProviderRequests>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listProviderRequests>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListProviderRequestsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listProviderRequests>>
+  > = ({ signal }) => listProviderRequests({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listProviderRequests>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListProviderRequestsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listProviderRequests>>
+>;
+export type ListProviderRequestsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Matched requests for the signed-in provider (contact anonymized until an offer is sent)
+ */
+
+export function useListProviderRequests<
+  TData = Awaited<ReturnType<typeof listProviderRequests>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listProviderRequests>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListProviderRequestsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary A single matched request for the signed-in provider (sets viewed); contact anonymized until offered
+ */
+export const getGetProviderRequestUrl = (requestId: number) => {
+  return `/api/providers/me/requests/${requestId}`;
+};
+
+export const getProviderRequest = async (
+  requestId: number,
+  options?: RequestInit,
+): Promise<RfqRequestForProvider> => {
+  return customFetch<RfqRequestForProvider>(
+    getGetProviderRequestUrl(requestId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetProviderRequestQueryKey = (requestId: number) => {
+  return [`/api/providers/me/requests/${requestId}`] as const;
+};
+
+export const getGetProviderRequestQueryOptions = <
+  TData = Awaited<ReturnType<typeof getProviderRequest>>,
+  TError = ErrorType<unknown>,
+>(
+  requestId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getProviderRequest>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetProviderRequestQueryKey(requestId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getProviderRequest>>
+  > = ({ signal }) =>
+    getProviderRequest(requestId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!requestId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getProviderRequest>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetProviderRequestQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getProviderRequest>>
+>;
+export type GetProviderRequestQueryError = ErrorType<unknown>;
+
+/**
+ * @summary A single matched request for the signed-in provider (sets viewed); contact anonymized until offered
+ */
+
+export function useGetProviderRequest<
+  TData = Awaited<ReturnType<typeof getProviderRequest>>,
+  TError = ErrorType<unknown>,
+>(
+  requestId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getProviderRequest>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetProviderRequestQueryOptions(requestId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Send an offer on a request (charges the server-computed lead fee from the wallet)
+ */
+export const getCreateProviderOfferUrl = (requestId: number) => {
+  return `/api/providers/me/requests/${requestId}/offers`;
+};
+
+export const createProviderOffer = async (
+  requestId: number,
+  providerOfferInput: ProviderOfferInput,
+  options?: RequestInit,
+): Promise<CreateOfferResult> => {
+  return customFetch<CreateOfferResult>(getCreateProviderOfferUrl(requestId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(providerOfferInput),
+  });
+};
+
+export const getCreateProviderOfferMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createProviderOffer>>,
+    TError,
+    { requestId: number; data: BodyType<ProviderOfferInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createProviderOffer>>,
+  TError,
+  { requestId: number; data: BodyType<ProviderOfferInput> },
+  TContext
+> => {
+  const mutationKey = ["createProviderOffer"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createProviderOffer>>,
+    { requestId: number; data: BodyType<ProviderOfferInput> }
+  > = (props) => {
+    const { requestId, data } = props ?? {};
+
+    return createProviderOffer(requestId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateProviderOfferMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createProviderOffer>>
+>;
+export type CreateProviderOfferMutationBody = BodyType<ProviderOfferInput>;
+export type CreateProviderOfferMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Send an offer on a request (charges the server-computed lead fee from the wallet)
+ */
+export const useCreateProviderOffer = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createProviderOffer>>,
+    TError,
+    { requestId: number; data: BodyType<ProviderOfferInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createProviderOffer>>,
+  TError,
+  { requestId: number; data: BodyType<ProviderOfferInput> },
+  TContext
+> => {
+  return useMutation(getCreateProviderOfferMutationOptions(options));
+};
+
+/**
+ * @summary The signed-in provider's lead wallet (balance, recent transactions, tier entitlements)
+ */
+export const getGetMyWalletUrl = () => {
+  return `/api/providers/me/wallet`;
+};
+
+export const getMyWallet = async (
+  options?: RequestInit,
+): Promise<WalletStatus> => {
+  return customFetch<WalletStatus>(getGetMyWalletUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMyWalletQueryKey = () => {
+  return [`/api/providers/me/wallet`] as const;
+};
+
+export const getGetMyWalletQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMyWallet>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMyWallet>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMyWalletQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyWallet>>> = ({
+    signal,
+  }) => getMyWallet({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMyWallet>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMyWalletQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMyWallet>>
+>;
+export type GetMyWalletQueryError = ErrorType<unknown>;
+
+/**
+ * @summary The signed-in provider's lead wallet (balance, recent transactions, tier entitlements)
+ */
+
+export function useGetMyWallet<
+  TData = Awaited<ReturnType<typeof getMyWallet>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMyWallet>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMyWalletQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a Stripe Checkout Session to top up the lead wallet
+ */
+export const getCreateWalletTopupUrl = () => {
+  return `/api/providers/me/wallet/topup`;
+};
+
+export const createWalletTopup = async (
+  walletTopupInput: WalletTopupInput,
+  options?: RequestInit,
+): Promise<CheckoutSession> => {
+  return customFetch<CheckoutSession>(getCreateWalletTopupUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(walletTopupInput),
+  });
+};
+
+export const getCreateWalletTopupMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createWalletTopup>>,
+    TError,
+    { data: BodyType<WalletTopupInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createWalletTopup>>,
+  TError,
+  { data: BodyType<WalletTopupInput> },
+  TContext
+> => {
+  const mutationKey = ["createWalletTopup"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createWalletTopup>>,
+    { data: BodyType<WalletTopupInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createWalletTopup(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateWalletTopupMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createWalletTopup>>
+>;
+export type CreateWalletTopupMutationBody = BodyType<WalletTopupInput>;
+export type CreateWalletTopupMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a Stripe Checkout Session to top up the lead wallet
+ */
+export const useCreateWalletTopup = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createWalletTopup>>,
+    TError,
+    { data: BodyType<WalletTopupInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createWalletTopup>>,
+  TError,
+  { data: BodyType<WalletTopupInput> },
+  TContext
+> => {
+  return useMutation(getCreateWalletTopupMutationOptions(options));
+};
+
+/**
+ * @summary Lead-Garantie — refund a dead lead fee back to the provider's wallet (provider owner only)
+ */
+export const getRefundLeadUrl = (leadFeeId: number) => {
+  return `/api/leads/${leadFeeId}/refund`;
+};
+
+export const refundLead = async (
+  leadFeeId: number,
+  leadRefundInput?: LeadRefundInput,
+  options?: RequestInit,
+): Promise<LeadRefundResult> => {
+  return customFetch<LeadRefundResult>(getRefundLeadUrl(leadFeeId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(leadRefundInput),
+  });
+};
+
+export const getRefundLeadMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof refundLead>>,
+    TError,
+    { leadFeeId: number; data: BodyType<LeadRefundInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof refundLead>>,
+  TError,
+  { leadFeeId: number; data: BodyType<LeadRefundInput> },
+  TContext
+> => {
+  const mutationKey = ["refundLead"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof refundLead>>,
+    { leadFeeId: number; data: BodyType<LeadRefundInput> }
+  > = (props) => {
+    const { leadFeeId, data } = props ?? {};
+
+    return refundLead(leadFeeId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RefundLeadMutationResult = NonNullable<
+  Awaited<ReturnType<typeof refundLead>>
+>;
+export type RefundLeadMutationBody = BodyType<LeadRefundInput>;
+export type RefundLeadMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Lead-Garantie — refund a dead lead fee back to the provider's wallet (provider owner only)
+ */
+export const useRefundLead = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof refundLead>>,
+    TError,
+    { leadFeeId: number; data: BodyType<LeadRefundInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof refundLead>>,
+  TError,
+  { leadFeeId: number; data: BodyType<LeadRefundInput> },
+  TContext
+> => {
+  return useMutation(getRefundLeadMutationOptions(options));
+};
 
 /**
  * @summary Current user's Immobilien-Kundenprofil (Hausverwalter/Bestandshalter)

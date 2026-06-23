@@ -22,7 +22,11 @@ import { requireAdmin } from "../lib/adminAuth";
 
 const router: IRouter = Router();
 
-router.use(requireAdmin);
+// Scope the admin guard to this router's own `/finance` prefix. The router is
+// mounted path-less, so a bare `router.use(requireAdmin)` would 401/403 every
+// UNMATCHED request that falls through to it, blocking later routers. Prefix-
+// scoping keeps the fail-closed gate while letting non-matching paths through.
+router.use("/finance", requireAdmin);
 
 const IdParam = z.object({ id: z.coerce.number().int().positive() });
 

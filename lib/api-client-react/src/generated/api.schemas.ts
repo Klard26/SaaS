@@ -1112,6 +1112,314 @@ export interface OfferAcceptance {
   createdAt: string;
 }
 
+/**
+ * @nullable
+ */
+export type RequestInputAnswers = { [key: string]: unknown } | null;
+
+export type RequestInputUrgency =
+  (typeof RequestInputUrgency)[keyof typeof RequestInputUrgency];
+
+export const RequestInputUrgency = {
+  sofort: "sofort",
+  zwei_wochen: "zwei_wochen",
+  flexibel: "flexibel",
+} as const;
+
+export interface RequestInput {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  customerName: string;
+  /**
+   * @minLength 3
+   * @maxLength 200
+   */
+  customerEmail: string;
+  /** @nullable */
+  customerPhone?: string | null;
+  /** @minLength 1 */
+  categorySlug: string;
+  /** @nullable */
+  serviceTemplateId?: number | null;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  title: string;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  answers?: RequestInputAnswers;
+  /** @nullable */
+  postalCode?: string | null;
+  /** @nullable */
+  city?: string | null;
+  /** @nullable */
+  budgetMinCents?: number | null;
+  /** @nullable */
+  budgetMaxCents?: number | null;
+  urgency?: RequestInputUrgency;
+  fundingRelevant?: boolean;
+  /**
+   * @minimum 1
+   * @maximum 10
+   */
+  maxOffers?: number;
+  /** DSGVO: ausdrückliche, freiwillige Einwilligung, die Anfrage an passende Anbieter weiterzugeben. Nur ein literal `true` zählt; der Zeitstempel wird serverseitig festgehalten. */
+  consentDataShare: boolean;
+}
+
+/**
+ * @nullable
+ */
+export type RfqRequestAnswers = { [key: string]: unknown } | null;
+
+export interface RfqRequest {
+  id: number;
+  /** @nullable */
+  customerId?: string | null;
+  customerName: string;
+  customerEmail: string;
+  /** @nullable */
+  customerPhone?: string | null;
+  categorySlug: string;
+  /** @nullable */
+  serviceTemplateId?: number | null;
+  title: string;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  answers?: RfqRequestAnswers;
+  /** @nullable */
+  postalCode?: string | null;
+  /** @nullable */
+  city?: string | null;
+  /** @nullable */
+  budgetMinCents?: number | null;
+  /** @nullable */
+  budgetMaxCents?: number | null;
+  urgency: string;
+  fundingRelevant: boolean;
+  maxOffers: number;
+  status: string;
+  createdAt: string;
+}
+
+export interface CreateRequestResult {
+  request: RfqRequest;
+  /** One-time bearer token for guest access to this request's offers (only returned here). */
+  accessToken: string;
+  matchedProviders: number;
+}
+
+export interface RequestAccessInput {
+  requestId: number;
+  /**
+   * Guest access token (omit when the owning customer is logged in).
+   * @nullable
+   */
+  token?: string | null;
+}
+
+export interface RfqProviderSummary {
+  id: number;
+  displayName: string;
+  /** @nullable */
+  category?: string | null;
+  /** @nullable */
+  city?: string | null;
+  rating?: number;
+  reviewCount?: number;
+  verified?: boolean;
+  /** @nullable */
+  subscriptionTier?: string | null;
+  /** @nullable */
+  avatarUrl?: string | null;
+}
+
+export interface RfqOfferWithProvider {
+  id: number;
+  requestId: number;
+  providerId: number;
+  priceCents: number;
+  priceType: string;
+  /** @nullable */
+  message?: string | null;
+  /** @nullable */
+  availableFrom?: string | null;
+  /** @nullable */
+  estimatedDuration?: string | null;
+  status: string;
+  createdAt: string;
+  provider: RfqProviderSummary;
+}
+
+export interface RequestWithOffers {
+  request: RfqRequest;
+  offers: RfqOfferWithProvider[];
+}
+
+export interface AcceptRequestOfferInput {
+  /**
+   * Guest access token (omit when the owning customer is logged in).
+   * @nullable
+   */
+  token?: string | null;
+}
+
+/**
+ * @nullable
+ */
+export type RfqRequestForProviderAnswers = { [key: string]: unknown } | null;
+
+export interface RfqRequestForProvider {
+  id: number;
+  categorySlug: string;
+  /** @nullable */
+  serviceTemplateId?: number | null;
+  title: string;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  answers?: RfqRequestForProviderAnswers;
+  /** @nullable */
+  postalCode?: string | null;
+  /** @nullable */
+  city?: string | null;
+  /** @nullable */
+  budgetMinCents?: number | null;
+  /** @nullable */
+  budgetMaxCents?: number | null;
+  urgency: string;
+  fundingRelevant: boolean;
+  status: string;
+  contactUnlocked: boolean;
+  hasOffered: boolean;
+  /** The lead fee this provider would pay to send an offer (after their tier discount). */
+  estimatedLeadPriceCents: number;
+  /** @nullable */
+  leadFeeId?: number | null;
+  offerCount?: number;
+  /** @nullable */
+  customerName?: string | null;
+  /** @nullable */
+  customerEmail?: string | null;
+  /** @nullable */
+  customerPhone?: string | null;
+  createdAt: string;
+}
+
+export type ProviderOfferInputPriceType =
+  (typeof ProviderOfferInputPriceType)[keyof typeof ProviderOfferInputPriceType];
+
+export const ProviderOfferInputPriceType = {
+  fixed: "fixed",
+  hourly: "hourly",
+  estimate: "estimate",
+} as const;
+
+export interface ProviderOfferInput {
+  /** @minimum 0 */
+  priceCents: number;
+  priceType?: ProviderOfferInputPriceType;
+  /** @nullable */
+  message?: string | null;
+  /** @nullable */
+  availableFrom?: string | null;
+  /** @nullable */
+  estimatedDuration?: string | null;
+}
+
+export interface RfqOffer {
+  id: number;
+  requestId: number;
+  providerId: number;
+  /** @nullable */
+  leadFeeId?: number | null;
+  priceCents: number;
+  priceType: string;
+  /** @nullable */
+  message?: string | null;
+  /** @nullable */
+  availableFrom?: string | null;
+  /** @nullable */
+  estimatedDuration?: string | null;
+  status: string;
+  /** @nullable */
+  viewedAt?: string | null;
+  /** @nullable */
+  respondedAt?: string | null;
+  createdAt: string;
+}
+
+export interface CreateOfferResult {
+  offer: RfqOffer;
+  leadFeeCents: number;
+  basePriceCents: number;
+  tier: string;
+  walletBalanceCents: number;
+}
+
+export type LeadEntitlementsTier =
+  (typeof LeadEntitlementsTier)[keyof typeof LeadEntitlementsTier];
+
+export const LeadEntitlementsTier = {
+  basic: "basic",
+  premium: "premium",
+} as const;
+
+export interface LeadEntitlements {
+  tier: LeadEntitlementsTier;
+  /**
+   * Monthly lead cap; null = unlimited (premium).
+   * @nullable
+   */
+  maxLeadsMonth?: number | null;
+  leadsUsed: number;
+  leadDiscountPct: number;
+  rankingBoost: number;
+}
+
+export interface WalletTransactionDto {
+  id: number;
+  type: string;
+  amountCents: number;
+  balanceAfterCents: number;
+  /** @nullable */
+  referenceId?: number | null;
+  /** @nullable */
+  note?: string | null;
+  createdAt: string;
+}
+
+export interface WalletStatus {
+  balanceCents: number;
+  currency: string;
+  entitlements: LeadEntitlements;
+  transactions: WalletTransactionDto[];
+}
+
+export interface WalletTopupInput {
+  /**
+   * @minimum 500
+   * @maximum 100000
+   */
+  amountCents: number;
+}
+
+export interface LeadRefundInput {
+  /** @nullable */
+  reason?: string | null;
+}
+
+export interface LeadRefundResult {
+  ok: boolean;
+  refundedCents: number;
+  balanceCents: number;
+}
+
 export type ImmobilienKundeInputTyp =
   (typeof ImmobilienKundeInputTyp)[keyof typeof ImmobilienKundeInputTyp];
 

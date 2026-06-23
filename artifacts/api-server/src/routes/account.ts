@@ -18,6 +18,13 @@ import {
   userRolesTable,
   invoicesTable,
   emailLogTable,
+  requestsTable,
+  requestMatchesTable,
+  requestOffersTable,
+  leadFeesTable,
+  providerWalletTable,
+  walletTransactionsTable,
+  leadUsageTable,
 } from "@workspace/db";
 import { eq, or, inArray } from "drizzle-orm";
 import { getAuth, clerkClient } from "@clerk/express";
@@ -158,6 +165,14 @@ router.delete("/account/me", async (req, res): Promise<void> => {
       .where(eq(energieausweisOrdersTable.userId, userId));
     for (const o of energieausweisContacts) addIdentifier(o.email);
 
+    // Pay-per-Lead (RfQ) request contact email — recipient of the offer-received
+    // mail and may differ from the Clerk account email, so gather it explicitly.
+    const requestContacts = await db
+      .select({ email: requestsTable.customerEmail })
+      .from(requestsTable)
+      .where(eq(requestsTable.customerId, userId));
+    for (const r of requestContacts) addIdentifier(r.email);
+
     // Best-effort: stop any active Stripe subscription immediately so the user
     // is not billed after deletion. Never block account deletion on Stripe.
     if (provider?.stripeSubscriptionId) {
@@ -181,10 +196,22 @@ router.delete("/account/me", async (req, res): Promise<void> => {
         await tx.delete(timeSlotsTable).where(eq(timeSlotsTable.providerId, provider.id));
         await tx.delete(reviewsTable).where(eq(reviewsTable.providerId, provider.id));
         await tx.delete(bookingsTable).where(eq(bookingsTable.providerId, provider.id));
+        // Pay-per-Lead (RfQ) provider-keyed data (no FK cascade): wallet ledger,
+        // wallet, lead fees, offers, matches, and monthly usage counter.
+        await tx
+          .delete(walletTransactionsTable)
+          .where(eq(walletTransactionsTable.providerId, provider.id));
+        await tx.delete(providerWalletTable).where(eq(providerWalletTable.providerId, provider.id));
+        await tx.delete(leadFeesTable).where(eq(leadFeesTable.providerId, provider.id));
+        await tx.delete(requestOffersTable).where(eq(requestOffersTable.providerId, provider.id));
+        await tx.delete(requestMatchesTable).where(eq(requestMatchesTable.providerId, provider.id));
+        await tx.delete(leadUsageTable).where(eq(leadUsageTable.providerId, provider.id));
         await tx.delete(providersTable).where(eq(providersTable.id, provider.id));
       }
       // All user-keyed data (keyed by the Clerk user id across both roles).
       await tx.delete(reviewsTable).where(eq(reviewsTable.customerId, userId));
+      // Pay-per-Lead requests created by this customer hold their contact PII.
+      await tx.delete(requestsTable).where(eq(requestsTable.customerId, userId));
       await tx.delete(bookingsTable).where(eq(bookingsTable.customerId, userId));
       await tx.delete(immobilienKundeTable).where(eq(immobilienKundeTable.userId, userId));
       await tx.delete(customerProfileTable).where(eq(customerProfileTable.userId, userId));

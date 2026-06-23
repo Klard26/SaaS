@@ -13,6 +13,7 @@ import {
   deliverReportReadyEmail,
 } from "../lib/foerderschiene";
 import { createFinanceLeadsForPaidReport } from "../lib/financeAffiliate";
+import { applyWalletMovement } from "../lib/wallet";
 
 const router: IRouter = Router();
 
@@ -159,6 +160,42 @@ router.post(
                     req.log.error({ err, bookingId: updated.id }, "Invoice issue failed in webhook");
                   }
                 })();
+              }
+            }
+          } else if (kind === "wallet_topup") {
+            const providerId = Number(session.metadata?.["providerId"]);
+            if (Number.isFinite(providerId) && session.payment_status === "paid") {
+              const metaAmount = Number(session.metadata?.["amountCents"]);
+              const credited =
+                Number.isFinite(metaAmount) && metaAmount > 0
+                  ? metaAmount
+                  : (session.amount_total ?? 0);
+              const stripePaymentId = String(session.payment_intent ?? session.id);
+              if (credited > 0) {
+                try {
+                  await db.transaction((tx) =>
+                    applyWalletMovement(tx, providerId, {
+                      type: "topup",
+                      amountCents: credited,
+                      stripePaymentId,
+                      note: "Guthaben-Aufladung",
+                    }),
+                  );
+                } catch (err) {
+                  // A duplicate webhook delivery collides with the unique
+                  // stripePaymentId index (PG 23505) and the whole movement
+                  // rolls back — that IS the idempotency guarantee, so we ack.
+                  // Any other error is real: rethrow so the outer handler 500s
+                  // and Stripe retries.
+                  if ((err as { code?: string })?.code === "23505") {
+                    req.log.info(
+                      { providerId, stripePaymentId },
+                      "wallet top-up already credited (idempotent replay)",
+                    );
+                  } else {
+                    throw err;
+                  }
+                }
               }
             }
           }

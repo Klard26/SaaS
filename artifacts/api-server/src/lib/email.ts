@@ -17,6 +17,8 @@ import tplPaymentFailed from "../email-templates/payment_failed.hbs";
 import tplReminder1h from "../email-templates/booking_reminder_1h.hbs";
 import tplFoerderschieneReportReady from "../email-templates/foerderschiene_report_ready.hbs";
 import tplFinanceLeadPartner from "../email-templates/finance_lead_partner.hbs";
+import tplNewRequestProvider from "../email-templates/new_request_provider.hbs";
+import tplOfferReceived from "../email-templates/offer_received.hbs";
 
 const APP_URL =
   process.env["APP_URL"] ??
@@ -220,6 +222,82 @@ async function send(args: SendArgs): Promise<void> {
 }
 
 // ── Templates ───────────────────────────────────────────────────────────────
+
+/** Human-readable labels for the RfQ matching categories (slug → German name). */
+const RFQ_CATEGORY_LABELS: Record<string, string> = {
+  architektur: "Architektur",
+  "bauberatung-baubegleitung": "Bauberatung / Baubegleitung",
+  "bauphysik-spezialberatung": "Bauphysik & Spezialberatung",
+  energieberatung: "Energieberatung",
+  gebaeudesachverstaendige: "Gebäudesachverständige",
+  "statiker-tragwerksplaner": "Statiker / Tragwerksplaner",
+  "tga-fachplaner-haustechnik": "TGA-Fachplaner (Haustechnik)",
+  "vermesser-geodaeten": "Vermesser / Geodäten",
+};
+function rfqCategoryLabel(slug: string): string {
+  return RFQ_CATEGORY_LABELS[slug] ?? slug;
+}
+
+/**
+ * Notify a matched provider that a new RfQ request landed in their inbox.
+ * Contact details are intentionally NOT included (revealed only after offering).
+ */
+export async function sendNewRequestToProvider(p: {
+  providerEmail: string;
+  providerName: string;
+  requestTitle: string;
+  city?: string | null;
+  categorySlug: string;
+  requestUrl: string;
+}): Promise<void> {
+  if (!p.providerEmail) return;
+  const category = rfqCategoryLabel(p.categorySlug);
+  const html = renderTemplate(tplNewRequestProvider, {
+    providerName: p.providerName,
+    requestTitle: p.requestTitle,
+    city: p.city || "ohne Ortsangabe",
+    category,
+    requestUrl: p.requestUrl,
+  });
+  await send({
+    to: p.providerEmail,
+    subject: `Neue Anfrage: ${p.requestTitle}`,
+    html,
+    text: `Neue Anfrage in Ihrer Kategorie ${category}${p.city ? ` (${p.city})` : ""}: ${p.requestTitle}. Jetzt ansehen und Angebot senden: ${p.requestUrl}`,
+    templateId: "new_request_provider",
+    relatedId: p.providerEmail,
+  });
+}
+
+/** Notify a customer that a provider sent a binding offer on their request. */
+export async function sendOfferReceivedToCustomer(p: {
+  customerEmail: string;
+  customerName: string;
+  requestTitle: string;
+  providerName: string;
+  priceCents: number;
+  message?: string | null;
+  requestUrl: string;
+}): Promise<void> {
+  if (!p.customerEmail) return;
+  const price = eur(p.priceCents / 100);
+  const html = renderTemplate(tplOfferReceived, {
+    customerName: p.customerName,
+    requestTitle: p.requestTitle,
+    providerName: p.providerName,
+    price,
+    message: p.message || "Keine zusätzliche Nachricht.",
+    requestUrl: p.requestUrl,
+  });
+  await send({
+    to: p.customerEmail,
+    subject: `Neues Angebot für „${p.requestTitle}“`,
+    html,
+    text: `${p.providerName} hat Ihnen ein Angebot (${price}) für „${p.requestTitle}“ gesendet. Angebote vergleichen und annehmen: ${p.requestUrl}`,
+    templateId: "offer_received",
+    relatedId: p.customerEmail,
+  });
+}
 
 export async function sendProviderWelcome(p: {
   email: string;

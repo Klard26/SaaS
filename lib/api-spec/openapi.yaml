@@ -40,6 +40,8 @@ tags:
     description: Platform operator admin dashboard
   - name: energie
     description: enerwatt24 energy-switching for property managers (Hausverwalter/Bestandshalter)
+  - name: requests
+    description: Pay-per-Lead Anfrage/Angebot (RfQ) marketplace — open requests, provider offers, wallet
 
 paths:
   /healthz:
@@ -978,6 +980,200 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/OfferAcceptance"
+
+  /requests:
+    post:
+      operationId: createRequest
+      tags: [requests]
+      summary: Post an open request (Anfrage). Public — works for guests and logged-in customers.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestInput"
+      responses:
+        "201":
+          description: Request created, matching providers notified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateRequestResult"
+
+  /requests/mine:
+    get:
+      operationId: listMyRequests
+      tags: [requests]
+      summary: List the logged-in customer's own requests
+      responses:
+        "200":
+          description: List of requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RfqRequest"
+
+  /requests/access:
+    post:
+      operationId: accessRequest
+      tags: [requests]
+      summary: >-
+        Fetch a single request together with its received offers. Works for the
+        owning logged-in customer, or for a guest who presents the one-time
+        access token (passed in the body, never the query string, so it is not
+        logged).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestAccessInput"
+      responses:
+        "200":
+          description: The request with its offers
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestWithOffers"
+
+  /request-offers/{id}/accept:
+    post:
+      operationId: acceptRequestOffer
+      tags: [requests]
+      summary: Customer accepts a provider's offer (owning customer, or a guest who presents the access token in the body)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcceptRequestOfferInput"
+      responses:
+        "200":
+          description: The accepted offer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RfqOffer"
+
+  /providers/me/requests:
+    get:
+      operationId: listProviderRequests
+      tags: [requests]
+      summary: Matched requests for the signed-in provider (contact anonymized until an offer is sent)
+      responses:
+        "200":
+          description: Matched requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RfqRequestForProvider"
+
+  /providers/me/requests/{requestId}:
+    get:
+      operationId: getProviderRequest
+      tags: [requests]
+      summary: A single matched request for the signed-in provider (sets viewed); contact anonymized until offered
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: The matched request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RfqRequestForProvider"
+
+  /providers/me/requests/{requestId}/offers:
+    post:
+      operationId: createProviderOffer
+      tags: [requests]
+      summary: Send an offer on a request (charges the server-computed lead fee from the wallet)
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProviderOfferInput"
+      responses:
+        "201":
+          description: Offer sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateOfferResult"
+
+  /providers/me/wallet:
+    get:
+      operationId: getMyWallet
+      tags: [requests]
+      summary: The signed-in provider's lead wallet (balance, recent transactions, tier entitlements)
+      responses:
+        "200":
+          description: Wallet status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WalletStatus"
+
+  /providers/me/wallet/topup:
+    post:
+      operationId: createWalletTopup
+      tags: [requests]
+      summary: Create a Stripe Checkout Session to top up the lead wallet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WalletTopupInput"
+      responses:
+        "200":
+          description: Checkout session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutSession"
+
+  /leads/{leadFeeId}/refund:
+    post:
+      operationId: refundLead
+      tags: [requests]
+      summary: Lead-Garantie — refund a dead lead fee back to the provider's wallet (provider owner only)
+      parameters:
+        - name: leadFeeId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LeadRefundInput"
+      responses:
+        "200":
+          description: Refund applied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeadRefundResult"
 
   /immobilien-kunde/me:
     get:
@@ -2485,6 +2681,250 @@ components:
         agbVersion: { type: string }
         status:     { type: string }
         createdAt:  { type: string, format: date-time }
+
+    RequestInput:
+      type: object
+      required: [customerName, customerEmail, categorySlug, title, consentDataShare]
+      properties:
+        customerName:  { type: string, minLength: 1, maxLength: 200 }
+        customerEmail: { type: string, minLength: 3, maxLength: 200 }
+        customerPhone: { type: ["string", "null"] }
+        categorySlug:  { type: string, minLength: 1 }
+        serviceTemplateId: { type: ["integer", "null"] }
+        title:       { type: string, minLength: 1, maxLength: 200 }
+        description: { type: ["string", "null"] }
+        answers:
+          type: ["object", "null"]
+          additionalProperties: true
+        postalCode: { type: ["string", "null"] }
+        city:       { type: ["string", "null"] }
+        budgetMinCents: { type: ["integer", "null"] }
+        budgetMaxCents: { type: ["integer", "null"] }
+        urgency: { type: string, enum: [sofort, zwei_wochen, flexibel] }
+        fundingRelevant: { type: boolean }
+        maxOffers: { type: integer, minimum: 1, maximum: 10 }
+        consentDataShare:
+          description: >-
+            DSGVO: ausdrückliche, freiwillige Einwilligung, die Anfrage an
+            passende Anbieter weiterzugeben. Nur ein literal `true` zählt; der
+            Zeitstempel wird serverseitig festgehalten.
+          type: boolean
+
+    RfqRequest:
+      type: object
+      required: [id, customerName, customerEmail, categorySlug, title, urgency, fundingRelevant, maxOffers, status, createdAt]
+      properties:
+        id:            { type: integer }
+        customerId:    { type: ["string", "null"] }
+        customerName:  { type: string }
+        customerEmail: { type: string }
+        customerPhone: { type: ["string", "null"] }
+        categorySlug:  { type: string }
+        serviceTemplateId: { type: ["integer", "null"] }
+        title:       { type: string }
+        description: { type: ["string", "null"] }
+        answers:
+          type: ["object", "null"]
+          additionalProperties: true
+        postalCode: { type: ["string", "null"] }
+        city:       { type: ["string", "null"] }
+        budgetMinCents: { type: ["integer", "null"] }
+        budgetMaxCents: { type: ["integer", "null"] }
+        urgency: { type: string }
+        fundingRelevant: { type: boolean }
+        maxOffers: { type: integer }
+        status:    { type: string }
+        createdAt: { type: string, format: date-time }
+
+    CreateRequestResult:
+      type: object
+      required: [request, accessToken, matchedProviders]
+      properties:
+        request: { $ref: "#/components/schemas/RfqRequest" }
+        accessToken:
+          description: One-time bearer token for guest access to this request's offers (only returned here).
+          type: string
+        matchedProviders: { type: integer }
+
+    RequestAccessInput:
+      type: object
+      required: [requestId]
+      properties:
+        requestId: { type: integer }
+        token:
+          description: Guest access token (omit when the owning customer is logged in).
+          type: ["string", "null"]
+
+    RequestWithOffers:
+      type: object
+      required: [request, offers]
+      properties:
+        request: { $ref: "#/components/schemas/RfqRequest" }
+        offers:
+          type: array
+          items:
+            $ref: "#/components/schemas/RfqOfferWithProvider"
+
+    AcceptRequestOfferInput:
+      type: object
+      properties:
+        token:
+          description: Guest access token (omit when the owning customer is logged in).
+          type: ["string", "null"]
+
+    RfqRequestForProvider:
+      type: object
+      required: [id, categorySlug, title, urgency, fundingRelevant, status, contactUnlocked, hasOffered, estimatedLeadPriceCents, createdAt]
+      properties:
+        id:           { type: integer }
+        categorySlug: { type: string }
+        serviceTemplateId: { type: ["integer", "null"] }
+        title:       { type: string }
+        description: { type: ["string", "null"] }
+        answers:
+          type: ["object", "null"]
+          additionalProperties: true
+        postalCode: { type: ["string", "null"] }
+        city:       { type: ["string", "null"] }
+        budgetMinCents: { type: ["integer", "null"] }
+        budgetMaxCents: { type: ["integer", "null"] }
+        urgency: { type: string }
+        fundingRelevant: { type: boolean }
+        status:  { type: string }
+        contactUnlocked: { type: boolean }
+        hasOffered: { type: boolean }
+        estimatedLeadPriceCents:
+          description: The lead fee this provider would pay to send an offer (after their tier discount).
+          type: integer
+        leadFeeId: { type: ["integer", "null"] }
+        offerCount: { type: integer }
+        customerName:  { type: ["string", "null"] }
+        customerEmail: { type: ["string", "null"] }
+        customerPhone: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+
+    ProviderOfferInput:
+      type: object
+      required: [priceCents]
+      properties:
+        priceCents: { type: integer, minimum: 0 }
+        priceType: { type: string, enum: [fixed, hourly, estimate] }
+        message: { type: ["string", "null"] }
+        availableFrom: { type: ["string", "null"] }
+        estimatedDuration: { type: ["string", "null"] }
+
+    RfqOffer:
+      type: object
+      required: [id, requestId, providerId, priceCents, priceType, status, createdAt]
+      properties:
+        id:         { type: integer }
+        requestId:  { type: integer }
+        providerId: { type: integer }
+        leadFeeId:  { type: ["integer", "null"] }
+        priceCents: { type: integer }
+        priceType:  { type: string }
+        message:    { type: ["string", "null"] }
+        availableFrom: { type: ["string", "null"] }
+        estimatedDuration: { type: ["string", "null"] }
+        status:     { type: string }
+        viewedAt:    { type: ["string", "null"], format: date-time }
+        respondedAt: { type: ["string", "null"], format: date-time }
+        createdAt:   { type: string, format: date-time }
+
+    RfqProviderSummary:
+      type: object
+      required: [id, displayName]
+      properties:
+        id:          { type: integer }
+        displayName: { type: string }
+        category:    { type: ["string", "null"] }
+        city:        { type: ["string", "null"] }
+        rating:      { type: number }
+        reviewCount: { type: integer }
+        verified:    { type: boolean }
+        subscriptionTier: { type: ["string", "null"] }
+        avatarUrl:   { type: ["string", "null"] }
+
+    RfqOfferWithProvider:
+      type: object
+      required: [id, requestId, providerId, priceCents, priceType, status, createdAt, provider]
+      properties:
+        id:         { type: integer }
+        requestId:  { type: integer }
+        providerId: { type: integer }
+        priceCents: { type: integer }
+        priceType:  { type: string }
+        message:    { type: ["string", "null"] }
+        availableFrom: { type: ["string", "null"] }
+        estimatedDuration: { type: ["string", "null"] }
+        status:     { type: string }
+        createdAt:  { type: string, format: date-time }
+        provider:   { $ref: "#/components/schemas/RfqProviderSummary" }
+
+    CreateOfferResult:
+      type: object
+      required: [offer, leadFeeCents, basePriceCents, tier, walletBalanceCents]
+      properties:
+        offer: { $ref: "#/components/schemas/RfqOffer" }
+        leadFeeCents:  { type: integer }
+        basePriceCents: { type: integer }
+        tier: { type: string }
+        walletBalanceCents: { type: integer }
+
+    LeadEntitlements:
+      type: object
+      required: [tier, leadsUsed, leadDiscountPct, rankingBoost]
+      properties:
+        tier: { type: string, enum: [basic, premium] }
+        maxLeadsMonth:
+          description: Monthly lead cap; null = unlimited (premium).
+          type: ["integer", "null"]
+        leadsUsed: { type: integer }
+        leadDiscountPct: { type: number }
+        rankingBoost: { type: number }
+
+    WalletTransactionDto:
+      type: object
+      required: [id, type, amountCents, balanceAfterCents, createdAt]
+      properties:
+        id:   { type: integer }
+        type: { type: string }
+        amountCents: { type: integer }
+        balanceAfterCents: { type: integer }
+        referenceId: { type: ["integer", "null"] }
+        note: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+
+    WalletStatus:
+      type: object
+      required: [balanceCents, currency, entitlements, transactions]
+      properties:
+        balanceCents: { type: integer }
+        currency: { type: string }
+        entitlements: { $ref: "#/components/schemas/LeadEntitlements" }
+        transactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/WalletTransactionDto"
+
+    WalletTopupInput:
+      type: object
+      required: [amountCents]
+      properties:
+        amountCents: { type: integer, minimum: 500, maximum: 100000 }
+
+    LeadRefundInput:
+      type: object
+      properties:
+        reason: { type: ["string", "null"] }
+
+    LeadRefundResult:
+      type: object
+      required: [ok, refundedCents, balanceCents]
+      properties:
+        ok: { type: boolean }
+        refundedCents: { type: integer }
+        balanceCents: { type: integer }
 
     ImmobilienKundeInput:
       type: object

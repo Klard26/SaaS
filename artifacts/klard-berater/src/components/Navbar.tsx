@@ -44,11 +44,17 @@ export function Navbar() {
               <Link href="/dashboard" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-dashboard">
                 Dashboard
               </Link>
+              <Link href="/anfragen" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-anfragen">
+                Anfragen
+              </Link>
               <Link href="/provider/services" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-services">
                 Meine Leistungen
               </Link>
               <Link href="/provider/availability" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-availability">
                 Verfügbarkeit
+              </Link>
+              <Link href="/wallet" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-wallet">
+                Guthaben
               </Link>
             </>
           ) : (
@@ -86,9 +92,11 @@ export function Navbar() {
                 {hasProvider ? (
                   <>
                     <DropdownMenuItem onClick={() => setLocation("/dashboard")} data-testid="menu-item-dashboard">Dashboard</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setLocation("/anfragen")} data-testid="menu-item-anfragen">Anfragen</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setLocation("/provider/profile")} data-testid="menu-item-profile">Berater-Profil</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setLocation("/provider/services")} data-testid="menu-item-services">Meine Leistungen</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setLocation("/provider/availability")} data-testid="menu-item-availability">Verfügbarkeit</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setLocation("/wallet")} data-testid="menu-item-wallet">Lead-Guthaben</DropdownMenuItem>
                   </>
                 ) : (
                   <DropdownMenuItem onClick={() => setLocation("/provider/onboarding")} data-testid="menu-item-onboarding">Profil erstellen</DropdownMenuItem>
@@ -141,9 +149,11 @@ export function Navbar() {
             {hasProvider ? (
               <>
                 <Link href="/dashboard" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Dashboard</Link>
+                <Link href="/anfragen" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Anfragen</Link>
                 <Link href="/provider/profile" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Berater-Profil</Link>
                 <Link href="/provider/services" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Meine Leistungen</Link>
                 <Link href="/provider/availability" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Verfügbarkeit</Link>
+                <Link href="/wallet" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Lead-Guthaben</Link>
               </>
             ) : (
               <Link href="/" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Vorteile</Link>

@@ -25,6 +25,8 @@ import MyBookings from "./pages/MyBookings";
 import Admin from "./pages/Admin";
 import ImmobilienKundeOnboarding from "./pages/ImmobilienKundeOnboarding";
 import CustomerOnboarding from "./pages/CustomerOnboarding";
+import AnfrageStellen from "./pages/AnfrageStellen";
+import MeineAnfragen from "./pages/MeineAnfragen";
 import Impressum from "./pages/legal/Impressum";
 import AGB from "./pages/legal/AGB";
 import Datenschutz from "./pages/legal/Datenschutz";
@@ -375,6 +377,8 @@ function ClerkProviderWithRoutes() {
           <Route path="/datenschutz" component={Datenschutz} />
           <Route path="/cookies" component={Cookies} />
           <Route path="/providers/:id" component={ProviderDetail} />
+          <Route path="/anfrage" component={AnfrageStellen} />
+          <Route path="/meine-anfragen" component={MeineAnfragen} />
           
           <Route path="/booking/:providerId/:serviceId/:slotId">
             {() => <AuthRoute component={BookingConfirmation} />}

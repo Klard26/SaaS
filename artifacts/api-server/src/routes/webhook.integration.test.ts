@@ -92,6 +92,8 @@ import {
   timeSlotsTable,
   categoriesTable,
   bookingsTable,
+  providerWalletTable,
+  walletTransactionsTable,
 } from "@workspace/db";
 import { eq, inArray } from "drizzle-orm";
 
@@ -237,6 +239,10 @@ afterAll(async () => {
   if (provider?.id) {
     await db.delete(timeSlotsTable).where(eq(timeSlotsTable.providerId, provider.id));
     await db.delete(servicesTable).where(eq(servicesTable.providerId, provider.id));
+    await db
+      .delete(walletTransactionsTable)
+      .where(eq(walletTransactionsTable.providerId, provider.id));
+    await db.delete(providerWalletTable).where(eq(providerWalletTable.providerId, provider.id));
     await db.delete(providersTable).where(inArray(providersTable.id, [provider.id]));
   }
   await db.delete(categoriesTable).where(eq(categoriesTable.slug, categorySlug));
@@ -537,5 +543,91 @@ describe("payment_intent.payment_failed", () => {
     });
     expect(res.status).toBe(200);
     expect(spies.sendPaymentFailed).not.toHaveBeenCalled();
+  });
+});
+
+describe("checkout.session.completed — wallet_topup (lead credit)", () => {
+  async function balanceCents(): Promise<number> {
+    const [row] = await db
+      .select({ balanceCents: providerWalletTable.balanceCents })
+      .from(providerWalletTable)
+      .where(eq(providerWalletTable.providerId, provider.id))
+      .limit(1);
+    return row?.balanceCents ?? 0;
+  }
+
+  it("credits the wallet exactly once and is idempotent on replay", async () => {
+    // Start from a clean wallet for a deterministic assertion.
+    await db
+      .delete(walletTransactionsTable)
+      .where(eq(walletTransactionsTable.providerId, provider.id));
+    await db.delete(providerWalletTable).where(eq(providerWalletTable.providerId, provider.id));
+
+    const paymentIntent = `pi_${sfx}_topup`;
+    const topupEvent = {
+      type: "checkout.session.completed",
+      data: {
+        object: {
+          id: `cs_${sfx}_topup`,
+          metadata: {
+            kind: "wallet_topup",
+            providerId: String(provider.id),
+            amountCents: "5000",
+          },
+          payment_status: "paid",
+          payment_intent: paymentIntent,
+          amount_total: 5000,
+        },
+      },
+    };
+
+    const first = await postWebhook(topupEvent);
+    expect(first.status).toBe(200);
+    expect(await balanceCents()).toBe(5000);
+
+    // A duplicate delivery (same payment_intent) must NOT double-credit.
+    const replay = await postWebhook(topupEvent);
+    expect(replay.status).toBe(200);
+    expect(await balanceCents()).toBe(5000);
+
+    // Exactly one ledger row exists for this payment.
+    const txns = await db
+      .select()
+      .from(walletTransactionsTable)
+      .where(eq(walletTransactionsTable.providerId, provider.id));
+    expect(txns.filter((t) => t.stripePaymentId === paymentIntent)).toHaveLength(1);
+  });
+
+  it("does not credit when the session is unpaid", async () => {
+    await db
+      .delete(walletTransactionsTable)
+      .where(eq(walletTransactionsTable.providerId, provider.id));
+    await db.delete(providerWalletTable).where(eq(providerWalletTable.providerId, provider.id));
+
+    const res = await postWebhook({
+      type: "checkout.session.completed",
+      data: {
+        object: {
+          id: `cs_${sfx}_topup_unpaid`,
+          metadata: {
+            kind: "wallet_topup",
+            providerId: String(provider.id),
+            amountCents: "5000",
+          },
+          payment_status: "unpaid",
+          payment_intent: `pi_${sfx}_topup_unpaid`,
+          amount_total: 5000,
+        },
+      },
+    });
+    expect(res.status).toBe(200);
+
+    const [row] = await db
+      .select()
+      .from(providerWalletTable)
+      .where(eq(providerWalletTable.providerId, provider.id))
+      .limit(1);
+    // No wallet row created at all (nothing credited).
+    expect(row).toBeUndefined();
   });
 });

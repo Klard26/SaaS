@@ -17,3 +17,4 @@ export * from "./emailLog";
 export * from "./userRoles";
 export * from "./foerderschiene";
 export * from "./financeAffiliate";
+export * from "./rfq";

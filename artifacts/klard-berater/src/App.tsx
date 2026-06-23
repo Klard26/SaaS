@@ -23,6 +23,8 @@ import ProviderOnboarding from "./pages/ProviderOnboarding";
 import ProviderProfile from "./pages/ProviderProfile";
 import ProviderServices from "./pages/ProviderServices";
 import ProviderAvailability from "./pages/ProviderAvailability";
+import ProviderRequests from "./pages/ProviderRequests";
+import ProviderWallet from "./pages/ProviderWallet";
 import Pricing from "./pages/Pricing";
 import BeraterWerden from "./pages/BeraterWerden";
 import Impressum from "./pages/legal/Impressum";
@@ -310,6 +312,12 @@ function ClerkProviderWithRoutes() {
           </Route>
           <Route path="/provider/availability">
             {() => <AuthRoute component={ProviderAvailability} />}
+          </Route>
+          <Route path="/anfragen">
+            {() => <AuthRoute component={ProviderRequests} />}
+          </Route>
+          <Route path="/wallet">
+            {() => <AuthRoute component={ProviderWallet} />}
           </Route>
 
           <Route component={NotFound} />

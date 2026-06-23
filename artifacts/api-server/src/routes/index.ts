@@ -26,6 +26,8 @@ import immobilienKundeRouter from "./immobilienKunde";
 import customerProfileRouter from "./customerProfile";
 import offersRouter from "./offers";
 import accountRouter from "./account";
+import requestsRouter from "./requests";
+import providerRequestsRouter from "./providerRequests";
 
 const router: IRouter = Router();
 
@@ -56,5 +58,7 @@ router.use(immobilienKundeRouter);
 router.use(customerProfileRouter);
 router.use(offersRouter);
 router.use(accountRouter);
+router.use(requestsRouter);
+router.use(providerRequestsRouter);
 
 export default router;

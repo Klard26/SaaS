@@ -1088,6 +1088,316 @@ export const ListMyOffersResponseItem = zod.object({
 export const ListMyOffersResponse = zod.array(ListMyOffersResponseItem);
 
 /**
+ * @summary Post an open request (Anfrage). Public — works for guests and logged-in customers.
+ */
+export const createRequestBodyCustomerNameMax = 200;
+
+export const createRequestBodyCustomerEmailMin = 3;
+export const createRequestBodyCustomerEmailMax = 200;
+
+export const createRequestBodyTitleMax = 200;
+
+export const createRequestBodyMaxOffersMax = 10;
+
+export const CreateRequestBody = zod.object({
+  customerName: zod.string().min(1).max(createRequestBodyCustomerNameMax),
+  customerEmail: zod
+    .string()
+    .min(createRequestBodyCustomerEmailMin)
+    .max(createRequestBodyCustomerEmailMax),
+  customerPhone: zod.string().nullish(),
+  categorySlug: zod.string().min(1),
+  serviceTemplateId: zod.number().nullish(),
+  title: zod.string().min(1).max(createRequestBodyTitleMax),
+  description: zod.string().nullish(),
+  answers: zod.record(zod.string(), zod.unknown()).nullish(),
+  postalCode: zod.string().nullish(),
+  city: zod.string().nullish(),
+  budgetMinCents: zod.number().nullish(),
+  budgetMaxCents: zod.number().nullish(),
+  urgency: zod.enum(["sofort", "zwei_wochen", "flexibel"]).optional(),
+  fundingRelevant: zod.boolean().optional(),
+  maxOffers: zod.number().min(1).max(createRequestBodyMaxOffersMax).optional(),
+  consentDataShare: zod
+    .boolean()
+    .describe(
+      "DSGVO: ausdrückliche, freiwillige Einwilligung, die Anfrage an passende Anbieter weiterzugeben. Nur ein literal `true` zählt; der Zeitstempel wird serverseitig festgehalten.",
+    ),
+});
+
+/**
+ * @summary List the logged-in customer's own requests
+ */
+export const ListMyRequestsResponseItem = zod.object({
+  id: zod.number(),
+  customerId: zod.string().nullish(),
+  customerName: zod.string(),
+  customerEmail: zod.string(),
+  customerPhone: zod.string().nullish(),
+  categorySlug: zod.string(),
+  serviceTemplateId: zod.number().nullish(),
+  title: zod.string(),
+  description: zod.string().nullish(),
+  answers: zod.record(zod.string(), zod.unknown()).nullish(),
+  postalCode: zod.string().nullish(),
+  city: zod.string().nullish(),
+  budgetMinCents: zod.number().nullish(),
+  budgetMaxCents: zod.number().nullish(),
+  urgency: zod.string(),
+  fundingRelevant: zod.boolean(),
+  maxOffers: zod.number(),
+  status: zod.string(),
+  createdAt: zod.coerce.date(),
+});
+export const ListMyRequestsResponse = zod.array(ListMyRequestsResponseItem);
+
+/**
+ * @summary Fetch a single request together with its received offers. Works for the owning logged-in customer, or for a guest who presents the one-time access token (passed in the body, never the query string, so it is not logged).
+ */
+export const AccessRequestBody = zod.object({
+  requestId: zod.number(),
+  token: zod
+    .string()
+    .nullish()
+    .describe(
+      "Guest access token (omit when the owning customer is logged in).",
+    ),
+});
+
+export const AccessRequestResponse = zod.object({
+  request: zod.object({
+    id: zod.number(),
+    customerId: zod.string().nullish(),
+    customerName: zod.string(),
+    customerEmail: zod.string(),
+    customerPhone: zod.string().nullish(),
+    categorySlug: zod.string(),
+    serviceTemplateId: zod.number().nullish(),
+    title: zod.string(),
+    description: zod.string().nullish(),
+    answers: zod.record(zod.string(), zod.unknown()).nullish(),
+    postalCode: zod.string().nullish(),
+    city: zod.string().nullish(),
+    budgetMinCents: zod.number().nullish(),
+    budgetMaxCents: zod.number().nullish(),
+    urgency: zod.string(),
+    fundingRelevant: zod.boolean(),
+    maxOffers: zod.number(),
+    status: zod.string(),
+    createdAt: zod.coerce.date(),
+  }),
+  offers: zod.array(
+    zod.object({
+      id: zod.number(),
+      requestId: zod.number(),
+      providerId: zod.number(),
+      priceCents: zod.number(),
+      priceType: zod.string(),
+      message: zod.string().nullish(),
+      availableFrom: zod.string().nullish(),
+      estimatedDuration: zod.string().nullish(),
+      status: zod.string(),
+      createdAt: zod.coerce.date(),
+      provider: zod.object({
+        id: zod.number(),
+        displayName: zod.string(),
+        category: zod.string().nullish(),
+        city: zod.string().nullish(),
+        rating: zod.number().optional(),
+        reviewCount: zod.number().optional(),
+        verified: zod.boolean().optional(),
+        subscriptionTier: zod.string().nullish(),
+        avatarUrl: zod.string().nullish(),
+      }),
+    }),
+  ),
+});
+
+/**
+ * @summary Customer accepts a provider's offer (owning customer, or a guest who presents the access token in the body)
+ */
+export const AcceptRequestOfferParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AcceptRequestOfferBody = zod.object({
+  token: zod
+    .string()
+    .nullish()
+    .describe(
+      "Guest access token (omit when the owning customer is logged in).",
+    ),
+});
+
+export const AcceptRequestOfferResponse = zod.object({
+  id: zod.number(),
+  requestId: zod.number(),
+  providerId: zod.number(),
+  leadFeeId: zod.number().nullish(),
+  priceCents: zod.number(),
+  priceType: zod.string(),
+  message: zod.string().nullish(),
+  availableFrom: zod.string().nullish(),
+  estimatedDuration: zod.string().nullish(),
+  status: zod.string(),
+  viewedAt: zod.coerce.date().nullish(),
+  respondedAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Matched requests for the signed-in provider (contact anonymized until an offer is sent)
+ */
+export const ListProviderRequestsResponseItem = zod.object({
+  id: zod.number(),
+  categorySlug: zod.string(),
+  serviceTemplateId: zod.number().nullish(),
+  title: zod.string(),
+  description: zod.string().nullish(),
+  answers: zod.record(zod.string(), zod.unknown()).nullish(),
+  postalCode: zod.string().nullish(),
+  city: zod.string().nullish(),
+  budgetMinCents: zod.number().nullish(),
+  budgetMaxCents: zod.number().nullish(),
+  urgency: zod.string(),
+  fundingRelevant: zod.boolean(),
+  status: zod.string(),
+  contactUnlocked: zod.boolean(),
+  hasOffered: zod.boolean(),
+  estimatedLeadPriceCents: zod
+    .number()
+    .describe(
+      "The lead fee this provider would pay to send an offer (after their tier discount).",
+    ),
+  leadFeeId: zod.number().nullish(),
+  offerCount: zod.number().optional(),
+  customerName: zod.string().nullish(),
+  customerEmail: zod.string().nullish(),
+  customerPhone: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const ListProviderRequestsResponse = zod.array(
+  ListProviderRequestsResponseItem,
+);
+
+/**
+ * @summary A single matched request for the signed-in provider (sets viewed); contact anonymized until offered
+ */
+export const GetProviderRequestParams = zod.object({
+  requestId: zod.coerce.number(),
+});
+
+export const GetProviderRequestResponse = zod.object({
+  id: zod.number(),
+  categorySlug: zod.string(),
+  serviceTemplateId: zod.number().nullish(),
+  title: zod.string(),
+  description: zod.string().nullish(),
+  answers: zod.record(zod.string(), zod.unknown()).nullish(),
+  postalCode: zod.string().nullish(),
+  city: zod.string().nullish(),
+  budgetMinCents: zod.number().nullish(),
+  budgetMaxCents: zod.number().nullish(),
+  urgency: zod.string(),
+  fundingRelevant: zod.boolean(),
+  status: zod.string(),
+  contactUnlocked: zod.boolean(),
+  hasOffered: zod.boolean(),
+  estimatedLeadPriceCents: zod
+    .number()
+    .describe(
+      "The lead fee this provider would pay to send an offer (after their tier discount).",
+    ),
+  leadFeeId: zod.number().nullish(),
+  offerCount: zod.number().optional(),
+  customerName: zod.string().nullish(),
+  customerEmail: zod.string().nullish(),
+  customerPhone: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Send an offer on a request (charges the server-computed lead fee from the wallet)
+ */
+export const CreateProviderOfferParams = zod.object({
+  requestId: zod.coerce.number(),
+});
+
+export const createProviderOfferBodyPriceCentsMin = 0;
+
+export const CreateProviderOfferBody = zod.object({
+  priceCents: zod.number().min(createProviderOfferBodyPriceCentsMin),
+  priceType: zod.enum(["fixed", "hourly", "estimate"]).optional(),
+  message: zod.string().nullish(),
+  availableFrom: zod.string().nullish(),
+  estimatedDuration: zod.string().nullish(),
+});
+
+/**
+ * @summary The signed-in provider's lead wallet (balance, recent transactions, tier entitlements)
+ */
+export const GetMyWalletResponse = zod.object({
+  balanceCents: zod.number(),
+  currency: zod.string(),
+  entitlements: zod.object({
+    tier: zod.enum(["basic", "premium"]),
+    maxLeadsMonth: zod
+      .number()
+      .nullish()
+      .describe("Monthly lead cap; null = unlimited (premium)."),
+    leadsUsed: zod.number(),
+    leadDiscountPct: zod.number(),
+    rankingBoost: zod.number(),
+  }),
+  transactions: zod.array(
+    zod.object({
+      id: zod.number(),
+      type: zod.string(),
+      amountCents: zod.number(),
+      balanceAfterCents: zod.number(),
+      referenceId: zod.number().nullish(),
+      note: zod.string().nullish(),
+      createdAt: zod.coerce.date(),
+    }),
+  ),
+});
+
+/**
+ * @summary Create a Stripe Checkout Session to top up the lead wallet
+ */
+export const createWalletTopupBodyAmountCentsMin = 500;
+export const createWalletTopupBodyAmountCentsMax = 100000;
+
+export const CreateWalletTopupBody = zod.object({
+  amountCents: zod
+    .number()
+    .min(createWalletTopupBodyAmountCentsMin)
+    .max(createWalletTopupBodyAmountCentsMax),
+});
+
+export const CreateWalletTopupResponse = zod.object({
+  url: zod.string(),
+  sessionId: zod.string().optional(),
+});
+
+/**
+ * @summary Lead-Garantie — refund a dead lead fee back to the provider's wallet (provider owner only)
+ */
+export const RefundLeadParams = zod.object({
+  leadFeeId: zod.coerce.number(),
+});
+
+export const RefundLeadBody = zod.object({
+  reason: zod.string().nullish(),
+});
+
+export const RefundLeadResponse = zod.object({
+  ok: zod.boolean(),
+  refundedCents: zod.number(),
+  balanceCents: zod.number(),
+});
+
+/**
  * @summary Current user's Immobilien-Kundenprofil (Hausverwalter/Bestandshalter)
  */
 export const GetMyImmobilienKundeResponse = zod.union([

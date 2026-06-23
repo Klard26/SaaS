@@ -29,7 +29,12 @@ import type {
 const router: IRouter = Router();
 
 // Gate every endpoint in this router (B2B2C management tooling, handles PII).
-router.use(requireAdmin);
+// Scope the guard to this router's own `/foerderpilot` prefix: because the
+// router is mounted path-less, a bare `router.use(requireAdmin)` would also
+// 401/403 every UNMATCHED request that falls through to it (swallowing later
+// routers like requests/offers/account). Prefix-scoping keeps the gate while
+// letting non-matching paths fall through untouched.
+router.use("/foerderpilot", requireAdmin);
 
 const IdParam = z.object({ id: z.string().uuid() });
 
