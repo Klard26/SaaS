@@ -503,6 +503,30 @@ paths:
                 items:
                   $ref: "#/components/schemas/Booking"
 
+  /providers/me/ical-conflicts:
+    get:
+      operationId: listMyIcalConflicts
+      tags: [providers]
+      summary: List external-calendar conflicts with the authenticated provider's Klard bookings
+      description: >-
+        Returns the conflicts detected during external iCal sync where an
+        imported busy interval overlapped an active Klard booking and was
+        therefore skipped (the Klard booking wins). Lets the provider see and
+        resolve the clash on their side.
+      responses:
+        "200":
+          description: List of iCal/booking conflicts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/IcalBookingConflict"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Provider profile not found
+
   /providers/{id}/reviews:
     get:
       operationId: listProviderReviews
@@ -2450,6 +2474,22 @@ components:
         assessmentId:    { type: ["integer", "null"] }
         assessmentLabel: { type: ["string", "null"] }
         createdAt:    { type: string }
+
+    IcalBookingConflict:
+      type: object
+      required: [id, providerId, bookingId, bookingScheduledAt, externalStart, externalEnd, detectedAt]
+      properties:
+        id:                  { type: integer }
+        providerId:          { type: integer }
+        bookingId:           { type: integer }
+        bookingScheduledAt:  { type: string, format: date-time }
+        bookingCustomerName: { type: ["string", "null"] }
+        bookingServiceName:  { type: ["string", "null"] }
+        externalStart:       { type: string, format: date-time }
+        externalEnd:         { type: string, format: date-time }
+        externalUid:         { type: ["string", "null"] }
+        externalSummary:     { type: ["string", "null"] }
+        detectedAt:          { type: string, format: date-time }
 
     BookingInput:
       type: object

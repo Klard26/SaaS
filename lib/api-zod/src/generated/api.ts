@@ -573,6 +573,27 @@ export const ListProviderBookingsResponse = zod.array(
 );
 
 /**
+ * Returns the conflicts detected during external iCal sync where an imported busy interval overlapped an active Klard booking and was therefore skipped (the Klard booking wins). Lets the provider see and resolve the clash on their side.
+ * @summary List external-calendar conflicts with the authenticated provider's Klard bookings
+ */
+export const ListMyIcalConflictsResponseItem = zod.object({
+  id: zod.number(),
+  providerId: zod.number(),
+  bookingId: zod.number(),
+  bookingScheduledAt: zod.coerce.date(),
+  bookingCustomerName: zod.string().nullish(),
+  bookingServiceName: zod.string().nullish(),
+  externalStart: zod.coerce.date(),
+  externalEnd: zod.coerce.date(),
+  externalUid: zod.string().nullish(),
+  externalSummary: zod.string().nullish(),
+  detectedAt: zod.coerce.date(),
+});
+export const ListMyIcalConflictsResponse = zod.array(
+  ListMyIcalConflictsResponseItem,
+);
+
+/**
  * @summary List reviews for a provider
  */
 export const ListProviderReviewsParams = zod.object({

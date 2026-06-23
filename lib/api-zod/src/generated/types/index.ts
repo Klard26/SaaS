@@ -72,6 +72,7 @@ export * from "./gebaeudecheckReconcileInput";
 export * from "./gebaeudecheckReconcileResult";
 export * from "./getAdminTimeseriesParams";
 export * from "./healthStatus";
+export * from "./icalBookingConflict";
 export * from "./immobilienKunde";
 export * from "./immobilienKundeInput";
 export * from "./immobilienKundeInputTyp";

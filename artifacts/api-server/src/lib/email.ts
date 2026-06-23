@@ -19,6 +19,7 @@ import tplFoerderschieneReportReady from "../email-templates/foerderschiene_repo
 import tplFinanceLeadPartner from "../email-templates/finance_lead_partner.hbs";
 import tplNewRequestProvider from "../email-templates/new_request_provider.hbs";
 import tplOfferReceived from "../email-templates/offer_received.hbs";
+import tplIcalBookingConflict from "../email-templates/ical_booking_conflict.hbs";
 
 const APP_URL =
   process.env["APP_URL"] ??
@@ -353,6 +354,46 @@ export async function sendStripeActivated(p: {
     text: `Ihr Klard Premium-Abo ist aktiv, ${p.providerName}. Zum Dashboard: ${APP_URL}/dashboard`,
     templateId: "stripe_activated",
     relatedId: p.email,
+  });
+}
+
+/**
+ * Notify a provider that their external iCal feed contains an event that
+ * overlaps an active Klard booking. The overlapping external event was NOT
+ * imported (the Klard booking always wins); this nudge lets the provider fix
+ * the clash on their side. Deduped by the caller via `wasEmailSent`.
+ */
+export async function notifyProviderIcalConflict(p: {
+  providerEmail: string;
+  providerName: string;
+  bookingCustomerName: string | null;
+  bookingServiceName: string | null;
+  bookingScheduledAt: Date | string;
+  externalSummary: string | null;
+  externalStart: Date | string;
+  externalEnd: Date | string;
+  relatedId: string;
+}): Promise<void> {
+  if (!p.providerEmail) return;
+  const bookingLabel =
+    [p.bookingServiceName, p.bookingCustomerName].filter(Boolean).join(" · ") ||
+    "Klard-Buchung";
+  const externalWhen = `${fmtDate(p.externalStart)}, ${fmtTime(p.externalStart)} – ${fmtTime(p.externalEnd)}`;
+  const html = renderTemplate(tplIcalBookingConflict, {
+    providerName: p.providerName,
+    bookingLabel,
+    bookingWhen: fmtDateTime(p.bookingScheduledAt),
+    externalSummary: p.externalSummary || "Externer Termin",
+    externalWhen,
+    dashboardUrl: `${APP_URL}/dashboard`,
+  });
+  await send({
+    to: p.providerEmail,
+    subject: "Kalender-Konflikt: Ihr externer Termin überschneidet eine Klard-Buchung",
+    html,
+    text: `Hallo ${p.providerName}, Ihr externer Kalender enthält einen Termin (${externalWhen}), der mit Ihrer Klard-Buchung (${bookingLabel}, ${fmtDateTime(p.bookingScheduledAt)}) kollidiert. Die Klard-Buchung bleibt bestehen. Bitte prüfen Sie den Konflikt: ${APP_URL}/dashboard`,
+    templateId: "ical_booking_conflict",
+    relatedId: p.relatedId,
   });
 }
 

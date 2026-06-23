@@ -13,6 +13,7 @@ export * from "./immobilienKunde";
 export * from "./customerProfile";
 export * from "./offers";
 export * from "./blockedSlots";
+export * from "./icalBookingConflicts";
 export * from "./emailLog";
 export * from "./userRoles";
 export * from "./foerderschiene";

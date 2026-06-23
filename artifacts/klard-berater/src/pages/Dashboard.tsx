@@ -19,9 +19,10 @@ import {
   useCreateConnectOnboarding,
   useListProviderServices, getListProviderServicesQueryKey,
   useListAvailability, getListAvailabilityQueryKey,
+  useListMyIcalConflicts, getListMyIcalConflictsQueryKey,
   getGetProviderCalendarFeedUrl,
 } from "@workspace/api-client-react";
-import { Star, TrendingUp, Calendar, DollarSign, Users, PlusCircle, Settings, Clock, Crown, Copy, Sparkles, Receipt, Banknote, CheckCircle2, Circle, ArrowRight, AlertCircle } from "lucide-react";
+import { Star, TrendingUp, Calendar, DollarSign, Users, PlusCircle, Settings, Clock, Crown, Copy, Sparkles, Receipt, Banknote, CheckCircle2, Circle, ArrowRight, AlertCircle, CalendarX } from "lucide-react";
 import { InvoicesPanel } from "@/components/InvoicesPanel";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -61,6 +62,10 @@ export default function Dashboard() {
 
   const { data: slots = [] } = useListAvailability(profile?.id ?? 0, {
     query: { enabled: !!profile?.id, queryKey: getListAvailabilityQueryKey(profile?.id ?? 0) },
+  });
+
+  const { data: icalConflicts = [] } = useListMyIcalConflicts({
+    query: { enabled: !!profile?.id, queryKey: getListMyIcalConflictsQueryKey() },
   });
 
   const createConnectOnboarding = useCreateConnectOnboarding();
@@ -271,6 +276,48 @@ export default function Dashboard() {
               <p className="text-sm text-foreground flex-1">
                 <strong>{pendingCount}</strong> {pendingCount === 1 ? "Anfrage wartet" : "Anfragen warten"} auf Ihre Bestätigung.
               </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* External-calendar conflicts with Klard bookings */}
+        {profile && icalConflicts.length > 0 && (
+          <Card className="mb-6 rounded-[20px] border-[1.5px] border-[var(--klard-gold-l)] bg-gradient-to-r from-[var(--klard-gold-l)]/40 to-amber-50 shadow-sm" data-testid="card-ical-conflicts">
+            <CardContent className="p-5">
+              <div className="flex items-start gap-3 mb-3">
+                <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[var(--klard-gold-l)] shrink-0">
+                  <CalendarX className="h-5 w-5 text-[var(--klard-gold)]" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-serif text-base font-semibold text-foreground">
+                    Kalender-Konflikt erkannt
+                  </p>
+                  <p className="text-xs text-[var(--klard-mid)] leading-relaxed mt-0.5">
+                    Ihr externer Kalender enthält {icalConflicts.length === 1 ? "einen Termin, der" : `${icalConflicts.length} Termine, die`} mit
+                    {icalConflicts.length === 1 ? " einer bestehenden Klard-Buchung" : " bestehenden Klard-Buchungen"} kollidiert.
+                    Die Klard-Buchung bleibt bestehen — der überschneidende externe Termin wurde nicht übernommen. Bitte prüfen Sie den Konflikt in Ihrem externen Kalender.
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                {icalConflicts.map((c) => (
+                  <div
+                    key={c.id}
+                    className="rounded-xl border-[1.5px] border-border bg-white px-4 py-3"
+                    data-testid={`ical-conflict-${c.id}`}
+                  >
+                    <p className="text-sm font-semibold text-foreground">
+                      {[c.bookingServiceName, c.bookingCustomerName].filter(Boolean).join(" · ") || "Klard-Buchung"}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Klard-Termin: {new Date(c.bookingScheduledAt).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" })} Uhr
+                    </p>
+                    <p className="text-xs text-[var(--klard-gold)] mt-1">
+                      Externer Termin{c.externalSummary ? ` „${c.externalSummary}“` : ""}: {new Date(c.externalStart).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" })}–{new Date(c.externalEnd).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr
+                    </p>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         )}

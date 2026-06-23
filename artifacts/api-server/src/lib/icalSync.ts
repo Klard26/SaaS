@@ -1,10 +1,17 @@
 import { db } from "@workspace/db";
-import { providersTable, blockedSlotsTable, bookingsTable, timeSlotsTable } from "@workspace/db";
+import {
+  providersTable,
+  blockedSlotsTable,
+  bookingsTable,
+  timeSlotsTable,
+  icalBookingConflictsTable,
+} from "@workspace/db";
 import { eq, and, ne } from "drizzle-orm";
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 import * as nodeIcal from "node-ical";
 import { logger } from "./logger";
+import { notifyProviderIcalConflict, wasEmailSent } from "./email";
 
 const CHECK_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 
@@ -169,6 +176,7 @@ export async function reconcileProviderIcalBlocks(
   busy: ParsedBusy[],
 ): Promise<number> {
   let stored = 0;
+  let newConflicts: ConflictRecord[] = [];
   await db.transaction(async (tx) => {
     await tx
       .delete(blockedSlotsTable)
@@ -181,12 +189,16 @@ export async function reconcileProviderIcalBlocks(
 
     // Load the provider's active (non-cancelled) Klard bookings with their slot
     // windows so an imported busy interval can never silently double-claim a
-    // time the customer already booked through Klard.
+    // time the customer already booked through Klard. The customer/service
+    // labels are snapshotted onto any recorded conflict for the dashboard.
     const activeBookings = await tx
       .select({
         bookingId: bookingsTable.id,
         start: timeSlotsTable.startTime,
         end: timeSlotsTable.endTime,
+        scheduledAt: bookingsTable.scheduledAt,
+        customerName: bookingsTable.customerName,
+        serviceName: bookingsTable.serviceName,
       })
       .from(bookingsTable)
       .innerJoin(timeSlotsTable, eq(bookingsTable.slotId, timeSlotsTable.id))
@@ -198,14 +210,14 @@ export async function reconcileProviderIcalBlocks(
       );
 
     const toStore: ParsedBusy[] = [];
-    const skipped: Array<{ busy: ParsedBusy; bookingId: number }> = [];
+    const skipped: Array<{ busy: ParsedBusy; booking: (typeof activeBookings)[number] }> = [];
     for (const b of busy) {
       // Half-open overlap predicate, identical to the booking-time re-check.
       const clash = activeBookings.find(
         (bk) => bk.start < b.end && bk.end > b.start,
       );
       if (clash) {
-        skipped.push({ busy: b, bookingId: clash.bookingId });
+        skipped.push({ busy: b, booking: clash });
       } else {
         toStore.push(b);
       }
@@ -216,7 +228,7 @@ export async function reconcileProviderIcalBlocks(
         {
           providerId,
           skipped: skipped.map((s) => ({
-            bookingId: s.bookingId,
+            bookingId: s.booking.bookingId,
             start: s.busy.start,
             end: s.busy.end,
             uid: s.busy.uid,
@@ -225,6 +237,27 @@ export async function reconcileProviderIcalBlocks(
         },
         "External iCal busy interval overlaps an existing Klard booking; import skipped (Klard booking wins)",
       );
+    }
+
+    // Full-refresh the persisted conflicts for this provider so resolved ones
+    // (external event or booking removed) disappear automatically.
+    await tx
+      .delete(icalBookingConflictsTable)
+      .where(eq(icalBookingConflictsTable.providerId, providerId));
+
+    if (skipped.length > 0) {
+      newConflicts = skipped.map((s) => ({
+        providerId,
+        bookingId: s.booking.bookingId,
+        bookingScheduledAt: s.booking.scheduledAt,
+        bookingCustomerName: s.booking.customerName,
+        bookingServiceName: s.booking.serviceName,
+        externalStart: s.busy.start,
+        externalEnd: s.busy.end,
+        externalUid: s.busy.uid,
+        externalSummary: s.busy.summary,
+      }));
+      await tx.insert(icalBookingConflictsTable).values(newConflicts);
     }
 
     if (toStore.length > 0) {
@@ -242,7 +275,63 @@ export async function reconcileProviderIcalBlocks(
     stored = toStore.length;
   });
 
+  // After the conflicts are persisted, send the provider a one-time email nudge
+  // per clashing booking (deduped via email_log so the 15-min sync loop does not
+  // spam). Fire-and-forget so a mail failure never blocks the sync.
+  if (newConflicts.length > 0) {
+    void notifyConflicts(providerId, newConflicts);
+  }
+
   return stored;
+}
+
+interface ConflictRecord {
+  providerId: number;
+  bookingId: number;
+  bookingScheduledAt: Date;
+  bookingCustomerName: string | null;
+  bookingServiceName: string | null;
+  externalStart: Date;
+  externalEnd: Date;
+  externalUid: string | null;
+  externalSummary: string | null;
+}
+
+/**
+ * Send the provider a one-time email nudge for each newly detected iCal/booking
+ * conflict. Deduped per (provider, booking) via `email_log` so the recurring
+ * 15-minute sync never re-sends for the same standing conflict.
+ */
+async function notifyConflicts(
+  providerId: number,
+  conflicts: ConflictRecord[],
+): Promise<void> {
+  try {
+    const [provider] = await db
+      .select({ email: providersTable.email, displayName: providersTable.displayName })
+      .from(providersTable)
+      .where(eq(providersTable.id, providerId))
+      .limit(1);
+    if (!provider?.email) return;
+
+    for (const c of conflicts) {
+      const relatedId = `${providerId}:${c.bookingId}`;
+      if (await wasEmailSent("ical_booking_conflict", relatedId)) continue;
+      await notifyProviderIcalConflict({
+        providerEmail: provider.email,
+        providerName: provider.displayName,
+        bookingCustomerName: c.bookingCustomerName,
+        bookingServiceName: c.bookingServiceName,
+        bookingScheduledAt: c.bookingScheduledAt,
+        externalSummary: c.externalSummary,
+        externalStart: c.externalStart,
+        externalEnd: c.externalEnd,
+        relatedId,
+      });
+    }
+  } catch (err) {
+    logger.error({ err, providerId }, "Failed to send iCal conflict notification");
+  }
 }
 
 async function tick(): Promise<void> {

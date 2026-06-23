@@ -897,6 +897,24 @@ export interface Booking {
   createdAt?: string;
 }
 
+export interface IcalBookingConflict {
+  id: number;
+  providerId: number;
+  bookingId: number;
+  bookingScheduledAt: string;
+  /** @nullable */
+  bookingCustomerName?: string | null;
+  /** @nullable */
+  bookingServiceName?: string | null;
+  externalStart: string;
+  externalEnd: string;
+  /** @nullable */
+  externalUid?: string | null;
+  /** @nullable */
+  externalSummary?: string | null;
+  detectedAt: string;
+}
+
 export interface BookingInput {
   providerId: number;
   serviceId: number;

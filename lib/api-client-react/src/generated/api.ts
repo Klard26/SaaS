@@ -59,6 +59,7 @@ import type {
   GebaeudecheckReconcileResult,
   GetAdminTimeseriesParams,
   HealthStatus,
+  IcalBookingConflict,
   ImmobilienKunde,
   ImmobilienKundeInput,
   Invoice,
@@ -2152,6 +2153,82 @@ export function useListProviderBookings<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getListProviderBookingsQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Returns the conflicts detected during external iCal sync where an imported busy interval overlapped an active Klard booking and was therefore skipped (the Klard booking wins). Lets the provider see and resolve the clash on their side.
+ * @summary List external-calendar conflicts with the authenticated provider's Klard bookings
+ */
+export const getListMyIcalConflictsUrl = () => {
+  return `/api/providers/me/ical-conflicts`;
+};
+
+export const listMyIcalConflicts = async (
+  options?: RequestInit,
+): Promise<IcalBookingConflict[]> => {
+  return customFetch<IcalBookingConflict[]>(getListMyIcalConflictsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListMyIcalConflictsQueryKey = () => {
+  return [`/api/providers/me/ical-conflicts`] as const;
+};
+
+export const getListMyIcalConflictsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listMyIcalConflicts>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listMyIcalConflicts>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListMyIcalConflictsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listMyIcalConflicts>>
+  > = ({ signal }) => listMyIcalConflicts({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listMyIcalConflicts>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListMyIcalConflictsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listMyIcalConflicts>>
+>;
+export type ListMyIcalConflictsQueryError = ErrorType<void>;
+
+/**
+ * @summary List external-calendar conflicts with the authenticated provider's Klard bookings
+ */
+
+export function useListMyIcalConflicts<
+  TData = Awaited<ReturnType<typeof listMyIcalConflicts>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listMyIcalConflicts>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListMyIcalConflictsQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

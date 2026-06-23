@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { providersTable, categoriesTable } from "@workspace/db";
+import { providersTable, categoriesTable, icalBookingConflictsTable } from "@workspace/db";
 import {
   CreateProviderBody,
   UpdateProviderBody,
@@ -272,6 +272,34 @@ router.get("/providers/me", async (req, res): Promise<void> => {
     res.json(withDirectBilling(provider, map));
   } catch (err) {
     req.log.error({ err }, "Failed to fetch own provider profile");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.get("/providers/me/ical-conflicts", async (req, res): Promise<void> => {
+  try {
+    const { userId } = getAuth(req);
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const [provider] = await db
+      .select({ id: providersTable.id })
+      .from(providersTable)
+      .where(eq(providersTable.clerkUserId, userId))
+      .limit(1);
+    if (!provider) {
+      res.status(404).json({ error: "Provider profile not found" });
+      return;
+    }
+    const conflicts = await db
+      .select()
+      .from(icalBookingConflictsTable)
+      .where(eq(icalBookingConflictsTable.providerId, provider.id))
+      .orderBy(icalBookingConflictsTable.bookingScheduledAt);
+    res.json(conflicts);
+  } catch (err) {
+    req.log.error({ err }, "Failed to fetch iCal booking conflicts");
     res.status(500).json({ error: "Internal server error" });
   }
 });
