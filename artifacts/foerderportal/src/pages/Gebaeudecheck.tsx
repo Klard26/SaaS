@@ -1,4 +1,5 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "wouter";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { EnergyBar } from "@/components/EnergieSchnellcheck";
@@ -18,6 +19,14 @@ import {
 } from "@workspace/energie-calc";
 import { useCreateReportCheckout } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  matchProgramme,
+  ART_LABEL,
+  EBENE_LABEL,
+  STATUS_LABEL,
+  type MatchProfil,
+  type Programm,
+} from "@/lib/foerderpilotApi";
 
 const REPORT_PRICE_LABEL = "49 €";
 const CURRENT_YEAR = new Date().getFullYear();
@@ -48,6 +57,29 @@ const TYP_UNITS: Record<string, { wohneinheiten: number; geschosse: number }> = 
   mfh_m: { wohneinheiten: 9, geschosse: 4 },
   mfh_l: { wohneinheiten: 16, geschosse: 5 },
 };
+
+/**
+ * Map a building type to a funding-catalog zielgruppe slug. Residential building
+ * owners (single- and multi-family) fall under the catalog's "Privatpersonen /
+ * Eigentümer" group, which carries the building-renovation programs.
+ */
+const TYP_ZIELGRUPPE: Record<string, string> = {
+  efh: "privat",
+  dhh: "privat",
+  rh: "privat",
+  mfh_s: "privat",
+  mfh_m: "privat",
+  mfh_l: "privat",
+};
+
+/** Build the funding-catalog match profile from the Gebäudecheck answers. */
+function gebaeudeToMatchProfil(d: BuildingInput): MatchProfil {
+  return {
+    kategorien: ["energie_gebaeude"],
+    zielgruppe: TYP_ZIELGRUPPE[d.gebaeudetyp] ?? "privat",
+    limit: 6,
+  };
+}
 
 type Kontakt = {
   vorname: string;
@@ -562,6 +594,9 @@ function ResultView({
         </Card>
       </div>
 
+      {/* Personalized funding shortlist — fed from the building profile */}
+      <FoerderMatch d={d} />
+
       {/* Optional Personalien — for registration / report assignment */}
       <Card>
         <CardContent className="p-5 sm:p-6 space-y-4">
@@ -715,6 +750,137 @@ function ResultView({
         </div>
       </div>
     </div>
+  );
+}
+
+function FoerderMatch({ d }: { d: BuildingInput }) {
+  const [treffer, setTreffer] = useState<Programm[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError(false);
+    matchProgramme(gebaeudeToMatchProfil(d))
+      .then((res) => {
+        if (active) setTreffer(res.treffer);
+      })
+      .catch(() => {
+        if (active) {
+          setError(true);
+          setTreffer([]);
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+    // Re-run whenever the building profile relevant to matching changes.
+  }, [d.gebaeudetyp]);
+
+  if (error) return null;
+
+  return (
+    <div data-testid="section-foerder-match">
+      <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-3">
+        Passende Förderprogramme für Ihr Gebäude
+      </div>
+      <Card>
+        <CardContent className="p-5 sm:p-6 space-y-4">
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Auf Basis Ihrer Angaben haben wir passende Förderprogramme aus unserer
+            Datenbank zusammengestellt. Tippen Sie ein Programm an für alle Details.
+          </p>
+
+          {loading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Passende Programme werden geladen…
+            </div>
+          ) : treffer && treffer.length > 0 ? (
+            <>
+              <div className="grid sm:grid-cols-2 gap-3">
+                {treffer.map((p) => (
+                  <MatchCard key={p.id} programm={p} />
+                ))}
+              </div>
+              <div className="pt-1">
+                <Link href="/foerderung">
+                  <Button
+                    variant="link"
+                    className="text-[var(--klard-teal-d)] px-0"
+                    data-testid="link-alle-programme"
+                  >
+                    Alle Förderprogramme durchsuchen
+                    <ArrowRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </Link>
+              </div>
+            </>
+          ) : (
+            <div className="py-2">
+              <p className="text-sm text-muted-foreground mb-3">
+                Aktuell konnten wir keine direkt passenden Programme zuordnen.
+                Durchsuchen Sie die gesamte Förderdatenbank.
+              </p>
+              <Link href="/foerderung">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  data-testid="link-alle-programme"
+                >
+                  Förderdatenbank öffnen
+                  <ArrowRight className="h-4 w-4 ml-1" />
+                </Button>
+              </Link>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function MatchCard({ programm: p }: { programm: Programm }) {
+  return (
+    <Link href={`/foerderung/${p.id}`}>
+      <div
+        className="flex flex-col h-full gap-2 rounded-xl border border-border bg-card p-4 transition-colors hover:border-[var(--klard-teal)] hover:shadow-sm cursor-pointer"
+        data-testid={`match-${p.id}`}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <h4 className="font-semibold text-sm leading-snug text-foreground">{p.titel}</h4>
+          <Badge variant="secondary" className="shrink-0 text-[0.65rem]">
+            {EBENE_LABEL[p.ebene]}
+          </Badge>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <span className="inline-flex w-fit items-center rounded-full bg-[var(--klard-teal-l)] text-[var(--klard-teal-d)] text-xs font-semibold px-2.5 py-0.5">
+            {ART_LABEL[p.art]}
+          </span>
+          {p.status === "verifiziert" && (
+            <span className="inline-flex w-fit items-center rounded-full bg-green-50 text-green-700 text-xs font-semibold px-2.5 py-0.5">
+              {STATUS_LABEL[p.status]}
+            </span>
+          )}
+        </div>
+        {p.foerderquote_text && (
+          <p className="text-xs font-medium text-foreground">{p.foerderquote_text}</p>
+        )}
+        {p.kurzbeschreibung && (
+          <p className="text-xs text-muted-foreground leading-relaxed flex-1 line-clamp-3">
+            {p.kurzbeschreibung}
+          </p>
+        )}
+        <div className="flex items-center justify-between pt-1">
+          <span className="text-[0.7rem] text-muted-foreground">{p.foerdergeber}</span>
+          <ArrowRight className="h-4 w-4 text-[var(--klard-teal)]" />
+        </div>
+      </div>
+    </Link>
   );
 }
 
