@@ -372,6 +372,149 @@ describe("issueInvoiceForBooking — concurrent contention (no duplicate numbers
   });
 });
 
+describe("issueStornoForBooking — concurrent contention (no duplicate numbers)", () => {
+  it("assigns unique, contiguous storno numbers to N simultaneous cancellations", async () => {
+    const N = 8;
+    // N distinct paid bookings, each already carrying its own original invoice,
+    // all for the SAME provider — so the cancellations race for that provider's
+    // invoice-number counter exactly like fresh payments do.
+    const bookingIds = await Promise.all(
+      Array.from({ length: N }, () => insertBooking({ totalPrice: 120 })),
+    );
+    // Issue the originals sequentially first so each booking has an invoice to
+    // cancel. (These consume their own numbers; we only race the stornos.)
+    for (const bookingId of bookingIds) {
+      const issued = await issueInvoiceForBooking({ bookingId });
+      expect(issued).not.toBeNull();
+    }
+
+    // Capture the provider's next number BEFORE the storno race, so we know the
+    // exact contiguous block these stornos must occupy.
+    const [before] = await db
+      .select({ next: providersTable.nextInvoiceNumber })
+      .from(providersTable)
+      .where(eq(providersTable.id, provider.id));
+    const startNum = before!.next;
+
+    // Fire all N stornos truly simultaneously. They draw from the SAME
+    // reserveInvoiceNumber as payments, so the single atomic UPDATE … RETURNING
+    // must serialize the increments — no two stornos may share a number.
+    const stornos = await Promise.all(
+      bookingIds.map((bookingId) => issueStornoForBooking(bookingId)),
+    );
+
+    // Every cancellation produced a fresh storno (none null / idempotent-hit).
+    for (const s of stornos) {
+      expect(s).not.toBeNull();
+      expect(s!.kind).toBe("storno");
+    }
+
+    const nums = stornos
+      .map((s) => s!.invoiceNumber)
+      .map((str) => {
+        const m = str.match(/-(\d+)$/);
+        return Number(m![1]);
+      })
+      .sort((a, b) => a - b);
+
+    // No two stornos grabbed the same number.
+    expect(new Set(nums).size).toBe(N);
+
+    // The numbers form a gap-free, contiguous block: startNum .. startNum+N-1.
+    const expected = Array.from({ length: N }, (_, i) => startNum + i);
+    expect(nums).toEqual(expected);
+
+    // The provider's counter advanced by exactly N — no lost or double increments.
+    const [after] = await db
+      .select({ next: providersTable.nextInvoiceNumber })
+      .from(providersTable)
+      .where(eq(providersTable.id, provider.id));
+    expect(after!.next).toBe(startNum + N);
+
+    // The DB holds exactly N storno rows for these bookings, all with distinct
+    // numbers — proving the uniqueness survives the round-trip to Postgres.
+    const persisted = await db
+      .select({ invoiceNumber: invoicesTable.invoiceNumber })
+      .from(invoicesTable)
+      .where(
+        and(inArray(invoicesTable.bookingId, bookingIds), eq(invoicesTable.kind, "storno")),
+      );
+    expect(persisted.length).toBe(N);
+    expect(new Set(persisted.map((p) => p.invoiceNumber)).size).toBe(N);
+  });
+});
+
+describe("issueInvoiceForBooking + issueStornoForBooking — mixed concurrent contention", () => {
+  it("assigns a globally unique, gap-free set of numbers across both paths", async () => {
+    const N = 6;
+    // N fresh paid bookings to be invoiced concurrently …
+    const freshBookingIds = await Promise.all(
+      Array.from({ length: N }, () => insertBooking({ totalPrice: 120 })),
+    );
+    // … and N already-invoiced bookings to be cancelled concurrently. Both paths
+    // belong to the SAME provider and share the SAME number counter.
+    const stornoBookingIds = await Promise.all(
+      Array.from({ length: N }, () => insertBooking({ totalPrice: 120 })),
+    );
+    for (const bookingId of stornoBookingIds) {
+      const issued = await issueInvoiceForBooking({ bookingId });
+      expect(issued).not.toBeNull();
+    }
+
+    // Capture the next number BEFORE the mixed race.
+    const [before] = await db
+      .select({ next: providersTable.nextInvoiceNumber })
+      .from(providersTable)
+      .where(eq(providersTable.id, provider.id));
+    const startNum = before!.next;
+
+    // Interleave fresh invoices and stornos, then fire EVERYTHING together so a
+    // cancellation can race a fresh payment for the same provider.
+    const invoiceOps = freshBookingIds.map(
+      (bookingId) => () => issueInvoiceForBooking({ bookingId }),
+    );
+    const stornoOps = stornoBookingIds.map(
+      (bookingId) => () => issueStornoForBooking(bookingId),
+    );
+    const ops: Array<() => Promise<unknown>> = [];
+    for (let i = 0; i < N; i++) {
+      ops.push(invoiceOps[i]!);
+      ops.push(stornoOps[i]!);
+    }
+    const results = await Promise.all(ops.map((op) => op()));
+
+    // Both return shapes differ: issueInvoiceForBooking → { invoice, created },
+    // issueStornoForBooking → Invoice. Normalise to the invoice number.
+    const nums = results
+      .map((r) => {
+        const inv =
+          r && typeof r === "object" && "invoice" in r
+            ? (r as { invoice: typeof invoicesTable.$inferSelect }).invoice
+            : (r as typeof invoicesTable.$inferSelect);
+        return inv.invoiceNumber;
+      })
+      .map((str) => {
+        const m = str.match(/-(\d+)$/);
+        return Number(m![1]);
+      })
+      .sort((a, b) => a - b);
+
+    const total = N * 2;
+    // The combined set across BOTH paths is unique with no gaps.
+    expect(nums.length).toBe(total);
+    expect(new Set(nums).size).toBe(total);
+    const expected = Array.from({ length: total }, (_, i) => startNum + i);
+    expect(nums).toEqual(expected);
+
+    // The provider's counter advanced by exactly the combined count.
+    const [after] = await db
+      .select({ next: providersTable.nextInvoiceNumber })
+      .from(providersTable)
+      .where(eq(providersTable.id, provider.id));
+    expect(after!.next).toBe(startNum + total);
+  });
+});
+
 describe("issueInvoiceForBooking — idempotency", () => {
   it("does not create a second invoice when re-issued for the same booking", async () => {
     const bookingId = await insertBooking({ totalPrice: 120 });
