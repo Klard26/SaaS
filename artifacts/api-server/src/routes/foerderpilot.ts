@@ -89,7 +89,10 @@ router.get("/foerderpilot/programme", async (req, res): Promise<void> => {
                  JOIN zielgruppe zg ON zg.id = pz.zielgruppe_id WHERE zg.slug = ${p(f.zielgruppe)})`,
     );
   }
-  if (f.region) where.push(`${p(f.region)} = ANY(vp.regionen)`);
+  if (f.region)
+    where.push(
+      `(${p(f.region)} = ANY(vp.regionen) OR 'bundesweit' = ANY(vp.regionen))`,
+    );
   if (f.suche) {
     where.push(
       `(vp.titel ILIKE '%' || ${p(f.suche)} || '%' OR vp.kurzbeschreibung ILIKE '%' || ${p(

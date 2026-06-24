@@ -26,11 +26,17 @@ import {
 
 const ALL = "__all__";
 
+/**
+ * Förderschiene is about energetic building renovation, so the Schnellcheck is
+ * locked to the "Energie & Gebäude" category. Bund and Länder programmes stay
+ * reachable via the Region filter.
+ */
+const ENERGIE_KATEGORIE = "energie_gebaeude";
+
 export default function FoerderpilotSchnellcheck() {
   const [optionen, setOptionen] = useState<FilterOptionen | null>(null);
   const [zielgruppe, setZielgruppe] = useState<string>(ALL);
   const [region, setRegion] = useState<string>(ALL);
-  const [kategorie, setKategorie] = useState<string>(ALL);
 
   const [treffer, setTreffer] = useState<Programm[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -49,7 +55,7 @@ export default function FoerderpilotSchnellcheck() {
       const res = await matchProgramme({
         zielgruppe: zielgruppe === ALL ? undefined : zielgruppe,
         region: region === ALL ? undefined : region,
-        kategorien: kategorie === ALL ? undefined : [kategorie],
+        kategorien: [ENERGIE_KATEGORIE],
         limit: 12,
       });
       setTreffer(res.treffer);
@@ -64,7 +70,6 @@ export default function FoerderpilotSchnellcheck() {
   function reset() {
     setZielgruppe(ALL);
     setRegion(ALL);
-    setKategorie(ALL);
     setTreffer(null);
     setError(null);
   }
@@ -80,11 +85,12 @@ export default function FoerderpilotSchnellcheck() {
             Förder-Schnellcheck
           </span>
           <h1 className="font-serif text-3xl sm:text-4xl font-bold text-foreground mb-3">
-            Passende Förderprogramme finden — ohne Anmeldung
+            Förderung für Ihre energetische Sanierung finden — ohne Anmeldung
           </h1>
           <p className="text-muted-foreground max-w-2xl leading-relaxed">
-            Beantworten Sie drei kurze Fragen zu Ihrem Vorhaben und erhalten Sie sofort eine
-            Auswahl passender Förderprogramme aus unserer Datenbank.
+            Beantworten Sie zwei kurze Fragen zu Ihrem Sanierungsvorhaben und erhalten Sie
+            sofort passende Förderprogramme für die energetische Gebäudesanierung — von Bund
+            und den Förderbanken der Länder.
           </p>
         </div>
       </section>
@@ -93,7 +99,7 @@ export default function FoerderpilotSchnellcheck() {
         {/* PROFILE FORM */}
         <Card className="mb-8">
           <CardContent className="p-6">
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-foreground">Zielgruppe</label>
                 <Select value={zielgruppe} onValueChange={setZielgruppe}>
@@ -122,23 +128,6 @@ export default function FoerderpilotSchnellcheck() {
                     {optionen?.regionen.map((r) => (
                       <SelectItem key={r} value={r}>
                         {regionLabel(r)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-foreground">Kategorie</label>
-                <Select value={kategorie} onValueChange={setKategorie}>
-                  <SelectTrigger data-testid="select-kategorie">
-                    <SelectValue placeholder="Worum geht es?" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={ALL}>Alle Kategorien</SelectItem>
-                    {optionen?.kategorien.map((k) => (
-                      <SelectItem key={k.slug} value={k.slug}>
-                        {k.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

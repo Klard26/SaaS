@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft, ArrowRight, Check, Loader2, Lock, ShieldCheck, Mail, FileDown,
-  MapPin, UserRound,
+  MapPin, UserRound, Sparkles,
 } from "lucide-react";
 import {
   AGE, BT, HT, INS, WI, ZUSTAND, ageBand,
@@ -336,7 +336,11 @@ export default function Gebaeudecheck() {
         </div>
       </section>
 
-      <section className="px-4 sm:px-8 py-8 max-w-[860px] mx-auto w-full flex-1">
+      <section
+        className={`px-4 sm:px-8 py-8 mx-auto w-full flex-1 ${
+          onResult ? "max-w-[1180px]" : "max-w-[860px]"
+        }`}
+      >
         {/* Progress */}
         <div className="mb-6">
           <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground mb-2">
@@ -595,14 +599,23 @@ function ResultView({
         </Card>
       </div>
 
-      {/* Personalized funding shortlist — fed from the building profile */}
-      <FoerderMatch d={d} />
+      {/* Result body: main funnel (left) + overview sidebar (right) */}
+      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+        {/* Overview sidebar — matching funding programs + recommended advisors.
+            DOM-first so it sits directly under the result on mobile; placed on
+            the right on desktop. */}
+        <aside
+          className="space-y-6 lg:col-start-2 lg:row-start-1"
+          data-testid="result-overview"
+        >
+          <FoerderMatch d={d} variant="sidebar" />
+          <EnergieberaterEmpfehlung plz={d.plz} city={d.city} variant="sidebar" />
+        </aside>
 
-      {/* Recommended Energieberater near the building's PLZ — book via Klard */}
-      <EnergieberaterEmpfehlung plz={d.plz} city={d.city} />
-
-      {/* Optional Personalien — for registration / report assignment */}
-      <Card>
+        {/* Main funnel — personal data, paid report, preview */}
+        <div className="space-y-8 lg:col-start-1 lg:row-start-1">
+          {/* Optional Personalien — for registration / report assignment */}
+          <Card>
         <CardContent className="p-5 sm:p-6 space-y-4">
           <div>
             <div className="flex items-center gap-2">
@@ -753,11 +766,19 @@ function ResultView({
           </p>
         </div>
       </div>
+        </div>
+      </div>
     </div>
   );
 }
 
-function FoerderMatch({ d }: { d: BuildingInput }) {
+function FoerderMatch({
+  d,
+  variant = "full",
+}: {
+  d: BuildingInput;
+  variant?: "full" | "sidebar";
+}) {
   const [treffer, setTreffer] = useState<Programm[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -786,6 +807,55 @@ function FoerderMatch({ d }: { d: BuildingInput }) {
   }, [d.gebaeudetyp]);
 
   if (error) return null;
+
+  if (variant === "sidebar") {
+    const programme = treffer ? treffer.slice(0, 4) : [];
+    return (
+      <div data-testid="section-foerder-match">
+        <div className="mb-3 flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-[var(--klard-teal-d)]" />
+          <div className="text-xs font-semibold uppercase tracking-wide text-[var(--klard-teal-d)]">
+            Passende Förderprogramme
+          </div>
+        </div>
+        {loading ? (
+          <div className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Programme werden geladen…
+          </div>
+        ) : programme.length > 0 ? (
+          <div className="space-y-3">
+            {programme.map((p) => (
+              <MatchCard key={p.id} programm={p} />
+            ))}
+            <Link href="/foerderung">
+              <Button
+                variant="link"
+                className="px-0 text-[var(--klard-teal-d)]"
+                data-testid="link-alle-programme"
+              >
+                Alle Förderprogramme durchsuchen
+                <ArrowRight className="ml-1 h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <div>
+            <p className="mb-3 text-sm leading-relaxed text-muted-foreground">
+              Aktuell keine direkt passenden Programme. Durchsuchen Sie die
+              gesamte Förderdatenbank.
+            </p>
+            <Link href="/foerderung">
+              <Button variant="outline" size="sm" data-testid="link-alle-programme">
+                Förderdatenbank öffnen
+                <ArrowRight className="ml-1 h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div data-testid="section-foerder-match">

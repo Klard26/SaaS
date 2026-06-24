@@ -35,6 +35,13 @@ import {
 const PAGE_SIZE = 12;
 const ALL = "__all__";
 
+/**
+ * Förderschiene only deals with energetic building renovation, so the
+ * Förderbank is locked to the "Energie & Gebäude" category. Bund and Länder
+ * programmes stay reachable via the Ebene/Region filters.
+ */
+const ENERGIE_KATEGORIE = "energie_gebaeude";
+
 export default function FoerderpilotFinder() {
   const [optionen, setOptionen] = useState<FilterOptionen | null>(null);
   const [programme, setProgramme] = useState<Programm[]>([]);
@@ -46,7 +53,6 @@ export default function FoerderpilotFinder() {
   const [sucheDebounced, setSucheDebounced] = useState("");
   const [ebene, setEbene] = useState<string>(ALL);
   const [art, setArt] = useState<string>(ALL);
-  const [kategorie, setKategorie] = useState<string>(ALL);
   const [zielgruppe, setZielgruppe] = useState<string>(ALL);
   const [region, setRegion] = useState<string>(ALL);
   const [page, setPage] = useState(0);
@@ -64,7 +70,7 @@ export default function FoerderpilotFinder() {
 
   useEffect(() => {
     setPage(0);
-  }, [sucheDebounced, ebene, art, kategorie, zielgruppe, region]);
+  }, [sucheDebounced, ebene, art, zielgruppe, region]);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,7 +80,7 @@ export default function FoerderpilotFinder() {
       suche: sucheDebounced || undefined,
       ebene: ebene === ALL ? undefined : (ebene as Ebene),
       art: art === ALL ? undefined : (art as Art),
-      kategorie: kategorie === ALL ? undefined : kategorie,
+      kategorie: ENERGIE_KATEGORIE,
       zielgruppe: zielgruppe === ALL ? undefined : zielgruppe,
       region: region === ALL ? undefined : region,
       limit: PAGE_SIZE,
@@ -97,13 +103,12 @@ export default function FoerderpilotFinder() {
     return () => {
       cancelled = true;
     };
-  }, [sucheDebounced, ebene, art, kategorie, zielgruppe, region, page]);
+  }, [sucheDebounced, ebene, art, zielgruppe, region, page]);
 
   const hasFilters =
     sucheDebounced !== "" ||
     ebene !== ALL ||
     art !== ALL ||
-    kategorie !== ALL ||
     zielgruppe !== ALL ||
     region !== ALL;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -112,7 +117,6 @@ export default function FoerderpilotFinder() {
     setSuche("");
     setEbene(ALL);
     setArt(ALL);
-    setKategorie(ALL);
     setZielgruppe(ALL);
     setRegion(ALL);
   }
@@ -124,14 +128,15 @@ export default function FoerderpilotFinder() {
       <section className="bg-[var(--klard-bg)] px-4 sm:px-8 py-12 border-b border-border">
         <div className="max-w-[1180px] mx-auto">
           <span className="inline-block bg-[var(--klard-teal-l)] text-[var(--klard-teal-d)] text-[0.7rem] font-bold tracking-wider uppercase px-3 py-1 rounded-full mb-4">
-            Förderdatenbank
+            Förderbank · Energetische Sanierung
           </span>
           <h1 className="font-serif text-3xl sm:text-4xl font-bold text-foreground mb-3">
-            Alle Förderprogramme im Überblick
+            Förderprogramme für die energetische Gebäudesanierung
           </h1>
           <p className="text-muted-foreground max-w-2xl leading-relaxed">
-            Durchsuchen und filtern Sie {total > 0 ? total : "alle"} aktuelle Förderprogramme
-            von Bund, Ländern, EU und Kommunen — mit Förderquote, Höhe und Antragsweg.
+            Durchsuchen und filtern Sie {total > 0 ? total : "alle"} Förderprogramme für die
+            energetische Sanierung Ihres Gebäudes — von Bund und den Förderbanken der Länder,
+            mit Förderquote, Höhe und Antragsweg.
           </p>
         </div>
       </section>
@@ -175,20 +180,6 @@ export default function FoerderpilotFinder() {
               ).map((a) => (
                 <SelectItem key={a} value={a}>
                   {ART_LABEL[a]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={kategorie} onValueChange={setKategorie}>
-            <SelectTrigger data-testid="select-kategorie">
-              <SelectValue placeholder="Kategorie" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>Alle Kategorien</SelectItem>
-              {optionen?.kategorien.map((k) => (
-                <SelectItem key={k.slug} value={k.slug}>
-                  {k.name}
                 </SelectItem>
               ))}
             </SelectContent>

@@ -111,9 +111,11 @@ function EnergieberaterCard({ p }: { p: ProviderSummary }) {
 export function EnergieberaterEmpfehlung({
   plz,
   city,
+  variant = "full",
 }: {
   plz?: string;
   city?: string;
+  variant?: "full" | "sidebar";
 }) {
   const { data, isLoading } = useListProviders({
     category: ENERGIEBERATER_CATEGORY,
@@ -124,20 +126,24 @@ export function EnergieberaterEmpfehlung({
   const providers = rankByProximity(data ?? [], plz ?? "", city ?? "");
   if (providers.length === 0) return null;
 
+  const sidebar = variant === "sidebar";
+
   return (
     <div data-testid="section-energieberater">
       <div className="mb-3 flex items-center gap-2">
         <Users className="h-4 w-4 text-[var(--klard-teal-d)]" />
         <div className="text-xs font-semibold uppercase tracking-wide text-[var(--klard-teal-d)]">
-          Empfohlene Energieberater in Ihrer Nähe
+          {sidebar
+            ? "Empfohlene Energieberater"
+            : "Empfohlene Energieberater in Ihrer Nähe"}
         </div>
       </div>
       <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
-        Lassen Sie Ihre Sanierung von einem zertifizierten Energieberater
-        begleiten. Wählen Sie einen Berater passend zu Ihrer Postleitzahl und
-        buchen Sie die Leistung direkt über Klard.
+        {sidebar
+          ? "Zertifizierte Energieberater passend zu Ihrer Postleitzahl — direkt über Klard buchbar."
+          : "Lassen Sie Ihre Sanierung von einem zertifizierten Energieberater begleiten. Wählen Sie einen Berater passend zu Ihrer Postleitzahl und buchen Sie die Leistung direkt über Klard."}
       </p>
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className={sidebar ? "space-y-4" : "grid gap-4 md:grid-cols-3"}>
         {providers.map((p) => (
           <EnergieberaterCard key={p.id} p={p} />
         ))}

@@ -38,6 +38,13 @@ Fastify backend and ported into the shared api-server + foerderportal frontend.
   via the junction tables (`programm_kategorie`→`kategorie.slug`,
   `programm_zielgruppe`→`zielgruppe.slug`) instead. Region filtering DOES use the
   view array (regionen are enum text values that match the slugs, not display names).
+- **Region filter MUST OR `bundesweit`:** a region filter has to be
+  `(<region> = ANY(vp.regionen) OR 'bundesweit' = ANY(vp.regionen))`, NOT exact
+  membership. **Why:** nationwide (Bund) programs are tagged `bundesweit`, not per
+  Bundesland; exact-match drops them, so picking a state would hide ~all Bund
+  programs (energy catalog is ~35 Bund vs ~8 Länder). Both the Finder
+  (`/programme`) and `/match` now do this — keep any new region-filtered query
+  consistent.
 
 ## Frontend deviation
 - Endpoints are mounted at `/api/foerderpilot/*` (distinct from existing
