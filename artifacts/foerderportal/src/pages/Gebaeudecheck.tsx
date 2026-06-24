@@ -6,6 +6,7 @@ import { EnergyBar } from "@/components/EnergieSchnellcheck";
 import { ReportPreviewDemo } from "@/components/ReportPreviewDemo";
 import { AddressAutocomplete, type AddressResult } from "@/components/AddressAutocomplete";
 import { StandortMap } from "@/components/StandortMap";
+import { EnergieberaterEmpfehlung } from "@/components/EnergieberaterEmpfehlung";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +29,7 @@ import {
   type Programm,
 } from "@/lib/foerderpilotApi";
 
-const REPORT_PRICE_LABEL = "49 €";
+const REPORT_PRICE_LABEL = "29 €";
 const CURRENT_YEAR = new Date().getFullYear();
 
 const DEFAULT: BuildingInput = {
@@ -596,6 +597,9 @@ function ResultView({
 
       {/* Personalized funding shortlist — fed from the building profile */}
       <FoerderMatch d={d} />
+
+      {/* Recommended Energieberater near the building's PLZ — book via Klard */}
+      <EnergieberaterEmpfehlung plz={d.plz} city={d.city} />
 
       {/* Optional Personalien — for registration / report assignment */}
       <Card>

@@ -9,7 +9,7 @@ import { eq, sql } from "drizzle-orm";
 import { sendFoerderschieneReportReady, wasEmailSent } from "./email";
 
 /** One-time price for the detailed Gebäudereport PDF (in cents). */
-export const REPORT_PRICE_CENTS = 4900;
+export const REPORT_PRICE_CENTS = 2900;
 
 /** Energieausweis order prices by type (in cents). Fulfilled by a certified
  *  Aussteller — Förderschiene only collects intake + payment. */

@@ -3,6 +3,7 @@ import { logger } from "./lib/logger";
 import { startReminderScheduler } from "./lib/reminderScheduler";
 import { startIcalSyncScheduler } from "./lib/icalSync";
 import { ensureFoerderpilotCatalog } from "./lib/foerderpilotSetup";
+import { ensureEnergieberaterDemoData } from "./lib/seedEnergieberater";
 
 const rawPort = process.env["PORT"];
 
@@ -28,4 +29,5 @@ app.listen(port, (err) => {
   startReminderScheduler();
   startIcalSyncScheduler();
   void ensureFoerderpilotCatalog();
+  void ensureEnergieberaterDemoData();
 });
