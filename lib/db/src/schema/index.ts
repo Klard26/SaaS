@@ -10,6 +10,7 @@ export * from "./invoices";
 export * from "./energie";
 export * from "./gebaeudecheck";
 export * from "./immobilienKunde";
+export * from "./immobilienPortfolio";
 export * from "./customerProfile";
 export * from "./offers";
 export * from "./blockedSlots";

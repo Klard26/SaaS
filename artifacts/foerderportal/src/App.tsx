@@ -17,6 +17,9 @@ import FoerderpilotFinder from "./pages/FoerderpilotFinder";
 import FoerderpilotDetail from "./pages/FoerderpilotDetail";
 import FoerderpilotSchnellcheck from "./pages/FoerderpilotSchnellcheck";
 import Verwaltung from "./pages/Verwaltung";
+import Konto from "./pages/Konto";
+import Portfolio from "./pages/Portfolio";
+import Kunden from "./pages/Kunden";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -172,6 +175,15 @@ function ClerkProviderWithRoutes() {
           <Route path="/report" component={ReportPage} />
           <Route path="/energieausweis">
             {() => <AuthRoute component={EnergieausweisPage} />}
+          </Route>
+          <Route path="/konto">
+            {() => <AuthRoute component={Konto} />}
+          </Route>
+          <Route path="/portfolio">
+            {() => <AuthRoute component={Portfolio} />}
+          </Route>
+          <Route path="/kunden">
+            {() => <AuthRoute component={Kunden} />}
           </Route>
           <Route path="/verwaltung">
             {() => <AuthRoute component={Verwaltung} />}

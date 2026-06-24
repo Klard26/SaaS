@@ -1431,6 +1431,7 @@ export const GetMyImmobilienKundeResponse = zod.union([
       "bestandshalter",
       "bautraeger",
       "genossenschaft",
+      "handwerker",
       "gewerbe",
     ]),
     firma: zod.string(),
@@ -1457,6 +1458,7 @@ export const UpsertMyImmobilienKundeBody = zod.object({
     "bestandshalter",
     "bautraeger",
     "genossenschaft",
+    "handwerker",
     "gewerbe",
   ]),
   firma: zod.string().min(1),
@@ -1476,6 +1478,7 @@ export const UpsertMyImmobilienKundeResponse = zod.object({
     "bestandshalter",
     "bautraeger",
     "genossenschaft",
+    "handwerker",
     "gewerbe",
   ]),
   firma: zod.string(),
@@ -1486,6 +1489,166 @@ export const UpsertMyImmobilienKundeResponse = zod.object({
   wohneinheitenGesamt: zod.number().nullish(),
   createdAt: zod.coerce.date(),
   updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary List the current user's Immobilienportfolio properties
+ */
+export const ListImmobilienPortfolioObjekteResponseItem = zod.object({
+  id: zod.number(),
+  userId: zod.string(),
+  bezeichnung: zod.string(),
+  strasse: zod.string().nullish(),
+  hausnummer: zod.string().nullish(),
+  plz: zod.string().nullish(),
+  ort: zod.string().nullish(),
+  gebaeudetyp: zod.string().nullish(),
+  baujahr: zod.number().nullish(),
+  wohnflaeche: zod.number().nullish(),
+  wohneinheiten: zod.number().nullish(),
+  heizung: zod.string().nullish(),
+  notiz: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+export const ListImmobilienPortfolioObjekteResponse = zod.array(
+  ListImmobilienPortfolioObjekteResponseItem,
+);
+
+/**
+ * @summary Add a property to the current user's portfolio
+ */
+
+export const CreateImmobilienPortfolioObjektBody = zod.object({
+  bezeichnung: zod.string().min(1),
+  strasse: zod.string().nullish(),
+  hausnummer: zod.string().nullish(),
+  plz: zod.string().nullish(),
+  ort: zod.string().nullish(),
+  gebaeudetyp: zod.string().nullish(),
+  baujahr: zod.number().nullish(),
+  wohnflaeche: zod.number().nullish(),
+  wohneinheiten: zod.number().nullish(),
+  heizung: zod.string().nullish(),
+  notiz: zod.string().nullish(),
+});
+
+/**
+ * @summary Update one of the current user's portfolio properties
+ */
+export const UpdateImmobilienPortfolioObjektParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateImmobilienPortfolioObjektBody = zod.object({
+  bezeichnung: zod.string().min(1),
+  strasse: zod.string().nullish(),
+  hausnummer: zod.string().nullish(),
+  plz: zod.string().nullish(),
+  ort: zod.string().nullish(),
+  gebaeudetyp: zod.string().nullish(),
+  baujahr: zod.number().nullish(),
+  wohnflaeche: zod.number().nullish(),
+  wohneinheiten: zod.number().nullish(),
+  heizung: zod.string().nullish(),
+  notiz: zod.string().nullish(),
+});
+
+export const UpdateImmobilienPortfolioObjektResponse = zod.object({
+  id: zod.number(),
+  userId: zod.string(),
+  bezeichnung: zod.string(),
+  strasse: zod.string().nullish(),
+  hausnummer: zod.string().nullish(),
+  plz: zod.string().nullish(),
+  ort: zod.string().nullish(),
+  gebaeudetyp: zod.string().nullish(),
+  baujahr: zod.number().nullish(),
+  wohnflaeche: zod.number().nullish(),
+  wohneinheiten: zod.number().nullish(),
+  heizung: zod.string().nullish(),
+  notiz: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Delete one of the current user's portfolio properties
+ */
+export const DeleteImmobilienPortfolioObjektParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary List the current user's verwaltete/betreute Kunden
+ */
+export const ListVerwalteteKundenResponseItem = zod.object({
+  id: zod.number(),
+  userId: zod.string(),
+  name: zod.string(),
+  typ: zod.string().nullish(),
+  ansprechpartner: zod.string().nullish(),
+  telefon: zod.string().nullish(),
+  email: zod.string().nullish(),
+  notiz: zod.string().nullish(),
+  portfolioObjektId: zod.number().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+export const ListVerwalteteKundenResponse = zod.array(
+  ListVerwalteteKundenResponseItem,
+);
+
+/**
+ * @summary Add a managed client
+ */
+
+export const CreateVerwalteterKundeBody = zod.object({
+  name: zod.string().min(1),
+  typ: zod.string().nullish(),
+  ansprechpartner: zod.string().nullish(),
+  telefon: zod.string().nullish(),
+  email: zod.string().nullish(),
+  notiz: zod.string().nullish(),
+  portfolioObjektId: zod.number().nullish(),
+});
+
+/**
+ * @summary Update one of the current user's managed clients
+ */
+export const UpdateVerwalteterKundeParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateVerwalteterKundeBody = zod.object({
+  name: zod.string().min(1),
+  typ: zod.string().nullish(),
+  ansprechpartner: zod.string().nullish(),
+  telefon: zod.string().nullish(),
+  email: zod.string().nullish(),
+  notiz: zod.string().nullish(),
+  portfolioObjektId: zod.number().nullish(),
+});
+
+export const UpdateVerwalteterKundeResponse = zod.object({
+  id: zod.number(),
+  userId: zod.string(),
+  name: zod.string(),
+  typ: zod.string().nullish(),
+  ansprechpartner: zod.string().nullish(),
+  telefon: zod.string().nullish(),
+  email: zod.string().nullish(),
+  notiz: zod.string().nullish(),
+  portfolioObjektId: zod.number().nullish(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Delete one of the current user's managed clients
+ */
+export const DeleteVerwalteterKundeParams = zod.object({
+  id: zod.coerce.number(),
 });
 
 /**

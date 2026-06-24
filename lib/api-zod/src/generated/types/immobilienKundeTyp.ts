@@ -16,5 +16,6 @@ export const ImmobilienKundeTyp = {
   bestandshalter: "bestandshalter",
   bautraeger: "bautraeger",
   genossenschaft: "genossenschaft",
+  handwerker: "handwerker",
   gewerbe: "gewerbe",
 } as const;

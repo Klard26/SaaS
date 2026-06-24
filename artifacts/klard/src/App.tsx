@@ -23,7 +23,7 @@ import ProviderDetail from "./pages/ProviderDetail";
 import BookingConfirmation from "./pages/BookingConfirmation";
 import MyBookings from "./pages/MyBookings";
 import Admin from "./pages/Admin";
-import ImmobilienKundeOnboarding from "./pages/ImmobilienKundeOnboarding";
+import MeinKonto from "./pages/MeinKonto";
 import CustomerOnboarding from "./pages/CustomerOnboarding";
 import AnfrageStellen from "./pages/AnfrageStellen";
 import MeineAnfragen from "./pages/MeineAnfragen";
@@ -392,8 +392,8 @@ function ClerkProviderWithRoutes() {
           <Route path="/willkommen">
             {() => <ProfilelessAuthRoute component={CustomerOnboarding} />}
           </Route>
-          <Route path="/immobilien/onboarding">
-            {() => <AuthRoute component={ImmobilienKundeOnboarding} />}
+          <Route path="/konto">
+            {() => <AuthRoute component={MeinKonto} />}
           </Route>
           
           <Route component={NotFound} />

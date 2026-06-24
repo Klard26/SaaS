@@ -7,6 +7,8 @@ import {
   bookingsTable,
   reviewsTable,
   immobilienKundeTable,
+  immobilienPortfolioObjekteTable,
+  verwalteteKundenTable,
   customerProfileTable,
   verwalterTable,
   assessmentsTable,
@@ -214,6 +216,12 @@ router.delete("/account/me", async (req, res): Promise<void> => {
       await tx.delete(requestsTable).where(eq(requestsTable.customerId, userId));
       await tx.delete(bookingsTable).where(eq(bookingsTable.customerId, userId));
       await tx.delete(immobilienKundeTable).where(eq(immobilienKundeTable.userId, userId));
+      // Commercial Förderschiene data: managed clients reference portfolio
+      // objects, so delete the clients BEFORE their objects.
+      await tx.delete(verwalteteKundenTable).where(eq(verwalteteKundenTable.userId, userId));
+      await tx
+        .delete(immobilienPortfolioObjekteTable)
+        .where(eq(immobilienPortfolioObjekteTable.userId, userId));
       await tx.delete(customerProfileTable).where(eq(customerProfileTable.userId, userId));
       await tx.delete(offerAcceptancesTable).where(eq(offerAcceptancesTable.userId, userId));
       await tx.delete(assessmentsTable).where(eq(assessmentsTable.userId, userId));

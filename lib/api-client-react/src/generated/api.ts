@@ -62,6 +62,8 @@ import type {
   IcalBookingConflict,
   ImmobilienKunde,
   ImmobilienKundeInput,
+  ImmobilienPortfolioObjekt,
+  ImmobilienPortfolioObjektInput,
   Invoice,
   InvoiceSettings,
   InvoiceSettingsUpdate,
@@ -105,6 +107,8 @@ import type {
   VertragInput,
   Verwalter,
   VerwalterInput,
+  VerwalteterKunde,
+  VerwalteterKundeInput,
   Vollmacht,
   VollmachtInput,
   VollmachtStatusUpdate,
@@ -5641,6 +5645,691 @@ export const useUpsertMyImmobilienKunde = <
   TContext
 > => {
   return useMutation(getUpsertMyImmobilienKundeMutationOptions(options));
+};
+
+/**
+ * @summary List the current user's Immobilienportfolio properties
+ */
+export const getListImmobilienPortfolioObjekteUrl = () => {
+  return `/api/immobilien-portfolio/objekte`;
+};
+
+export const listImmobilienPortfolioObjekte = async (
+  options?: RequestInit,
+): Promise<ImmobilienPortfolioObjekt[]> => {
+  return customFetch<ImmobilienPortfolioObjekt[]>(
+    getListImmobilienPortfolioObjekteUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListImmobilienPortfolioObjekteQueryKey = () => {
+  return [`/api/immobilien-portfolio/objekte`] as const;
+};
+
+export const getListImmobilienPortfolioObjekteQueryOptions = <
+  TData = Awaited<ReturnType<typeof listImmobilienPortfolioObjekte>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listImmobilienPortfolioObjekte>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListImmobilienPortfolioObjekteQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listImmobilienPortfolioObjekte>>
+  > = ({ signal }) =>
+    listImmobilienPortfolioObjekte({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listImmobilienPortfolioObjekte>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListImmobilienPortfolioObjekteQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listImmobilienPortfolioObjekte>>
+>;
+export type ListImmobilienPortfolioObjekteQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List the current user's Immobilienportfolio properties
+ */
+
+export function useListImmobilienPortfolioObjekte<
+  TData = Awaited<ReturnType<typeof listImmobilienPortfolioObjekte>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listImmobilienPortfolioObjekte>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListImmobilienPortfolioObjekteQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Add a property to the current user's portfolio
+ */
+export const getCreateImmobilienPortfolioObjektUrl = () => {
+  return `/api/immobilien-portfolio/objekte`;
+};
+
+export const createImmobilienPortfolioObjekt = async (
+  immobilienPortfolioObjektInput: ImmobilienPortfolioObjektInput,
+  options?: RequestInit,
+): Promise<ImmobilienPortfolioObjekt> => {
+  return customFetch<ImmobilienPortfolioObjekt>(
+    getCreateImmobilienPortfolioObjektUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(immobilienPortfolioObjektInput),
+    },
+  );
+};
+
+export const getCreateImmobilienPortfolioObjektMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createImmobilienPortfolioObjekt>>,
+    TError,
+    { data: BodyType<ImmobilienPortfolioObjektInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createImmobilienPortfolioObjekt>>,
+  TError,
+  { data: BodyType<ImmobilienPortfolioObjektInput> },
+  TContext
+> => {
+  const mutationKey = ["createImmobilienPortfolioObjekt"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createImmobilienPortfolioObjekt>>,
+    { data: BodyType<ImmobilienPortfolioObjektInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createImmobilienPortfolioObjekt(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateImmobilienPortfolioObjektMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createImmobilienPortfolioObjekt>>
+>;
+export type CreateImmobilienPortfolioObjektMutationBody =
+  BodyType<ImmobilienPortfolioObjektInput>;
+export type CreateImmobilienPortfolioObjektMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Add a property to the current user's portfolio
+ */
+export const useCreateImmobilienPortfolioObjekt = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createImmobilienPortfolioObjekt>>,
+    TError,
+    { data: BodyType<ImmobilienPortfolioObjektInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createImmobilienPortfolioObjekt>>,
+  TError,
+  { data: BodyType<ImmobilienPortfolioObjektInput> },
+  TContext
+> => {
+  return useMutation(
+    getCreateImmobilienPortfolioObjektMutationOptions(options),
+  );
+};
+
+/**
+ * @summary Update one of the current user's portfolio properties
+ */
+export const getUpdateImmobilienPortfolioObjektUrl = (id: number) => {
+  return `/api/immobilien-portfolio/objekte/${id}`;
+};
+
+export const updateImmobilienPortfolioObjekt = async (
+  id: number,
+  immobilienPortfolioObjektInput: ImmobilienPortfolioObjektInput,
+  options?: RequestInit,
+): Promise<ImmobilienPortfolioObjekt> => {
+  return customFetch<ImmobilienPortfolioObjekt>(
+    getUpdateImmobilienPortfolioObjektUrl(id),
+    {
+      ...options,
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(immobilienPortfolioObjektInput),
+    },
+  );
+};
+
+export const getUpdateImmobilienPortfolioObjektMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateImmobilienPortfolioObjekt>>,
+    TError,
+    { id: number; data: BodyType<ImmobilienPortfolioObjektInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateImmobilienPortfolioObjekt>>,
+  TError,
+  { id: number; data: BodyType<ImmobilienPortfolioObjektInput> },
+  TContext
+> => {
+  const mutationKey = ["updateImmobilienPortfolioObjekt"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateImmobilienPortfolioObjekt>>,
+    { id: number; data: BodyType<ImmobilienPortfolioObjektInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateImmobilienPortfolioObjekt(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateImmobilienPortfolioObjektMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateImmobilienPortfolioObjekt>>
+>;
+export type UpdateImmobilienPortfolioObjektMutationBody =
+  BodyType<ImmobilienPortfolioObjektInput>;
+export type UpdateImmobilienPortfolioObjektMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update one of the current user's portfolio properties
+ */
+export const useUpdateImmobilienPortfolioObjekt = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateImmobilienPortfolioObjekt>>,
+    TError,
+    { id: number; data: BodyType<ImmobilienPortfolioObjektInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateImmobilienPortfolioObjekt>>,
+  TError,
+  { id: number; data: BodyType<ImmobilienPortfolioObjektInput> },
+  TContext
+> => {
+  return useMutation(
+    getUpdateImmobilienPortfolioObjektMutationOptions(options),
+  );
+};
+
+/**
+ * @summary Delete one of the current user's portfolio properties
+ */
+export const getDeleteImmobilienPortfolioObjektUrl = (id: number) => {
+  return `/api/immobilien-portfolio/objekte/${id}`;
+};
+
+export const deleteImmobilienPortfolioObjekt = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteImmobilienPortfolioObjektUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteImmobilienPortfolioObjektMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteImmobilienPortfolioObjekt>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteImmobilienPortfolioObjekt>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteImmobilienPortfolioObjekt"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteImmobilienPortfolioObjekt>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteImmobilienPortfolioObjekt(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteImmobilienPortfolioObjektMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteImmobilienPortfolioObjekt>>
+>;
+
+export type DeleteImmobilienPortfolioObjektMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete one of the current user's portfolio properties
+ */
+export const useDeleteImmobilienPortfolioObjekt = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteImmobilienPortfolioObjekt>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteImmobilienPortfolioObjekt>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(
+    getDeleteImmobilienPortfolioObjektMutationOptions(options),
+  );
+};
+
+/**
+ * @summary List the current user's verwaltete/betreute Kunden
+ */
+export const getListVerwalteteKundenUrl = () => {
+  return `/api/verwaltete-kunden`;
+};
+
+export const listVerwalteteKunden = async (
+  options?: RequestInit,
+): Promise<VerwalteterKunde[]> => {
+  return customFetch<VerwalteterKunde[]>(getListVerwalteteKundenUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListVerwalteteKundenQueryKey = () => {
+  return [`/api/verwaltete-kunden`] as const;
+};
+
+export const getListVerwalteteKundenQueryOptions = <
+  TData = Awaited<ReturnType<typeof listVerwalteteKunden>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listVerwalteteKunden>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListVerwalteteKundenQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listVerwalteteKunden>>
+  > = ({ signal }) => listVerwalteteKunden({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listVerwalteteKunden>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListVerwalteteKundenQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listVerwalteteKunden>>
+>;
+export type ListVerwalteteKundenQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List the current user's verwaltete/betreute Kunden
+ */
+
+export function useListVerwalteteKunden<
+  TData = Awaited<ReturnType<typeof listVerwalteteKunden>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listVerwalteteKunden>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListVerwalteteKundenQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Add a managed client
+ */
+export const getCreateVerwalteterKundeUrl = () => {
+  return `/api/verwaltete-kunden`;
+};
+
+export const createVerwalteterKunde = async (
+  verwalteterKundeInput: VerwalteterKundeInput,
+  options?: RequestInit,
+): Promise<VerwalteterKunde> => {
+  return customFetch<VerwalteterKunde>(getCreateVerwalteterKundeUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(verwalteterKundeInput),
+  });
+};
+
+export const getCreateVerwalteterKundeMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createVerwalteterKunde>>,
+    TError,
+    { data: BodyType<VerwalteterKundeInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createVerwalteterKunde>>,
+  TError,
+  { data: BodyType<VerwalteterKundeInput> },
+  TContext
+> => {
+  const mutationKey = ["createVerwalteterKunde"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createVerwalteterKunde>>,
+    { data: BodyType<VerwalteterKundeInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createVerwalteterKunde(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateVerwalteterKundeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createVerwalteterKunde>>
+>;
+export type CreateVerwalteterKundeMutationBody =
+  BodyType<VerwalteterKundeInput>;
+export type CreateVerwalteterKundeMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Add a managed client
+ */
+export const useCreateVerwalteterKunde = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createVerwalteterKunde>>,
+    TError,
+    { data: BodyType<VerwalteterKundeInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createVerwalteterKunde>>,
+  TError,
+  { data: BodyType<VerwalteterKundeInput> },
+  TContext
+> => {
+  return useMutation(getCreateVerwalteterKundeMutationOptions(options));
+};
+
+/**
+ * @summary Update one of the current user's managed clients
+ */
+export const getUpdateVerwalteterKundeUrl = (id: number) => {
+  return `/api/verwaltete-kunden/${id}`;
+};
+
+export const updateVerwalteterKunde = async (
+  id: number,
+  verwalteterKundeInput: VerwalteterKundeInput,
+  options?: RequestInit,
+): Promise<VerwalteterKunde> => {
+  return customFetch<VerwalteterKunde>(getUpdateVerwalteterKundeUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(verwalteterKundeInput),
+  });
+};
+
+export const getUpdateVerwalteterKundeMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateVerwalteterKunde>>,
+    TError,
+    { id: number; data: BodyType<VerwalteterKundeInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateVerwalteterKunde>>,
+  TError,
+  { id: number; data: BodyType<VerwalteterKundeInput> },
+  TContext
+> => {
+  const mutationKey = ["updateVerwalteterKunde"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateVerwalteterKunde>>,
+    { id: number; data: BodyType<VerwalteterKundeInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateVerwalteterKunde(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateVerwalteterKundeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateVerwalteterKunde>>
+>;
+export type UpdateVerwalteterKundeMutationBody =
+  BodyType<VerwalteterKundeInput>;
+export type UpdateVerwalteterKundeMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update one of the current user's managed clients
+ */
+export const useUpdateVerwalteterKunde = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateVerwalteterKunde>>,
+    TError,
+    { id: number; data: BodyType<VerwalteterKundeInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateVerwalteterKunde>>,
+  TError,
+  { id: number; data: BodyType<VerwalteterKundeInput> },
+  TContext
+> => {
+  return useMutation(getUpdateVerwalteterKundeMutationOptions(options));
+};
+
+/**
+ * @summary Delete one of the current user's managed clients
+ */
+export const getDeleteVerwalteterKundeUrl = (id: number) => {
+  return `/api/verwaltete-kunden/${id}`;
+};
+
+export const deleteVerwalteterKunde = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteVerwalteterKundeUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteVerwalteterKundeMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteVerwalteterKunde>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteVerwalteterKunde>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteVerwalteterKunde"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteVerwalteterKunde>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteVerwalteterKunde(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteVerwalteterKundeMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteVerwalteterKunde>>
+>;
+
+export type DeleteVerwalteterKundeMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete one of the current user's managed clients
+ */
+export const useDeleteVerwalteterKunde = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteVerwalteterKunde>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteVerwalteterKunde>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteVerwalteterKundeMutationOptions(options));
 };
 
 /**

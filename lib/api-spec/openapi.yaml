@@ -1231,6 +1231,142 @@ paths:
               schema:
                 $ref: "#/components/schemas/ImmobilienKunde"
 
+  /immobilien-portfolio/objekte:
+    get:
+      operationId: listImmobilienPortfolioObjekte
+      tags: [immobilienPortfolio]
+      summary: List the current user's Immobilienportfolio properties
+      responses:
+        "200":
+          description: The user's portfolio properties
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ImmobilienPortfolioObjekt"
+    post:
+      operationId: createImmobilienPortfolioObjekt
+      tags: [immobilienPortfolio]
+      summary: Add a property to the current user's portfolio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImmobilienPortfolioObjektInput"
+      responses:
+        "201":
+          description: The created property
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImmobilienPortfolioObjekt"
+
+  /immobilien-portfolio/objekte/{id}:
+    put:
+      operationId: updateImmobilienPortfolioObjekt
+      tags: [immobilienPortfolio]
+      summary: Update one of the current user's portfolio properties
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImmobilienPortfolioObjektInput"
+      responses:
+        "200":
+          description: The updated property
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImmobilienPortfolioObjekt"
+    delete:
+      operationId: deleteImmobilienPortfolioObjekt
+      tags: [immobilienPortfolio]
+      summary: Delete one of the current user's portfolio properties
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+
+  /verwaltete-kunden:
+    get:
+      operationId: listVerwalteteKunden
+      tags: [verwalteteKunden]
+      summary: List the current user's verwaltete/betreute Kunden
+      responses:
+        "200":
+          description: The user's managed clients
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VerwalteterKunde"
+    post:
+      operationId: createVerwalteterKunde
+      tags: [verwalteteKunden]
+      summary: Add a managed client
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerwalteterKundeInput"
+      responses:
+        "201":
+          description: The created client
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerwalteterKunde"
+
+  /verwaltete-kunden/{id}:
+    put:
+      operationId: updateVerwalteterKunde
+      tags: [verwalteteKunden]
+      summary: Update one of the current user's managed clients
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerwalteterKundeInput"
+      responses:
+        "200":
+          description: The updated client
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerwalteterKunde"
+    delete:
+      operationId: deleteVerwalteterKunde
+      tags: [verwalteteKunden]
+      summary: Delete one of the current user's managed clients
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+
   /customer-profile/me:
     get:
       operationId: getMyCustomerProfile
@@ -2972,7 +3108,7 @@ components:
       properties:
         typ:
           type: string
-          enum: [privat, hausverwaltung, makler, bestandshalter, bautraeger, genossenschaft, gewerbe]
+          enum: [privat, hausverwaltung, makler, bestandshalter, bautraeger, genossenschaft, handwerker, gewerbe]
         firma:           { type: string, minLength: 1 }
         ansprechpartner: { type: ["string", "null"] }
         telefon:         { type: ["string", "null"] }
@@ -2987,7 +3123,7 @@ components:
         userId:          { type: string }
         typ:
           type: string
-          enum: [privat, hausverwaltung, makler, bestandshalter, bautraeger, genossenschaft, gewerbe]
+          enum: [privat, hausverwaltung, makler, bestandshalter, bautraeger, genossenschaft, handwerker, gewerbe]
         firma:           { type: string }
         ansprechpartner: { type: ["string", "null"] }
         telefon:         { type: ["string", "null"] }
@@ -2996,6 +3132,70 @@ components:
         wohneinheitenGesamt: { type: ["integer", "null"] }
         createdAt:       { type: string, format: date-time }
         updatedAt:       { type: string, format: date-time }
+
+    ImmobilienPortfolioObjektInput:
+      type: object
+      required: [bezeichnung]
+      properties:
+        bezeichnung:   { type: string, minLength: 1 }
+        strasse:       { type: ["string", "null"] }
+        hausnummer:    { type: ["string", "null"] }
+        plz:           { type: ["string", "null"] }
+        ort:           { type: ["string", "null"] }
+        gebaeudetyp:   { type: ["string", "null"] }
+        baujahr:       { type: ["integer", "null"] }
+        wohnflaeche:   { type: ["integer", "null"] }
+        wohneinheiten: { type: ["integer", "null"] }
+        heizung:       { type: ["string", "null"] }
+        notiz:         { type: ["string", "null"] }
+
+    ImmobilienPortfolioObjekt:
+      type: object
+      required: [id, userId, bezeichnung, createdAt, updatedAt]
+      properties:
+        id:            { type: integer }
+        userId:        { type: string }
+        bezeichnung:   { type: string }
+        strasse:       { type: ["string", "null"] }
+        hausnummer:    { type: ["string", "null"] }
+        plz:           { type: ["string", "null"] }
+        ort:           { type: ["string", "null"] }
+        gebaeudetyp:   { type: ["string", "null"] }
+        baujahr:       { type: ["integer", "null"] }
+        wohnflaeche:   { type: ["integer", "null"] }
+        wohneinheiten: { type: ["integer", "null"] }
+        heizung:       { type: ["string", "null"] }
+        notiz:         { type: ["string", "null"] }
+        createdAt:     { type: string, format: date-time }
+        updatedAt:     { type: string, format: date-time }
+
+    VerwalteterKundeInput:
+      type: object
+      required: [name]
+      properties:
+        name:              { type: string, minLength: 1 }
+        typ:               { type: ["string", "null"] }
+        ansprechpartner:   { type: ["string", "null"] }
+        telefon:           { type: ["string", "null"] }
+        email:             { type: ["string", "null"] }
+        notiz:             { type: ["string", "null"] }
+        portfolioObjektId: { type: ["integer", "null"] }
+
+    VerwalteterKunde:
+      type: object
+      required: [id, userId, name, createdAt, updatedAt]
+      properties:
+        id:                { type: integer }
+        userId:            { type: string }
+        name:              { type: string }
+        typ:               { type: ["string", "null"] }
+        ansprechpartner:   { type: ["string", "null"] }
+        telefon:           { type: ["string", "null"] }
+        email:             { type: ["string", "null"] }
+        notiz:             { type: ["string", "null"] }
+        portfolioObjektId: { type: ["integer", "null"] }
+        createdAt:         { type: string, format: date-time }
+        updatedAt:         { type: string, format: date-time }
 
     CustomerProfileInput:
       type: object

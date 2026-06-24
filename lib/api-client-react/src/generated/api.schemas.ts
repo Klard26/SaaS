@@ -1448,6 +1448,7 @@ export const ImmobilienKundeInputTyp = {
   bestandshalter: "bestandshalter",
   bautraeger: "bautraeger",
   genossenschaft: "genossenschaft",
+  handwerker: "handwerker",
   gewerbe: "gewerbe",
 } as const;
 
@@ -1477,6 +1478,7 @@ export const ImmobilienKundeTyp = {
   bestandshalter: "bestandshalter",
   bautraeger: "bautraeger",
   genossenschaft: "genossenschaft",
+  handwerker: "handwerker",
   gewerbe: "gewerbe",
 } as const;
 
@@ -1494,6 +1496,96 @@ export interface ImmobilienKunde {
   anzahlGebaeude?: number | null;
   /** @nullable */
   wohneinheitenGesamt?: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ImmobilienPortfolioObjektInput {
+  /** @minLength 1 */
+  bezeichnung: string;
+  /** @nullable */
+  strasse?: string | null;
+  /** @nullable */
+  hausnummer?: string | null;
+  /** @nullable */
+  plz?: string | null;
+  /** @nullable */
+  ort?: string | null;
+  /** @nullable */
+  gebaeudetyp?: string | null;
+  /** @nullable */
+  baujahr?: number | null;
+  /** @nullable */
+  wohnflaeche?: number | null;
+  /** @nullable */
+  wohneinheiten?: number | null;
+  /** @nullable */
+  heizung?: string | null;
+  /** @nullable */
+  notiz?: string | null;
+}
+
+export interface ImmobilienPortfolioObjekt {
+  id: number;
+  userId: string;
+  bezeichnung: string;
+  /** @nullable */
+  strasse?: string | null;
+  /** @nullable */
+  hausnummer?: string | null;
+  /** @nullable */
+  plz?: string | null;
+  /** @nullable */
+  ort?: string | null;
+  /** @nullable */
+  gebaeudetyp?: string | null;
+  /** @nullable */
+  baujahr?: number | null;
+  /** @nullable */
+  wohnflaeche?: number | null;
+  /** @nullable */
+  wohneinheiten?: number | null;
+  /** @nullable */
+  heizung?: string | null;
+  /** @nullable */
+  notiz?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VerwalteterKundeInput {
+  /** @minLength 1 */
+  name: string;
+  /** @nullable */
+  typ?: string | null;
+  /** @nullable */
+  ansprechpartner?: string | null;
+  /** @nullable */
+  telefon?: string | null;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  notiz?: string | null;
+  /** @nullable */
+  portfolioObjektId?: number | null;
+}
+
+export interface VerwalteterKunde {
+  id: number;
+  userId: string;
+  name: string;
+  /** @nullable */
+  typ?: string | null;
+  /** @nullable */
+  ansprechpartner?: string | null;
+  /** @nullable */
+  telefon?: string | null;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  notiz?: string | null;
+  /** @nullable */
+  portfolioObjektId?: number | null;
   createdAt: string;
   updatedAt: string;
 }

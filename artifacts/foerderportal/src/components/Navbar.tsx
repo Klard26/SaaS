@@ -58,6 +58,27 @@ export function Navbar() {
             >
               Meine Reports
             </Link>
+            <Link
+              href="/portfolio"
+              className="text-muted-foreground hover:text-[var(--klard-teal-d)] transition-colors"
+              data-testid="link-portfolio"
+            >
+              Portfolio
+            </Link>
+            <Link
+              href="/kunden"
+              className="text-muted-foreground hover:text-[var(--klard-teal-d)] transition-colors"
+              data-testid="link-kunden"
+            >
+              Kunden
+            </Link>
+            <Link
+              href="/konto"
+              className="text-muted-foreground hover:text-[var(--klard-teal-d)] transition-colors"
+              data-testid="link-konto"
+            >
+              Mein Konto
+            </Link>
           </Show>
           {isAdmin && (
             <Link
@@ -124,6 +145,15 @@ export function Navbar() {
             <Show when="signed-in">
               <Link href="/report" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>
                 Meine Reports
+              </Link>
+              <Link href="/portfolio" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)} data-testid="link-portfolio-mobile">
+                Portfolio
+              </Link>
+              <Link href="/kunden" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)} data-testid="link-kunden-mobile">
+                Kunden
+              </Link>
+              <Link href="/konto" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)} data-testid="link-konto-mobile">
+                Mein Konto
               </Link>
             </Show>
             {isAdmin && (

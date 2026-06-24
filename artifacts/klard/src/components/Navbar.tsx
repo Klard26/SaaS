@@ -96,7 +96,7 @@ export function Navbar() {
                 <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">Kundenbereich</DropdownMenuLabel>
                 <DropdownMenuItem onClick={() => setLocation("/bookings")} data-testid="menu-item-bookings">Meine Buchungen</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setLocation("/meine-anfragen")} data-testid="menu-item-anfragen">Meine Anfragen</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setLocation("/immobilien/onboarding")} data-testid="menu-item-immobilien">Mein Kundenkonto</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLocation("/konto")} data-testid="menu-item-konto">Mein Konto</DropdownMenuItem>
                 {isAdmin && (
                   <DropdownMenuItem onClick={() => setLocation("/admin")} data-testid="menu-item-admin">
                     <Shield className="h-4 w-4 mr-2" /> Plattform-Admin
@@ -155,7 +155,7 @@ export function Navbar() {
                 <div className="mt-2 pt-2 border-t border-border" />
                 <p className="px-1 py-1 text-xs font-medium text-muted-foreground">Kundenbereich</p>
                 <Link href="/bookings" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Meine Buchungen</Link>
-                <Link href="/immobilien/onboarding" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Mein Kundenkonto</Link>
+                <Link href="/konto" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Mein Konto</Link>
               </>
             )}
           </nav>
