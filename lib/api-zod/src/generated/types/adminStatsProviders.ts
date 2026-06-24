@@ -10,4 +10,7 @@ export type AdminStatsProviders = {
   total: number;
   premium: number;
   verified: number;
+  pending: number;
+  approved: number;
+  rejected: number;
 };

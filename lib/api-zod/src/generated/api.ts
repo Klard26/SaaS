@@ -169,6 +169,9 @@ export const GetProviderResponse = zod.object({
   rating: zod.number(),
   reviewCount: zod.number(),
   verified: zod.boolean().optional(),
+  approvalStatus: zod.enum(["pending", "approved", "rejected"]),
+  rejectionReason: zod.string().nullish(),
+  reviewedAt: zod.string().nullish(),
   subscriptionTier: zod.enum(["basic", "premium"]).optional(),
   requiresDirectBilling: zod.boolean().optional(),
   premiumSince: zod.string().nullish(),
@@ -233,6 +236,9 @@ export const UpdateProviderResponse = zod.object({
   rating: zod.number(),
   reviewCount: zod.number(),
   verified: zod.boolean().optional(),
+  approvalStatus: zod.enum(["pending", "approved", "rejected"]),
+  rejectionReason: zod.string().nullish(),
+  reviewedAt: zod.string().nullish(),
   subscriptionTier: zod.enum(["basic", "premium"]).optional(),
   requiresDirectBilling: zod.boolean().optional(),
   premiumSince: zod.string().nullish(),
@@ -272,6 +278,9 @@ export const GetMyProviderProfileResponse = zod.object({
   rating: zod.number(),
   reviewCount: zod.number(),
   verified: zod.boolean().optional(),
+  approvalStatus: zod.enum(["pending", "approved", "rejected"]),
+  rejectionReason: zod.string().nullish(),
+  reviewedAt: zod.string().nullish(),
   subscriptionTier: zod.enum(["basic", "premium"]).optional(),
   requiresDirectBilling: zod.boolean().optional(),
   premiumSince: zod.string().nullish(),
@@ -1873,6 +1882,9 @@ export const GetAdminStatsResponse = zod.object({
     total: zod.number(),
     premium: zod.number(),
     verified: zod.number(),
+    pending: zod.number(),
+    approved: zod.number(),
+    rejected: zod.number(),
   }),
   customers: zod.object({
     total: zod.number(),
@@ -1926,6 +1938,9 @@ export const ListAdminProvidersResponseItem = zod.object({
   city: zod.string(),
   subscriptionTier: zod.string(),
   verified: zod.boolean(),
+  approvalStatus: zod.enum(["pending", "approved", "rejected"]),
+  rejectionReason: zod.string().nullish(),
+  reviewedAt: zod.coerce.date().nullish(),
   rating: zod.number(),
   reviewCount: zod.number(),
   createdAt: zod.coerce.date(),
@@ -1936,6 +1951,38 @@ export const ListAdminProvidersResponseItem = zod.object({
 export const ListAdminProvidersResponse = zod.array(
   ListAdminProvidersResponseItem,
 );
+
+/**
+ * @summary Approve or reject a provider profile
+ */
+export const UpdateAdminProviderApprovalParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateAdminProviderApprovalBody = zod.object({
+  status: zod.enum(["approved", "rejected"]),
+  rejectionReason: zod.string().optional(),
+});
+
+export const UpdateAdminProviderApprovalResponse = zod.object({
+  id: zod.number(),
+  displayName: zod.string(),
+  email: zod.string(),
+  category: zod.string(),
+  categorySlug: zod.string(),
+  city: zod.string(),
+  subscriptionTier: zod.string(),
+  verified: zod.boolean(),
+  approvalStatus: zod.enum(["pending", "approved", "rejected"]),
+  rejectionReason: zod.string().nullish(),
+  reviewedAt: zod.coerce.date().nullish(),
+  rating: zod.number(),
+  reviewCount: zod.number(),
+  createdAt: zod.coerce.date(),
+  bookingCount: zod.number(),
+  paidRevenueCents: zod.number(),
+  distinctCustomers: zod.number(),
+});
 
 /**
  * @summary Distinct customers with booking aggregates

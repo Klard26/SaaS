@@ -24,6 +24,7 @@ import type {
   AdminCategoryRow,
   AdminCustomerRow,
   AdminMe,
+  AdminProviderApprovalUpdate,
   AdminProviderRow,
   AdminStats,
   AdminTimeseriesPoint,
@@ -7373,6 +7374,94 @@ export function useListAdminProviders<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Approve or reject a provider profile
+ */
+export const getUpdateAdminProviderApprovalUrl = (id: number) => {
+  return `/api/admin/providers/${id}/approval`;
+};
+
+export const updateAdminProviderApproval = async (
+  id: number,
+  adminProviderApprovalUpdate: AdminProviderApprovalUpdate,
+  options?: RequestInit,
+): Promise<AdminProviderRow> => {
+  return customFetch<AdminProviderRow>(getUpdateAdminProviderApprovalUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(adminProviderApprovalUpdate),
+  });
+};
+
+export const getUpdateAdminProviderApprovalMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateAdminProviderApproval>>,
+    TError,
+    { id: number; data: BodyType<AdminProviderApprovalUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateAdminProviderApproval>>,
+  TError,
+  { id: number; data: BodyType<AdminProviderApprovalUpdate> },
+  TContext
+> => {
+  const mutationKey = ["updateAdminProviderApproval"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateAdminProviderApproval>>,
+    { id: number; data: BodyType<AdminProviderApprovalUpdate> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateAdminProviderApproval(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateAdminProviderApprovalMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateAdminProviderApproval>>
+>;
+export type UpdateAdminProviderApprovalMutationBody =
+  BodyType<AdminProviderApprovalUpdate>;
+export type UpdateAdminProviderApprovalMutationError = ErrorType<void>;
+
+/**
+ * @summary Approve or reject a provider profile
+ */
+export const useUpdateAdminProviderApproval = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateAdminProviderApproval>>,
+    TError,
+    { id: number; data: BodyType<AdminProviderApprovalUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateAdminProviderApproval>>,
+  TError,
+  { id: number; data: BodyType<AdminProviderApprovalUpdate> },
+  TContext
+> => {
+  return useMutation(getUpdateAdminProviderApprovalMutationOptions(options));
+};
 
 /**
  * @summary Distinct customers with booking aggregates

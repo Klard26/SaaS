@@ -98,7 +98,7 @@ export default function ProviderOnboarding() {
         data: { ...rest, certificates, ...(hasQualifications ? { qualifications } : {}) },
       });
       qc.invalidateQueries({ queryKey: getGetMyProviderProfileQueryKey() });
-      toast({ title: "Willkommen!", description: "Ihr Berater-Profil wurde erstellt." });
+      toast({ title: "Profil eingereicht", description: "Freigabe ausstehend – nach der Prüfung durch Klard wird Ihr Profil automatisch veröffentlicht." });
       setLocation("/dashboard");
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number }; status?: number } | undefined);

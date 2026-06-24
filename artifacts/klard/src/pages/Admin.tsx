@@ -1,16 +1,24 @@
 import { useState } from "react";
 import { useUser } from "@clerk/react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Navbar } from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 import {
   useGetAdminMe, getGetAdminMeQueryKey,
   useGetAdminStats, getGetAdminStatsQueryKey,
   useGetAdminTimeseries, getGetAdminTimeseriesQueryKey,
   useListAdminProviders, getListAdminProvidersQueryKey,
+  useUpdateAdminProviderApproval,
   useListAdminCustomers, getListAdminCustomersQueryKey,
   useListAdminBookings, getListAdminBookingsQueryKey,
   useListAdminCategories, getListAdminCategoriesQueryKey,
@@ -18,8 +26,14 @@ import {
 import type { ListAdminBookingsStatus } from "@workspace/api-client-react";
 import {
   Activity, Users, Building2, Calendar, CreditCard, Star, Shield, Receipt,
-  TrendingUp, Crown, BadgeCheck,
+  TrendingUp, Crown, BadgeCheck, Check, X, Clock,
 } from "lucide-react";
+
+const APPROVAL_BADGE: Record<string, { label: string; cls: string }> = {
+  pending: { label: "Ausstehend", cls: "bg-amber-100 text-amber-900" },
+  approved: { label: "Freigegeben", cls: "bg-emerald-100 text-emerald-900" },
+  rejected: { label: "Abgelehnt", cls: "bg-rose-100 text-rose-900" },
+};
 
 function eur(cents: number): string {
   return (cents / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
@@ -171,7 +185,7 @@ function StatsRow() {
         sub={`gesamt ${eur(stats.bookings.revenueAll)}`}
         testid="stat-revenue" />
       <StatCard icon={Building2} label="Anbieter" value={String(stats.providers.total)}
-        sub={`${stats.providers.premium} Premium · ${stats.providers.verified} verifiziert`}
+        sub={`${stats.providers.pending} ausstehend · ${stats.providers.premium} Premium`}
         testid="stat-providers" />
       <StatCard icon={Users} label="Kunden" value={String(stats.customers.total)}
         sub="aktive Buchungs-Identitäten"
@@ -405,25 +419,80 @@ function BookingsPanel() {
 }
 
 function ProvidersPanel() {
+  const qc = useQueryClient();
+  const { toast } = useToast();
   const [q, setQ] = useState("");
+  const [onlyPending, setOnlyPending] = useState(false);
+  const [rejectTarget, setRejectTarget] = useState<{ id: number; name: string } | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+
   const { data: providers = [], isLoading } = useListAdminProviders({
     query: { queryKey: getListAdminProvidersQueryKey() },
   });
+  const approval = useUpdateAdminProviderApproval();
+  const pendingCount = providers.filter((p) => p.approvalStatus === "pending").length;
+
+  async function applyStatus(id: number, status: "approved" | "rejected", reason?: string) {
+    try {
+      await approval.mutateAsync({
+        id,
+        data: { status, ...(reason ? { rejectionReason: reason } : {}) },
+      });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: getListAdminProvidersQueryKey() }),
+        qc.invalidateQueries({ queryKey: getGetAdminStatsQueryKey() }),
+      ]);
+      toast({
+        title: status === "approved" ? "Anbieter freigegeben" : "Anbieter abgelehnt",
+        description:
+          status === "approved"
+            ? "Das Profil ist jetzt im Marktplatz sichtbar und buchbar."
+            : "Der Anbieter wurde über die Ablehnung informiert.",
+      });
+    } catch {
+      toast({
+        title: "Aktion fehlgeschlagen",
+        description: "Bitte versuchen Sie es erneut.",
+        variant: "destructive",
+      });
+    }
+  }
+
+  const base = onlyPending ? providers.filter((p) => p.approvalStatus === "pending") : providers;
   const filtered = q
-    ? providers.filter((p) => `${p.displayName} ${p.email} ${p.city} ${p.category}`.toLowerCase().includes(q.toLowerCase()))
-    : providers;
+    ? base.filter((p) => `${p.displayName} ${p.email} ${p.city} ${p.category}`.toLowerCase().includes(q.toLowerCase()))
+    : base;
+
   return (
     <Card className="rounded-[20px] border-[1.5px]">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <CardTitle className="font-serif text-lg font-semibold">Anbieter ({providers.length})</CardTitle>
-          <Input
-            placeholder="Suche nach Name, E-Mail, Stadt…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            className="max-w-xs h-9"
-            data-testid="input-admin-providers-search"
-          />
+          <CardTitle className="font-serif text-lg font-semibold flex items-center gap-2">
+            Anbieter ({providers.length})
+            {pendingCount > 0 && (
+              <Badge className="bg-amber-100 text-amber-900 border-0 gap-1">
+                <Clock className="h-3 w-3" /> {pendingCount} zur Freigabe
+              </Badge>
+            )}
+          </CardTitle>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              variant={onlyPending ? "default" : "outline"}
+              size="sm"
+              onClick={() => setOnlyPending((v) => !v)}
+              data-testid="button-admin-providers-pending-filter"
+            >
+              <Clock className="h-4 w-4 mr-1.5" />
+              Nur ausstehende
+            </Button>
+            <Input
+              placeholder="Suche nach Name, E-Mail, Stadt…"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              className="max-w-xs h-9"
+              data-testid="input-admin-providers-search"
+            />
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -435,49 +504,122 @@ function ProvidersPanel() {
               <thead>
                 <tr className="border-b border-border text-left text-xs text-muted-foreground">
                   <th className="py-2 pr-3">Anbieter</th>
+                  <th className="py-2 pr-3">Status</th>
                   <th className="py-2 pr-3">Kategorie</th>
                   <th className="py-2 pr-3">Stadt</th>
                   <th className="py-2 pr-3">Tarif</th>
                   <th className="py-2 pr-3 text-right">Buchungen</th>
-                  <th className="py-2 pr-3 text-right">Kunden</th>
-                  <th className="py-2 pr-3 text-right">Bewertung</th>
                   <th className="py-2 pr-3 text-right">Umsatz (bez.)</th>
                   <th className="py-2 pr-3">Seit</th>
+                  <th className="py-2 pr-3 text-right">Freigabe</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {filtered.map((p) => (
-                  <tr key={p.id} data-testid={`row-admin-provider-${p.id}`}>
-                    <td className="py-2 pr-3">
-                      <div className="font-medium">{p.displayName}</div>
-                      <div className="text-xs text-muted-foreground">{p.email}</div>
-                    </td>
-                    <td className="py-2 pr-3 text-muted-foreground">{p.category}</td>
-                    <td className="py-2 pr-3 text-muted-foreground">{p.city}</td>
-                    <td className="py-2 pr-3">
-                      <div className="flex items-center gap-1.5">
-                        {p.subscriptionTier === "premium" ? (
-                          <Badge className="bg-amber-100 text-amber-900 border-0 gap-1"><Crown className="h-3 w-3" /> Premium</Badge>
-                        ) : (
-                          <Badge variant="outline">Basic</Badge>
+                {filtered.map((p) => {
+                  const badge = APPROVAL_BADGE[p.approvalStatus] ?? APPROVAL_BADGE.pending;
+                  const busy = approval.isPending;
+                  return (
+                    <tr key={p.id} data-testid={`row-admin-provider-${p.id}`}>
+                      <td className="py-2 pr-3">
+                        <div className="font-medium">{p.displayName}</div>
+                        <div className="text-xs text-muted-foreground">{p.email}</div>
+                      </td>
+                      <td className="py-2 pr-3">
+                        <Badge className={`${badge.cls} border-0`} data-testid={`badge-approval-${p.id}`}>
+                          {badge.label}
+                        </Badge>
+                        {p.approvalStatus === "rejected" && p.rejectionReason && (
+                          <div className="text-xs text-muted-foreground mt-1 max-w-[200px]">{p.rejectionReason}</div>
                         )}
-                        {p.verified && <BadgeCheck className="h-4 w-4 text-emerald-600" />}
-                      </div>
-                    </td>
-                    <td className="py-2 pr-3 text-right font-mono">{p.bookingCount}</td>
-                    <td className="py-2 pr-3 text-right font-mono">{p.distinctCustomers}</td>
-                    <td className="py-2 pr-3 text-right text-muted-foreground">
-                      {p.reviewCount > 0 ? `${p.rating.toFixed(1)} (${p.reviewCount})` : "—"}
-                    </td>
-                    <td className="py-2 pr-3 text-right font-medium">{eur(p.paidRevenueCents)}</td>
-                    <td className="py-2 pr-3 text-muted-foreground whitespace-nowrap">{d(p.createdAt)}</td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="py-2 pr-3 text-muted-foreground">{p.category}</td>
+                      <td className="py-2 pr-3 text-muted-foreground">{p.city}</td>
+                      <td className="py-2 pr-3">
+                        <div className="flex items-center gap-1.5">
+                          {p.subscriptionTier === "premium" ? (
+                            <Badge className="bg-amber-100 text-amber-900 border-0 gap-1"><Crown className="h-3 w-3" /> Premium</Badge>
+                          ) : (
+                            <Badge variant="outline">Basic</Badge>
+                          )}
+                          {p.verified && <BadgeCheck className="h-4 w-4 text-emerald-600" />}
+                        </div>
+                      </td>
+                      <td className="py-2 pr-3 text-right font-mono">{p.bookingCount}</td>
+                      <td className="py-2 pr-3 text-right font-medium">{eur(p.paidRevenueCents)}</td>
+                      <td className="py-2 pr-3 text-muted-foreground whitespace-nowrap">{d(p.createdAt)}</td>
+                      <td className="py-2 pr-3">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {p.approvalStatus !== "approved" && (
+                            <Button
+                              size="sm"
+                              className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white"
+                              disabled={busy}
+                              onClick={() => applyStatus(p.id, "approved")}
+                              data-testid={`button-approve-${p.id}`}
+                            >
+                              <Check className="h-4 w-4 mr-1" /> Freigeben
+                            </Button>
+                          )}
+                          {p.approvalStatus !== "rejected" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 text-rose-700 border-rose-200 hover:bg-rose-50"
+                              disabled={busy}
+                              onClick={() => { setRejectTarget({ id: p.id, name: p.displayName }); setRejectReason(""); }}
+                              data-testid={`button-reject-${p.id}`}
+                            >
+                              <X className="h-4 w-4 mr-1" /> Ablehnen
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
+            {filtered.length === 0 && (
+              <p className="text-sm text-muted-foreground py-6 text-center">Keine Anbieter gefunden.</p>
+            )}
           </div>
         )}
       </CardContent>
+
+      <Dialog open={!!rejectTarget} onOpenChange={(open) => { if (!open) setRejectTarget(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Anbieter ablehnen</DialogTitle>
+            <DialogDescription>
+              {rejectTarget ? `Bitte geben Sie einen Grund für die Ablehnung von „${rejectTarget.name}" an. Der Anbieter sieht diesen Hinweis.` : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+            placeholder="Grund der Ablehnung…"
+            rows={4}
+            data-testid="textarea-reject-reason"
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectTarget(null)} data-testid="button-reject-cancel">
+              Abbrechen
+            </Button>
+            <Button
+              className="bg-rose-600 hover:bg-rose-700 text-white"
+              disabled={approval.isPending || !rejectReason.trim()}
+              onClick={async () => {
+                if (!rejectTarget) return;
+                await applyStatus(rejectTarget.id, "rejected", rejectReason.trim());
+                setRejectTarget(null);
+              }}
+              data-testid="button-reject-confirm"
+            >
+              Ablehnen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

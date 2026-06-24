@@ -9,9 +9,56 @@ import {
 } from "@workspace/db";
 import { getAuth } from "@clerk/express";
 import { sql, desc, eq, and, gte } from "drizzle-orm";
+import { UpdateAdminProviderApprovalBody } from "@workspace/api-zod";
 import { requireAdmin, isAdminUserId } from "../lib/adminAuth";
 
 const router: IRouter = Router();
+
+/**
+ * Shared column selection + row mapping for the admin provider rows, used by
+ * both the list endpoint and the approve/reject mutation so the response shape
+ * (AdminProviderRow) stays in lockstep.
+ */
+const adminProviderColumns = {
+  id: providersTable.id,
+  displayName: providersTable.displayName,
+  email: providersTable.email,
+  category: providersTable.category,
+  categorySlug: providersTable.categorySlug,
+  city: providersTable.city,
+  subscriptionTier: providersTable.subscriptionTier,
+  verified: providersTable.verified,
+  approvalStatus: providersTable.approvalStatus,
+  rejectionReason: providersTable.rejectionReason,
+  reviewedAt: providersTable.reviewedAt,
+  rating: providersTable.rating,
+  reviewCount: providersTable.reviewCount,
+  createdAt: providersTable.createdAt,
+  bookingCount: sql<number>`(
+    select count(*)::int from ${bookingsTable}
+    where ${bookingsTable.providerId} = ${providersTable.id}
+  )`,
+  paidRevenueCents: sql<number>`(
+    select coalesce(sum(${bookingsTable.totalPrice} * 100), 0)::bigint from ${bookingsTable}
+    where ${bookingsTable.providerId} = ${providersTable.id}
+      and ${bookingsTable.paymentStatus} = 'paid'
+  )`,
+  distinctCustomers: sql<number>`(
+    select count(distinct ${bookingsTable.customerId})::int from ${bookingsTable}
+    where ${bookingsTable.providerId} = ${providersTable.id}
+  )`,
+};
+
+function mapAdminProviderRow<
+  T extends { createdAt: Date; reviewedAt: Date | null; paidRevenueCents: number },
+>(r: T) {
+  return {
+    ...r,
+    createdAt: r.createdAt.toISOString(),
+    reviewedAt: r.reviewedAt ? r.reviewedAt.toISOString() : null,
+    paidRevenueCents: Number(r.paidRevenueCents),
+  };
+}
 
 /**
  * Lightweight introspection so the frontend can conditionally show the
@@ -57,6 +104,9 @@ router.get("/admin/stats", requireAdmin, async (req, res): Promise<void> => {
         total: sql<number>`count(*)::int`,
         premium: sql<number>`count(*) filter (where ${providersTable.subscriptionTier} = 'premium')::int`,
         verified: sql<number>`count(*) filter (where ${providersTable.verified} = true)::int`,
+        pending: sql<number>`count(*) filter (where ${providersTable.approvalStatus} = 'pending')::int`,
+        approved: sql<number>`count(*) filter (where ${providersTable.approvalStatus} = 'approved')::int`,
+        rejected: sql<number>`count(*) filter (where ${providersTable.approvalStatus} = 'rejected')::int`,
       })
       .from(providersTable);
 
@@ -99,6 +149,9 @@ router.get("/admin/stats", requireAdmin, async (req, res): Promise<void> => {
         total: providersAgg?.total ?? 0,
         premium: providersAgg?.premium ?? 0,
         verified: providersAgg?.verified ?? 0,
+        pending: providersAgg?.pending ?? 0,
+        approved: providersAgg?.approved ?? 0,
+        rejected: providersAgg?.rejected ?? 0,
       },
       customers: {
         total: customersAgg?.total ?? 0,
@@ -156,46 +209,71 @@ router.get("/admin/timeseries", requireAdmin, async (req, res): Promise<void> =>
 router.get("/admin/providers", requireAdmin, async (req, res): Promise<void> => {
   try {
     const rows = await db
-      .select({
-        id: providersTable.id,
-        displayName: providersTable.displayName,
-        email: providersTable.email,
-        category: providersTable.category,
-        categorySlug: providersTable.categorySlug,
-        city: providersTable.city,
-        subscriptionTier: providersTable.subscriptionTier,
-        verified: providersTable.verified,
-        rating: providersTable.rating,
-        reviewCount: providersTable.reviewCount,
-        createdAt: providersTable.createdAt,
-        bookingCount: sql<number>`(
-          select count(*)::int from ${bookingsTable}
-          where ${bookingsTable.providerId} = ${providersTable.id}
-        )`,
-        paidRevenueCents: sql<number>`(
-          select coalesce(sum(${bookingsTable.totalPrice} * 100), 0)::bigint from ${bookingsTable}
-          where ${bookingsTable.providerId} = ${providersTable.id}
-            and ${bookingsTable.paymentStatus} = 'paid'
-        )`,
-        distinctCustomers: sql<number>`(
-          select count(distinct ${bookingsTable.customerId})::int from ${bookingsTable}
-          where ${bookingsTable.providerId} = ${providersTable.id}
-        )`,
-      })
+      .select(adminProviderColumns)
       .from(providersTable)
-      .orderBy(desc(providersTable.createdAt));
-    res.json(
-      rows.map((r) => ({
-        ...r,
-        createdAt: r.createdAt.toISOString(),
-        paidRevenueCents: Number(r.paidRevenueCents),
-      })),
-    );
+      .orderBy(
+        // Pending (then rejected) first so admins can action reviews quickly.
+        sql`case ${providersTable.approvalStatus} when 'pending' then 0 when 'rejected' then 1 else 2 end`,
+        desc(providersTable.createdAt),
+      );
+    res.json(rows.map(mapAdminProviderRow));
   } catch (err) {
     req.log.error({ err }, "Admin providers list failed");
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+router.patch(
+  "/admin/providers/:id/approval",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isInteger(id) || id <= 0) {
+        res.status(400).json({ error: "Ungültige Anbieter-ID" });
+        return;
+      }
+      const parsed = UpdateAdminProviderApprovalBody.safeParse(req.body);
+      if (!parsed.success) {
+        res.status(400).json({ error: parsed.error.message });
+        return;
+      }
+      const { status } = parsed.data;
+      const rejectionReason = parsed.data.rejectionReason?.trim() || null;
+      if (status === "rejected" && !rejectionReason) {
+        res.status(400).json({ error: "Bitte geben Sie einen Ablehnungsgrund an." });
+        return;
+      }
+      const [updated] = await db
+        .update(providersTable)
+        .set({
+          approvalStatus: status,
+          // Clear any prior rejection note when approving.
+          rejectionReason: status === "rejected" ? rejectionReason : null,
+          reviewedAt: new Date(),
+        })
+        .where(eq(providersTable.id, id))
+        .returning({ id: providersTable.id });
+      if (!updated) {
+        res.status(404).json({ error: "Anbieter nicht gefunden" });
+        return;
+      }
+      const [row] = await db
+        .select(adminProviderColumns)
+        .from(providersTable)
+        .where(eq(providersTable.id, id))
+        .limit(1);
+      if (!row) {
+        res.status(404).json({ error: "Anbieter nicht gefunden" });
+        return;
+      }
+      res.json(mapAdminProviderRow(row));
+    } catch (err) {
+      req.log.error({ err }, "Admin provider approval update failed");
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
+);
 
 router.get("/admin/customers", requireAdmin, async (req, res): Promise<void> => {
   try {

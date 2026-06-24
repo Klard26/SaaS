@@ -5,6 +5,7 @@
  * Klard – Booking platform for consultants
  * OpenAPI spec version: 0.1.0
  */
+import type { AdminProviderRowApprovalStatus } from "./adminProviderRowApprovalStatus";
 
 export interface AdminProviderRow {
   id: number;
@@ -15,6 +16,11 @@ export interface AdminProviderRow {
   city: string;
   subscriptionTier: string;
   verified: boolean;
+  approvalStatus: AdminProviderRowApprovalStatus;
+  /** @nullable */
+  rejectionReason?: string | null;
+  /** @nullable */
+  reviewedAt?: Date | null;
   rating: number;
   reviewCount: number;
   createdAt: Date;

@@ -7,6 +7,7 @@ import {
 } from "@workspace/api-zod";
 import { eq, avg } from "drizzle-orm";
 import { getAuth, clerkClient } from "@clerk/express";
+import { canViewProvider } from "../lib/providerVisibility";
 
 const router: IRouter = Router();
 
@@ -15,6 +16,10 @@ router.get("/providers/:id/reviews", async (req, res): Promise<void> => {
     const parsed = ListProviderReviewsParams.safeParse({ id: Number(req.params.id) });
     if (!parsed.success) {
       res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+    if (!(await canViewProvider(req, parsed.data.id))) {
+      res.status(404).json({ error: "Provider not found" });
       return;
     }
     const reviews = await db

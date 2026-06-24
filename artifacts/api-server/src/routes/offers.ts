@@ -26,7 +26,7 @@ router.post("/offers/accept", async (req, res): Promise<void> => {
       .from(providersTable)
       .where(eq(providersTable.id, d.providerId))
       .limit(1);
-    if (!provider) {
+    if (!provider || provider.approvalStatus !== "approved") {
       res.status(404).json({ error: "Berater nicht gefunden." });
       return;
     }

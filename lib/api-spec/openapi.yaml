@@ -1569,6 +1569,34 @@ paths:
                 items:
                   $ref: "#/components/schemas/AdminProviderRow"
 
+  /admin/providers/{id}/approval:
+    patch:
+      operationId: updateAdminProviderApproval
+      tags: [admin]
+      summary: Approve or reject a provider profile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminProviderApprovalUpdate"
+      responses:
+        "200":
+          description: Updated provider row
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminProviderRow"
+        "400":
+          description: Invalid request
+        "404":
+          description: Provider not found
+
   /admin/customers:
     get:
       operationId: listAdminCustomers
@@ -2266,11 +2294,14 @@ components:
             revenuePaidCents: { type: integer }
         providers:
           type: object
-          required: [total, premium, verified]
+          required: [total, premium, verified, pending, approved, rejected]
           properties:
             total: { type: integer }
             premium: { type: integer }
             verified: { type: integer }
+            pending: { type: integer }
+            approved: { type: integer }
+            rejected: { type: integer }
         customers:
           type: object
           required: [total]
@@ -2305,7 +2336,7 @@ components:
 
     AdminProviderRow:
       type: object
-      required: [id, displayName, email, category, categorySlug, city, subscriptionTier, verified, rating, reviewCount, createdAt, bookingCount, paidRevenueCents, distinctCustomers]
+      required: [id, displayName, email, category, categorySlug, city, subscriptionTier, verified, approvalStatus, rating, reviewCount, createdAt, bookingCount, paidRevenueCents, distinctCustomers]
       properties:
         id: { type: integer }
         displayName: { type: string }
@@ -2315,12 +2346,22 @@ components:
         city: { type: string }
         subscriptionTier: { type: string }
         verified: { type: boolean }
+        approvalStatus: { type: string, enum: [pending, approved, rejected] }
+        rejectionReason: { type: ["string", "null"] }
+        reviewedAt: { type: ["string", "null"], format: date-time }
         rating: { type: number }
         reviewCount: { type: integer }
         createdAt: { type: string, format: date-time }
         bookingCount: { type: integer }
         paidRevenueCents: { type: integer }
         distinctCustomers: { type: integer }
+
+    AdminProviderApprovalUpdate:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [approved, rejected] }
+        rejectionReason: { type: string }
 
     AdminCustomerRow:
       type: object
@@ -2411,7 +2452,7 @@ components:
 
     Provider:
       type: object
-      required: [id, clerkUserId, displayName, category, city, zip, rating, reviewCount]
+      required: [id, clerkUserId, displayName, category, city, zip, rating, reviewCount, approvalStatus]
       properties:
         id:           { type: integer }
         clerkUserId:  { type: string }
@@ -2431,6 +2472,9 @@ components:
         rating:       { type: number }
         reviewCount:  { type: integer }
         verified:     { type: boolean }
+        approvalStatus: { type: string, enum: [pending, approved, rejected] }
+        rejectionReason: { type: ["string", "null"] }
+        reviewedAt:     { type: ["string", "null"] }
         subscriptionTier: { type: string, enum: [basic, premium] }
         requiresDirectBilling: { type: boolean }
         premiumSince:    { type: ["string", "null"] }

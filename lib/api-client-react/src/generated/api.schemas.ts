@@ -461,6 +461,9 @@ export type AdminStatsProviders = {
   total: number;
   premium: number;
   verified: number;
+  pending: number;
+  approved: number;
+  rejected: number;
 };
 
 export type AdminStatsCustomers = {
@@ -497,6 +500,15 @@ export interface AdminTimeseriesPoint {
   paidRevenueCents: number;
 }
 
+export type AdminProviderRowApprovalStatus =
+  (typeof AdminProviderRowApprovalStatus)[keyof typeof AdminProviderRowApprovalStatus];
+
+export const AdminProviderRowApprovalStatus = {
+  pending: "pending",
+  approved: "approved",
+  rejected: "rejected",
+} as const;
+
 export interface AdminProviderRow {
   id: number;
   displayName: string;
@@ -506,12 +518,30 @@ export interface AdminProviderRow {
   city: string;
   subscriptionTier: string;
   verified: boolean;
+  approvalStatus: AdminProviderRowApprovalStatus;
+  /** @nullable */
+  rejectionReason?: string | null;
+  /** @nullable */
+  reviewedAt?: string | null;
   rating: number;
   reviewCount: number;
   createdAt: string;
   bookingCount: number;
   paidRevenueCents: number;
   distinctCustomers: number;
+}
+
+export type AdminProviderApprovalUpdateStatus =
+  (typeof AdminProviderApprovalUpdateStatus)[keyof typeof AdminProviderApprovalUpdateStatus];
+
+export const AdminProviderApprovalUpdateStatus = {
+  approved: "approved",
+  rejected: "rejected",
+} as const;
+
+export interface AdminProviderApprovalUpdate {
+  status: AdminProviderApprovalUpdateStatus;
+  rejectionReason?: string;
 }
 
 export interface AdminCustomerRow {
@@ -607,6 +637,15 @@ export interface ProviderSummary {
   requiresDirectBilling?: boolean;
 }
 
+export type ProviderApprovalStatus =
+  (typeof ProviderApprovalStatus)[keyof typeof ProviderApprovalStatus];
+
+export const ProviderApprovalStatus = {
+  pending: "pending",
+  approved: "approved",
+  rejected: "rejected",
+} as const;
+
 export type ProviderSubscriptionTier =
   (typeof ProviderSubscriptionTier)[keyof typeof ProviderSubscriptionTier];
 
@@ -655,6 +694,11 @@ export interface Provider {
   rating: number;
   reviewCount: number;
   verified?: boolean;
+  approvalStatus: ProviderApprovalStatus;
+  /** @nullable */
+  rejectionReason?: string | null;
+  /** @nullable */
+  reviewedAt?: string | null;
   subscriptionTier?: ProviderSubscriptionTier;
   requiresDirectBilling?: boolean;
   /** @nullable */

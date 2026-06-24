@@ -215,6 +215,8 @@ router.get("/providers", async (req, res): Promise<void> => {
     const q = parsed.success ? parsed.data : {};
 
     const conditions: SQL[] = [];
+    // Only approved providers are visible in the public marketplace.
+    conditions.push(eq(providersTable.approvalStatus, "approved"));
     if (q.zip) conditions.push(eq(providersTable.zip, q.zip));
     if (q.city) conditions.push(ilike(providersTable.city, `%${q.city}%`));
     if (q.category) conditions.push(eq(providersTable.categorySlug, q.category));
@@ -317,7 +319,9 @@ router.get("/providers/:id", async (req, res): Promise<void> => {
       .where(eq(providersTable.id, parsed.data.id))
       .limit(1);
 
-    if (!provider) {
+    // Non-approved profiles are not publicly visible (hard 404). The owner
+    // sees their own status via /providers/me; admins use /admin/providers.
+    if (!provider || provider.approvalStatus !== "approved") {
       res.status(404).json({ error: "Provider not found" });
       return;
     }
@@ -407,6 +411,8 @@ router.post("/providers", async (req, res): Promise<void> => {
         certificates: d.certificates ?? [],
         qualifications: cleanQualifications,
         icalToken: randomBytes(24).toString("hex"),
+        // New profiles require admin approval (Freigabe) before going live.
+        approvalStatus: "pending",
       })
       .returning();
 
@@ -452,6 +458,7 @@ router.patch("/providers/:id", async (req, res): Promise<void> => {
         clerkUserId: providersTable.clerkUserId,
         categorySlug: providersTable.categorySlug,
         qualifications: providersTable.qualifications,
+        approvalStatus: providersTable.approvalStatus,
       })
       .from(providersTable)
       .where(eq(providersTable.id, paramsParsed.data.id))
@@ -525,6 +532,15 @@ router.patch("/providers/:id", async (req, res): Promise<void> => {
     if (d.certificates !== undefined) updateData.certificates = d.certificates;
     if (d.externalIcalUrl !== undefined)
       updateData.externalIcalUrl = d.externalIcalUrl || null;
+
+    // A rejected provider editing their profile re-enters the approval queue
+    // (matches the Dashboard hint that changes are reviewed again). Approved
+    // profiles stay live; edits never un-publish an approved Berater.
+    if (existing.approvalStatus === "rejected") {
+      updateData.approvalStatus = "pending";
+      updateData.rejectionReason = null;
+      updateData.reviewedAt = null;
+    }
 
     const [updated] = await db
       .update(providersTable)

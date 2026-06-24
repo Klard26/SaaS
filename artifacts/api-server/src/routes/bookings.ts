@@ -96,7 +96,9 @@ router.post("/bookings", async (req, res): Promise<void> => {
       .where(eq(providersTable.id, d.providerId))
       .limit(1);
 
-    if (!provider) {
+    if (!provider || provider.approvalStatus !== "approved") {
+      // Non-approved providers are hidden from the marketplace and cannot be
+      // booked, even via a direct API call with known IDs (defense-in-depth).
       res.status(404).json({ error: "Provider not found" });
       return;
     }

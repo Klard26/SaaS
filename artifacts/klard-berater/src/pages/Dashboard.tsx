@@ -141,13 +141,21 @@ export default function Dashboard() {
   const hasServices = services.length > 0;
   const hasAvailability = slots.some((s) => s.isAvailable);
   const hasPayout = !!connect?.onboarded;
-  const isBookable = hasServices && hasAvailability;
+  const approvalStatus = profile?.approvalStatus ?? "pending";
+  const isApproved = approvalStatus === "approved";
+  // A profile is only bookable once an admin has approved it AND it has at least
+  // one service and one open slot. Approval publishes the profile automatically.
+  const isBookable = isApproved && hasServices && hasAvailability;
   const pendingCount = bookings.filter((b) => b.status === "pending").length;
 
-  const setupSteps = [
+  const setupSteps: {
+    key: string; label: string; hint: string; done: boolean; optional: boolean;
+    cta: string; action: (() => void) | undefined;
+  }[] = [
     { key: "profil", label: "Profil angelegt", hint: "Name, Beschreibung und Kontaktdaten", done: true, optional: false, cta: "Profil bearbeiten", action: () => setLocation("/provider/profile") },
     { key: "leistungen", label: "Leistungen hinzufügen", hint: "Mindestens eine buchbare Leistung mit Preis", done: hasServices, optional: false, cta: "Leistungen verwalten", action: () => setLocation("/provider/services") },
     { key: "verfuegbarkeit", label: "Verfügbarkeit eintragen", hint: "Freie Termine, die Kunden buchen können", done: hasAvailability, optional: false, cta: "Termine hinzufügen", action: () => setLocation("/provider/availability") },
+    { key: "freigabe", label: "Freigabe durch Klard", hint: "Ihr Profil wird von Klard geprüft und danach automatisch veröffentlicht", done: isApproved, optional: false, cta: "", action: undefined },
     { key: "auszahlung", label: "Auszahlungskonto verbinden", hint: "Optional – nötig, um Zahlungen zu empfangen", done: hasPayout, optional: true, cta: "Konto einrichten", action: startConnectOnboarding },
   ];
   const doneCount = setupSteps.filter((s) => !s.optional && s.done).length;
@@ -195,6 +203,45 @@ export default function Dashboard() {
             </Button>
           </div>
         </div>
+
+        {/* Admin approval status */}
+        {profile && approvalStatus === "pending" && (
+          <Card className="mb-6 rounded-[20px] border-[1.5px] border-[var(--klard-gold-l)] bg-gradient-to-r from-[var(--klard-gold-l)]/40 to-amber-50 shadow-sm">
+            <CardContent className="p-5 flex items-start gap-3">
+              <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[var(--klard-gold-l)] shrink-0">
+                <Clock className="h-5 w-5 text-[var(--klard-gold)]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-serif text-base font-semibold text-foreground">Profil in Prüfung</p>
+                <p className="text-xs text-[var(--klard-mid)] leading-relaxed mt-0.5">
+                  Ihr Berater-Profil wird von Klard geprüft. Sobald es freigegeben ist, wird es
+                  automatisch im Marktplatz sichtbar und buchbar – Sie müssen nichts weiter tun.
+                  In der Zwischenzeit können Sie Leistungen und Verfügbarkeit vorbereiten.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        {profile && approvalStatus === "rejected" && (
+          <Card className="mb-6 rounded-[20px] border-[1.5px] border-rose-200 bg-rose-50 shadow-sm">
+            <CardContent className="p-5 flex items-start gap-3">
+              <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-rose-100 shrink-0">
+                <AlertCircle className="h-5 w-5 text-rose-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-serif text-base font-semibold text-foreground">Profil abgelehnt</p>
+                <p className="text-xs text-[var(--klard-mid)] leading-relaxed mt-0.5">
+                  Ihr Profil wurde nicht freigegeben.
+                  {profile.rejectionReason ? ` Grund: ${profile.rejectionReason}` : ""}
+                  {" "}Bitte passen Sie Ihr Profil an; es wird anschließend erneut geprüft.
+                </p>
+              </div>
+              <Button size="sm" variant="outline" className="gap-1.5 shrink-0 rounded-full border-[1.5px]" onClick={() => setLocation("/provider/profile")} data-testid="button-fix-rejected-profile">
+                Profil bearbeiten <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Bookable status + guided setup checklist */}
         {profile && (
@@ -255,10 +302,15 @@ export default function Dashboard() {
                         </p>
                         <p className="text-xs text-muted-foreground">{step.hint}</p>
                       </div>
-                      {!step.done && (
+                      {!step.done && step.action && (
                         <Button size="sm" className="gap-1.5 shrink-0 rounded-full" onClick={step.action} data-testid={`button-setup-${step.key}`}>
                           {step.cta} <ArrowRight className="h-3.5 w-3.5" />
                         </Button>
+                      )}
+                      {!step.done && !step.action && step.key === "freigabe" && (
+                        <Badge className="bg-amber-100 text-amber-900 border-0 gap-1 shrink-0">
+                          <Clock className="h-3 w-3" /> In Prüfung
+                        </Badge>
                       )}
                     </div>
                   ))}
