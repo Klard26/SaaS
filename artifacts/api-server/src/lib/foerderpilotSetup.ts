@@ -10,6 +10,12 @@ import antragspfadeSql from "../foerderpilot-sql/03_antragspfade.sql";
 // foerderpilot schema; fully idempotent (IF NOT EXISTS / guarded enums / CREATE
 // OR REPLACE / guarded seed), so it runs every boot AFTER the base catalog exists.
 import vorgangSql from "../foerderpilot-sql/04_vorgang.sql";
+// Energetische-Sanierung Förderprogramme (BEG/KfW EM+WG, EBW, Baubegleitung,
+// § 35c, Länder-/Kommunalprogramme, Kombinationen). Fully idempotent: programs are
+// upserted by titel, junctions are DELETE+re-INSERT, foerdergeber are name-guarded.
+// Runs every boot AFTER the base catalog (the base loader skips once populated, so
+// a new seed would never reach an existing DB unless run unconditionally here).
+import energieSql from "../foerderpilot-sql/05_energie.sql";
 
 let didRun = false;
 
@@ -38,6 +44,7 @@ export async function ensureFoerderpilotCatalog(): Promise<void> {
   try {
     await ensureBaseCatalog();
     await ensureVorgangExtension();
+    await ensureEnergieSeed();
   } catch (err) {
     // Never let setup crash the server — the rest of the API stays available;
     // the Förderpilot routes will surface errors if the catalog is missing.
@@ -124,4 +131,35 @@ async function ensureVorgangExtension(): Promise<void> {
     client.release();
   }
   logger.info("[foerderpilot] Vorgang/Exposé extension ready.");
+}
+
+/**
+ * Loads/refreshes the energetic-renovation funding programs (05_energie.sql). Runs
+ * on every boot AFTER the base catalog, because the base loader skips once the
+ * catalog is populated — so a newly added seed would otherwise never reach an
+ * already-seeded database.
+ *
+ * Safe to run unconditionally: the seed is fully idempotent (programs upserted by
+ * `titel`, junction tables DELETE+re-INSERT per program, foerdergeber guarded by
+ * name), so re-running self-heals without duplicating rows. Guarded on the base
+ * schema so it never runs against a missing foerderpilot.programm.
+ */
+async function ensureEnergieSeed(): Promise<void> {
+  const base = await fpQueryOne<{ reg: string | null }>(
+    "SELECT to_regclass('foerderpilot.programm')::text AS reg",
+  );
+  if (!base?.reg) {
+    logger.warn(
+      "[foerderpilot] Base catalog missing — skipping energetic funding seed.",
+    );
+    return;
+  }
+
+  const client = await foerderpilotPool.connect();
+  try {
+    await client.query(energieSql);
+  } finally {
+    client.release();
+  }
+  logger.info("[foerderpilot] Energetic funding programs ready.");
 }

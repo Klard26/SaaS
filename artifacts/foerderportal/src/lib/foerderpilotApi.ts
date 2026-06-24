@@ -151,8 +151,9 @@ export function fetchProgramme(filter: FinderFilter): Promise<FinderResponse> {
   return getJson<FinderResponse>(`/api/foerderpilot/programme?${params.toString()}`);
 }
 
-export function fetchFilterOptionen(): Promise<FilterOptionen> {
-  return getJson<FilterOptionen>("/api/foerderpilot/filter-optionen");
+export function fetchFilterOptionen(kategorie?: string): Promise<FilterOptionen> {
+  const qs = kategorie ? `?kategorie=${encodeURIComponent(kategorie)}` : "";
+  return getJson<FilterOptionen>(`/api/foerderpilot/filter-optionen${qs}`);
 }
 
 export function fetchProgrammDetail(id: string): Promise<ProgrammDetail> {

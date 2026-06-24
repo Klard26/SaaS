@@ -128,10 +128,28 @@ router.get("/foerderpilot/programme", async (req, res): Promise<void> => {
 });
 
 router.get("/foerderpilot/filter-optionen", async (req, res): Promise<void> => {
+  // Optional category scope: when given, the Zielgruppen are restricted to groups
+  // that can actually apply to an ACTIVE program WITHIN that category — so the
+  // dropdown never offers a target group with zero matching programs (e.g. an
+  // imported group like `makler` that no program is assigned to).
+  const kategorie = typeof req.query.kategorie === "string" ? req.query.kategorie : undefined;
+  const zielgruppenSql = kategorie
+    ? `SELECT DISTINCT zg.slug, zg.name
+         FROM zielgruppe zg
+         JOIN programm_zielgruppe pz ON pz.zielgruppe_id = zg.id
+         JOIN programm pr ON pr.id = pz.programm_id AND pr.aktiv
+         JOIN programm_kategorie pk ON pk.programm_id = pr.id
+         JOIN kategorie k ON k.id = pk.kategorie_id AND k.slug = $1
+        ORDER BY zg.name`
+    : `SELECT DISTINCT zg.slug, zg.name
+         FROM zielgruppe zg
+         JOIN programm_zielgruppe pz ON pz.zielgruppe_id = zg.id
+         JOIN programm pr ON pr.id = pz.programm_id AND pr.aktiv
+        ORDER BY zg.name`;
   try {
     const [kategorien, zielgruppen, regionRows] = await Promise.all([
       fpQuery<{ slug: string; name: string }>("SELECT slug, name FROM kategorie ORDER BY name"),
-      fpQuery<{ slug: string; name: string }>("SELECT slug, name FROM zielgruppe ORDER BY name"),
+      fpQuery<{ slug: string; name: string }>(zielgruppenSql, kategorie ? [kategorie] : []),
       fpQuery<{ region: string }>(
         "SELECT DISTINCT region::text AS region FROM programm_region ORDER BY 1",
       ),

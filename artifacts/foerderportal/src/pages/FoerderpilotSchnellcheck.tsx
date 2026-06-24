@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { Navbar } from "@/components/Navbar";
+import { FoerderpilotTabs } from "@/components/FoerderpilotTabs";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -43,7 +44,7 @@ export default function FoerderpilotSchnellcheck() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchFilterOptionen()
+    fetchFilterOptionen(ENERGIE_KATEGORIE)
       .then(setOptionen)
       .catch(() => setOptionen(null));
   }, []);
@@ -77,6 +78,7 @@ export default function FoerderpilotSchnellcheck() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
+      <FoerderpilotTabs />
 
       <section className="bg-[var(--klard-bg)] px-4 sm:px-8 py-12 border-b border-border">
         <div className="max-w-[1180px] mx-auto">

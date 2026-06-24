@@ -32,16 +32,9 @@ export function Navbar() {
           <Link
             href="/schnellcheck"
             className="text-muted-foreground hover:text-[var(--klard-teal-d)] transition-colors"
-            data-testid="link-schnellcheck"
+            data-testid="link-foerderprogramme"
           >
-            Förder-Schnellcheck
-          </Link>
-          <Link
-            href="/foerderung"
-            className="text-muted-foreground hover:text-[var(--klard-teal-d)] transition-colors"
-            data-testid="link-foerderdatenbank"
-          >
-            Förderdatenbank
+            Förderprogramme
           </Link>
           <Link
             href="/energieausweis"
@@ -133,11 +126,8 @@ export function Navbar() {
             <Link href="/check" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>
               Gebäudecheck
             </Link>
-            <Link href="/schnellcheck" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>
-              Förder-Schnellcheck
-            </Link>
-            <Link href="/foerderung" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>
-              Förderdatenbank
+            <Link href="/schnellcheck" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)} data-testid="link-foerderprogramme-mobile">
+              Förderprogramme
             </Link>
             <Link href="/energieausweis" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>
               Energieausweis
