@@ -161,6 +161,7 @@ beforeAll(async () => {
     .insert(providersTable)
     .values({
       clerkUserId: providerUser,
+      approvalStatus: "approved",
       displayName: "Invoice Berater (test)",
       email: "invoice-berater@example.com",
       category: "Invoice Test Kategorie",
@@ -184,6 +185,7 @@ beforeAll(async () => {
     .insert(providersTable)
     .values({
       clerkUserId: `${providerUser}_direct`,
+      approvalStatus: "approved",
       displayName: "Direkt Berater (test)",
       email: "direkt-berater@example.com",
       category: "Invoice Direkt Kategorie",

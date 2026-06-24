@@ -44,6 +44,7 @@ async function seed(): Promise<void> {
     .insert(providersTable)
     .values({
       clerkUserId: `${sfx}_user`,
+      approvalStatus: "approved",
       displayName: "Test Berater",
       email: `${sfx}@example.com`,
       category: "Architektur",

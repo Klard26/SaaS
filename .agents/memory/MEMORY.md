@@ -8,6 +8,7 @@
 - [Klard frontend test setup](klard-test-setup.md) — vitest+testing-library+jsdom; standalone vitest.config.ts (vite.config throws without PORT/BASE_PATH); tests excluded from tsc.
 - [Klard account deletion tables](account-deletion-tables.md) — full DELETE /account/me must wipe every user-keyed table (incl. assessments, offer_acceptances, gebaeudecheck_*); DB-first then Clerk for retry-safety.
 - [Klard registration flow](klard-registration-flow.md) — customer signup goes straight to /search (no forced chooser; booking needs no immobilien_kunde); Berater via ?intent=berater; booking intent preserved via guarded ?redirect=.
+- [Provider approval gate](provider-approval-gate.md) — Berater need admin Freigabe before going live (approvalStatus pending→approved, separate from verified); gates public GETs/offers/booking via canViewProvider; provider test fixtures must set approvalStatus:"approved".
 - [Vitest integration gotchas](vitest-integration-gotchas.md) — api-server route tests under Vitest hang on pino-pretty worker + Proxy-mock `then` trap; mount a minimal app, mock explicit named exports.
 - [api-server dev serves stale routes](api-server-dev-stale.md) — after editing api-server route files, restart the workflow before curl-smoke; dev process can serve pre-edit code (e.g. old auth walls).
 - [Path-less router.use guard trap](path-less-router-use-trap.md) — bare `router.use(requireAdmin)` on a root-mounted Express router 401s ALL fall-through routes mounted after it; always scope to the path prefix.

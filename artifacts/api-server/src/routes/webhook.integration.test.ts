@@ -210,6 +210,7 @@ beforeAll(async () => {
     .insert(providersTable)
     .values({
       clerkUserId: providerUser,
+      approvalStatus: "approved",
       displayName: "Webhook Berater (test)",
       email: "webhook-berater@example.com",
       category: "Webhook Test Kategorie",

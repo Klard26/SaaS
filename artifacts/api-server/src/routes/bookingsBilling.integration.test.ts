@@ -194,6 +194,7 @@ beforeAll(async () => {
     .insert(providersTable)
     .values({
       clerkUserId: providerAUser,
+      approvalStatus: "approved",
       displayName: "Berater A (itest)",
       email: "beraterA@example.com",
       category: "Integration Test Kategorie",
@@ -208,6 +209,7 @@ beforeAll(async () => {
     .insert(providersTable)
     .values({
       clerkUserId: providerBUser,
+      approvalStatus: "approved",
       displayName: "Berater B (itest)",
       email: "beraterB@example.com",
       category: "Integration Test Kategorie",
@@ -226,6 +228,7 @@ beforeAll(async () => {
     .insert(providersTable)
     .values({
       clerkUserId: providerCUser,
+      approvalStatus: "approved",
       displayName: "Berater C (itest)",
       email: "beraterC@example.com",
       category: "Integration Test Kategorie",

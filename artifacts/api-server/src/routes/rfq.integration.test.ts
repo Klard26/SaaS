@@ -166,6 +166,7 @@ beforeAll(async () => {
     .values([
       {
         clerkUserId: userP1,
+        approvalStatus: "approved",
         displayName: "RfQ Berater 1",
         email: "rfq-p1@example.com",
         category: "RfQ Test Kategorie",
@@ -176,6 +177,7 @@ beforeAll(async () => {
       },
       {
         clerkUserId: userP2,
+        approvalStatus: "approved",
         displayName: "RfQ Berater 2",
         email: "rfq-p2@example.com",
         category: "RfQ Test Kategorie",
@@ -186,6 +188,7 @@ beforeAll(async () => {
       },
       {
         clerkUserId: userPoor,
+        approvalStatus: "approved",
         displayName: "RfQ Berater (leer)",
         email: "rfq-poor@example.com",
         category: "RfQ Test Kategorie",

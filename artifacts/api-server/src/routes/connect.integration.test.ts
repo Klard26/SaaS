@@ -183,6 +183,7 @@ beforeAll(async () => {
   await db.insert(providersTable).values([
     {
       clerkUserId: onboardUser,
+      approvalStatus: "approved",
       displayName: "Onboard Berater (cntest)",
       email: "onboard@example.com",
       category: "Connect Test Kategorie",
@@ -193,6 +194,7 @@ beforeAll(async () => {
     },
     {
       clerkUserId: existingAcctUser,
+      approvalStatus: "approved",
       displayName: "Existing Acct Berater (cntest)",
       email: "existing@example.com",
       category: "Connect Test Kategorie",
@@ -204,6 +206,7 @@ beforeAll(async () => {
     },
     {
       clerkUserId: statusUser,
+      approvalStatus: "approved",
       displayName: "Status Berater (cntest)",
       email: "status@example.com",
       category: "Connect Test Kategorie",

@@ -29,6 +29,12 @@ approved, else only for the authenticated owner (`clerkUserId`) or an admin
 rejectionReason/reviewedAt) so it re-enters the admin queue; an `approved`
 profile is never un-published by edits.
 
+**Test-fixture trap:** any integration test that inserts a provider and then
+exercises a gated path (booking creation, `POST /offers/accept`, public
+`GET /providers/:id/{services,availability,reviews}`) must set
+`approvalStatus: "approved"` on the insert — the column now defaults to `pending`,
+which 404s those paths and breaks otherwise-unrelated fixtures.
+
 **Known follow-ups (pre-existing, out of approval-gate scope):** provider-owned
 mutations (services/availability POST/PATCH/DELETE) and `GET /dashboard/provider/:id`
 lack owner/admin authorization. Public `Provider` DTO also carries

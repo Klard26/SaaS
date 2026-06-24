@@ -157,6 +157,7 @@ async function seedFullAccount(userId: string): Promise<{ providerId: number }> 
     .insert(providersTable)
     .values({
       clerkUserId: userId,
+      approvalStatus: "approved",
       displayName: "Lösch Berater",
       email: "loesch-berater@example.com",
       category: "Steuerberater",
