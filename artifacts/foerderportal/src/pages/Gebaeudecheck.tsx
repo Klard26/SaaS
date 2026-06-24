@@ -12,11 +12,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft, ArrowRight, Check, Loader2, Lock, ShieldCheck, Mail, FileDown,
-  MapPin, UserRound, Sparkles,
+  MapPin, UserRound, Sparkles, SlidersHorizontal, ChevronDown, Flame,
 } from "lucide-react";
 import {
-  AGE, BT, HT, INS, WI, ZUSTAND, ageBand,
-  calcEnergie, type BuildingInput,
+  AGE, BT, HT, INS, WI, ZUSTAND, WARMWASSER, LUEFTUNG, NWG_KATEGORIEN, ageBand,
+  calcEnergie, type BuildingInput, type Bauteil, type SanierungDetail,
 } from "@workspace/energie-calc";
 import { useCreateReportCheckout } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
@@ -129,6 +129,16 @@ const HEIZUNGSALTER_OPTS: Opt[] = [
   { id: "sehralt", label: "Älter als 25 Jahre", patch: { heizungBaujahr: CURRENT_YEAR - 30 } },
 ];
 
+// Nettogrundfläche-Bänder (NWG) → repräsentativer Mittelwert je Band.
+const NGF_OPTS: Opt[] = [
+  { id: "xs", label: "Bis 250 m²", patch: { nettoflaeche: 180 } },
+  { id: "s", label: "250 – 500 m²", patch: { nettoflaeche: 375 } },
+  { id: "m", label: "500 – 1.000 m²", patch: { nettoflaeche: 750 } },
+  { id: "l", label: "1.000 – 2.500 m²", patch: { nettoflaeche: 1750 } },
+  { id: "xl", label: "2.500 – 5.000 m²", patch: { nettoflaeche: 3500 } },
+  { id: "xxl", label: "Über 5.000 m²", patch: { nettoflaeche: 7000 } },
+];
+
 function wohnflaecheSelectedId(d: BuildingInput): string {
   const w = d.wohnflaeche;
   if (w <= 80) return "s";
@@ -146,32 +156,30 @@ function heizungsalterSelectedId(d: BuildingInput): string {
   return "sehralt";
 }
 
-const STEPS: StepDef[] = [
-  {
-    key: "gebaeudetyp",
-    title: "Um welches Gebäude geht es?",
-    subtitle: "Wählen Sie den Gebäudetyp, der am besten passt.",
-    options: BT.map((b) => ({
-      id: b.id,
-      label: b.l,
-      patch: { gebaeudetyp: b.id, ...(TYP_UNITS[b.id] ?? {}) },
-    })),
-    selectedId: (d) => d.gebaeudetyp,
-  },
-  {
-    key: "baujahr",
-    title: "Aus welcher Bauzeit stammt das Gebäude?",
-    subtitle: "Eine grobe Einordnung genügt — das reicht für den Schnellcheck.",
-    options: BAUJAHR_OPTS,
-    selectedId: (d) => String(ageBand(d.baujahr).ym),
-  },
-  {
-    key: "wohnflaeche",
-    title: "Wie groß ist die beheizte Wohnfläche?",
-    subtitle: "Schätzen Sie die Größenklasse — eine genaue Zahl ist nicht nötig.",
-    options: WOHNFLAECHE_OPTS,
-    selectedId: wohnflaecheSelectedId,
-  },
+function ngfSelectedId(d: BuildingInput): string {
+  const w = d.nettoflaeche ?? 0;
+  if (w <= 250) return "xs";
+  if (w <= 500) return "s";
+  if (w <= 1000) return "m";
+  if (w <= 2500) return "l";
+  if (w <= 5000) return "xl";
+  return "xxl";
+}
+
+// Erster Schritt: Gebäudenutzung — steuert die folgenden Schritte und das Verfahren.
+const NUTZUNG_STEP: StepDef = {
+  key: "nutzung",
+  title: "Um was für ein Gebäude geht es?",
+  subtitle: "Die Nutzung bestimmt das Bewertungsverfahren.",
+  options: [
+    { id: "wohngebaeude", label: "Wohngebäude", hint: "Ein-/Mehrfamilienhaus, Wohnung", patch: { nutzung: "wohngebaeude" } },
+    { id: "nichtwohngebaeude", label: "Nichtwohngebäude", hint: "Büro, Handel, Schule, Gewerbe …", patch: { nutzung: "nichtwohngebaeude" } },
+  ],
+  selectedId: (d) => d.nutzung ?? "wohngebaeude",
+};
+
+// Gemeinsame Schritte (Heizung … Zustand) für Wohn- und Nichtwohngebäude.
+const TAIL_STEPS: StepDef[] = [
   {
     key: "heizung",
     title: "Womit wird geheizt?",
@@ -213,6 +221,64 @@ const STEPS: StepDef[] = [
   },
 ];
 
+const BAUJAHR_STEP: StepDef = {
+  key: "baujahr",
+  title: "Aus welcher Bauzeit stammt das Gebäude?",
+  subtitle: "Eine grobe Einordnung genügt — das reicht für den Schnellcheck.",
+  options: BAUJAHR_OPTS,
+  selectedId: (d) => String(ageBand(d.baujahr).ym),
+};
+
+// Wohngebäude: Gebäudetyp → Bauzeit → Wohnfläche → gemeinsame Schritte.
+const STEPS_WG: StepDef[] = [
+  NUTZUNG_STEP,
+  {
+    key: "gebaeudetyp",
+    title: "Um welches Gebäude geht es?",
+    subtitle: "Wählen Sie den Gebäudetyp, der am besten passt.",
+    options: BT.map((b) => ({
+      id: b.id,
+      label: b.l,
+      patch: { gebaeudetyp: b.id, ...(TYP_UNITS[b.id] ?? {}) },
+    })),
+    selectedId: (d) => d.gebaeudetyp,
+  },
+  BAUJAHR_STEP,
+  {
+    key: "wohnflaeche",
+    title: "Wie groß ist die beheizte Wohnfläche?",
+    subtitle: "Schätzen Sie die Größenklasse — eine genaue Zahl ist nicht nötig.",
+    options: WOHNFLAECHE_OPTS,
+    selectedId: wohnflaecheSelectedId,
+  },
+  ...TAIL_STEPS,
+];
+
+// Nichtwohngebäude: Nutzungsprofil → Bauzeit → Nettogrundfläche → gemeinsame Schritte.
+const STEPS_NWG: StepDef[] = [
+  NUTZUNG_STEP,
+  {
+    key: "nwgKategorie",
+    title: "Welche Nutzung hat das Gebäude?",
+    subtitle: "Wählen Sie das Nutzungsprofil, das am besten passt.",
+    options: NWG_KATEGORIEN.map((k) => ({ id: k.id, label: k.l, patch: { nwgKategorie: k.id } })),
+    selectedId: (d) => d.nwgKategorie ?? "buero",
+  },
+  BAUJAHR_STEP,
+  {
+    key: "nettoflaeche",
+    title: "Wie groß ist die Nettogrundfläche (NGF)?",
+    subtitle: "Schätzen Sie die Größenklasse der beheizten Flächen.",
+    options: NGF_OPTS,
+    selectedId: ngfSelectedId,
+  },
+  ...TAIL_STEPS,
+];
+
+function stepsFor(d: BuildingInput): StepDef[] {
+  return d.nutzung === "nichtwohngebaeude" ? STEPS_NWG : STEPS_WG;
+}
+
 export default function Gebaeudecheck() {
   const { toast } = useToast();
   const checkout = useCreateReportCheckout();
@@ -232,8 +298,9 @@ export default function Gebaeudecheck() {
   const [step, setStep] = useState(0);
   const [pending, setPending] = useState(false);
 
-  const total = STEPS.length + 1;
-  const onResult = step > STEPS.length;
+  const steps = useMemo(() => stepsFor(d), [d]);
+  const total = steps.length + 1;
+  const onResult = step > steps.length;
   const onStandort = step === 0;
   const progress = onResult ? 100 : Math.round((step / total) * 100);
 
@@ -368,7 +435,8 @@ export default function Gebaeudecheck() {
             financeConsent={financeConsent}
             onFinanceConsentChange={setFinanceConsent}
             onBuy={handleBuy}
-            onBack={() => setStep(STEPS.length)}
+            onPatch={(patch) => setD((p) => ({ ...p, ...patch }))}
+            onBack={() => setStep(steps.length)}
           />
         ) : onStandort ? (
           <StandortView
@@ -383,8 +451,8 @@ export default function Gebaeudecheck() {
           />
         ) : (
           <StepView
-            step={STEPS[step - 1]!}
-            current={STEPS[step - 1]!.selectedId(d)}
+            step={steps[step - 1]!}
+            current={steps[step - 1]!.selectedId(d)}
             canGoBack={step > 0}
             onBack={() => setStep((s) => Math.max(0, s - 1))}
             onPick={pick}
@@ -544,7 +612,7 @@ function StepView({
 
 function ResultView({
   d, energie, pending, kontakt, onKontaktChange, adressePlaceholder,
-  financeConsent, onFinanceConsentChange, onBuy, onBack,
+  financeConsent, onFinanceConsentChange, onBuy, onBack, onPatch,
 }: {
   d: BuildingInput;
   energie: ReturnType<typeof calcEnergie>;
@@ -556,7 +624,9 @@ function ResultView({
   onFinanceConsentChange: (v: boolean) => void;
   onBuy: () => void;
   onBack: () => void;
+  onPatch: (patch: Partial<BuildingInput>) => void;
 }) {
+  const isNwg = energie.nutzung === "nichtwohngebaeude";
   return (
     <div className="space-y-8">
       {/* Free result */}
@@ -568,22 +638,74 @@ function ResultView({
           <CardContent className="p-5 sm:p-6 space-y-5">
             <div className="flex items-center justify-between gap-3">
               <h2 className="font-serif text-xl sm:text-2xl font-semibold text-foreground">
-                Geschätzte Energieklasse
+                {isNwg ? "Energetische Einordnung" : "Geschätzte Energieklasse"}
               </h2>
-              <Badge
-                style={{ background: energie.klasse.col, color: "#fff" }}
-                className="text-base px-3 py-1"
-                data-testid="badge-energieklasse"
-              >
-                {energie.klasse.c}
-              </Badge>
+              {isNwg && energie.nwgBenchmark ? (
+                <Badge
+                  style={{ background: energie.nwgBenchmark.col, color: "#fff" }}
+                  className="text-sm px-3 py-1"
+                  data-testid="badge-nwg-benchmark"
+                >
+                  {energie.nwgBenchmark.stufe}
+                </Badge>
+              ) : (
+                <Badge
+                  style={{ background: energie.klasse.col, color: "#fff" }}
+                  className="text-base px-3 py-1"
+                  data-testid="badge-energieklasse"
+                >
+                  {energie.klasse.c}
+                </Badge>
+              )}
             </div>
-            <EnergyBar value={energie.endenergie} />
+            {!isNwg && <EnergyBar value={energie.endenergie} />}
             <div className="grid grid-cols-3 gap-3">
               <Stat label="Endenergie" value={`${energie.endenergie}`} unit="kWh/(m²·a)" />
               <Stat label="Primärenergie" value={`${energie.primaerenergie}`} unit="kWh/(m²·a)" />
               <Stat label="CO₂" value={`${energie.co2Tonnen} t`} unit="pro Jahr" />
             </div>
+
+            {/* Heizlast (Auslegung) — Norm-Heizlast des Gebäudes */}
+            <div>
+              <div className="mb-2 flex items-center gap-1.5 text-xs uppercase tracking-wide text-muted-foreground font-semibold">
+                <Flame className="h-3.5 w-3.5 text-[var(--klard-teal-d)]" />
+                Heizlast (Auslegung)
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Stat label="Gebäude-Heizlast" value={energie.heizlastKw.toFixed(1)} unit="kW" />
+                <Stat label="Spezifisch" value={`${Math.round(energie.heizlastWProM2)}`} unit="W/m²" />
+              </div>
+              <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
+                Überschlägige Norm-Heizlast (Auslegungstemperatur {energie.tNorm} °C,
+                Raum {energie.thetaInt} °C) zur ersten Dimensionierung von Wärmepumpe
+                oder Kessel. Eine raumweise Berechnung nach DIN EN 12831 ersetzt sie nicht.
+              </p>
+            </div>
+
+            {isNwg && energie.nwgBenchmark && (
+              <div
+                className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 leading-relaxed"
+                data-testid="nwg-caveat"
+              >
+                {energie.nwgBenchmark.hinweis} Für Nichtwohngebäude erfolgt keine
+                Einordnung in die Energieeffizienzklassen A+–H; maßgeblich ist der
+                flächenbezogene Verbrauchskennwert.
+              </div>
+            )}
+
+            {energie.hinweise && energie.hinweise.length > 0 && (
+              <ul className="space-y-1 text-[11px] text-muted-foreground leading-relaxed">
+                {energie.hinweise.map((h, i) => (
+                  <li key={i} className="flex gap-1.5">
+                    <span className="text-[var(--klard-teal-d)]">•</span>
+                    <span>{h}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <DetailAngaben d={d} isNwg={isNwg} onPatch={onPatch} />
+
             <div className="flex justify-start">
               <Button
                 variant="ghost"
@@ -979,6 +1101,216 @@ function Field({
         data-testid={testId}
         className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-[var(--klard-teal)] focus:outline-none focus:ring-1 focus:ring-[var(--klard-teal)]"
       />
+    </div>
+  );
+}
+
+const BAUTEIL_LABEL: Record<Bauteil, string> = {
+  fassade: "Fassade / Außenwand",
+  dach: "Dach / oberste Geschossdecke",
+  kellerdecke: "Kellerdecke / Bodenplatte",
+  fenster: "Fenster",
+  heizung: "Heizung",
+};
+const BAUTEIL_ORDER: Bauteil[] = ["fassade", "dach", "kellerdecke", "fenster", "heizung"];
+
+// Optionaler Feinschliff auf dem Ergebnis-Schritt: exakte Fläche, einzelne
+// Bauteil-Sanierungen mit Jahr, Denkmalschutz, Warmwasser/Lüftung/PV. Alles
+// optional — der schnelle Klick-Pfad bleibt unangetastet.
+function DetailAngaben({
+  d, isNwg, onPatch,
+}: {
+  d: BuildingInput;
+  isNwg: boolean;
+  onPatch: (patch: Partial<BuildingInput>) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const areaLabel = isNwg ? "Nettogrundfläche (m²)" : "Wohnfläche (m²)";
+  const areaValue = isNwg ? (d.nettoflaeche ?? 0) : d.wohnflaeche;
+  function setArea(raw: string) {
+    const n = Math.round(Number(raw));
+    if (!Number.isFinite(n) || n <= 0) return;
+    onPatch(isNwg ? { nettoflaeche: n } : { wohnflaeche: n });
+  }
+
+  function detailFor(b: Bauteil): SanierungDetail | undefined {
+    return (d.sanierungDetails ?? []).find((x) => x.bauteil === b);
+  }
+  function setBauteilJahr(b: Bauteil, jahr: number | undefined) {
+    const rest = (d.sanierungDetails ?? []).filter((x) => x.bauteil !== b);
+    onPatch({ sanierungDetails: [...rest, { bauteil: b, ...(jahr != null ? { jahr } : {}) }] });
+  }
+  function removeBauteil(b: Bauteil) {
+    onPatch({ sanierungDetails: (d.sanierungDetails ?? []).filter((x) => x.bauteil !== b) });
+  }
+
+  return (
+    <div className="rounded-xl border border-border bg-secondary/30">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        data-testid="button-detail-angaben"
+        className="flex w-full items-center justify-between gap-3 p-3 text-left"
+      >
+        <span className="flex items-center gap-2">
+          <SlidersHorizontal className="h-4 w-4 text-[var(--klard-teal-d)]" />
+          <span className="text-sm font-medium text-foreground">
+            Genauere Angaben <span className="text-muted-foreground font-normal">(optional)</span>
+          </span>
+        </span>
+        <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div className="space-y-5 border-t border-border p-4">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Präzisieren Sie Ihre Angaben für eine genauere Einschätzung — z. B. die
+            exakte Fläche oder einzelne Sanierungen mit Jahr. Alle Felder sind freiwillig.
+          </p>
+
+          {/* Exakte Fläche */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1.5">{areaLabel}</label>
+            <input
+              type="number"
+              min={1}
+              defaultValue={areaValue > 0 ? areaValue : ""}
+              onChange={(e) => setArea(e.target.value)}
+              data-testid="input-exakte-flaeche"
+              className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-[var(--klard-teal)] focus:outline-none focus:ring-1 focus:ring-[var(--klard-teal)]"
+            />
+          </div>
+
+          {/* Bauteilweise Sanierungen mit Jahr */}
+          <div>
+            <div className="text-sm font-medium text-foreground mb-2">Sanierte Bauteile mit Jahr</div>
+            <div className="space-y-2">
+              {BAUTEIL_ORDER.map((b) => {
+                const detail = detailFor(b);
+                const checked = detail !== undefined;
+                return (
+                  <div key={b} className="flex items-center gap-3">
+                    <label className="flex flex-1 items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) => (e.target.checked ? setBauteilJahr(b, CURRENT_YEAR - 2) : removeBauteil(b))}
+                        className="h-4 w-4 shrink-0 accent-[var(--klard-teal)]"
+                        data-testid={`checkbox-bauteil-${b}`}
+                      />
+                      <span className="text-sm text-foreground">{BAUTEIL_LABEL[b]}</span>
+                    </label>
+                    {checked && (
+                      <input
+                        type="number"
+                        min={1950}
+                        max={CURRENT_YEAR}
+                        placeholder="Jahr"
+                        defaultValue={detail?.jahr ?? ""}
+                        onChange={(e) => {
+                          const n = Math.round(Number(e.target.value));
+                          setBauteilJahr(b, Number.isFinite(n) && n >= 1950 && n <= CURRENT_YEAR ? n : undefined);
+                        }}
+                        data-testid={`input-bauteil-jahr-${b}`}
+                        className="w-24 rounded-lg border border-border bg-card px-2 py-1.5 text-sm text-foreground focus:border-[var(--klard-teal)] focus:outline-none focus:ring-1 focus:ring-[var(--klard-teal)]"
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Warmwasser & Lüftung */}
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">Warmwasser</label>
+              <select
+                value={d.warmwasser ?? ""}
+                onChange={(e) => onPatch({ warmwasser: e.target.value || undefined })}
+                data-testid="select-warmwasser"
+                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-[var(--klard-teal)] focus:outline-none focus:ring-1 focus:ring-[var(--klard-teal)]"
+              >
+                <option value="">Keine Angabe</option>
+                {WARMWASSER.map((w) => (
+                  <option key={w.id} value={w.id}>{w.l}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">Lüftung</label>
+              <select
+                value={d.lueftung ?? ""}
+                onChange={(e) => onPatch({ lueftung: e.target.value || undefined })}
+                data-testid="select-lueftung"
+                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-[var(--klard-teal)] focus:outline-none focus:ring-1 focus:ring-[var(--klard-teal)]"
+              >
+                <option value="">Keine Angabe</option>
+                {LUEFTUNG.map((l) => (
+                  <option key={l.id} value={l.id}>{l.l}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Schalter: PV, Kühlung (NWG), Denkmalschutz */}
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={!!d.pvVorhanden}
+                onChange={(e) => onPatch({ pvVorhanden: e.target.checked })}
+                className="h-4 w-4 shrink-0 accent-[var(--klard-teal)]"
+                data-testid="checkbox-pv"
+              />
+              <span className="text-sm text-foreground">Photovoltaik-/Solaranlage vorhanden</span>
+            </label>
+            {isNwg && (
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={!!d.kuehlungVorhanden}
+                  onChange={(e) => onPatch({ kuehlungVorhanden: e.target.checked })}
+                  className="h-4 w-4 shrink-0 accent-[var(--klard-teal)]"
+                  data-testid="checkbox-kuehlung"
+                />
+                <span className="text-sm text-foreground">Kühlung / Klimatisierung vorhanden</span>
+              </label>
+            )}
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={!!d.denkmalschutz}
+                onChange={(e) => onPatch({ denkmalschutz: e.target.checked })}
+                className="h-4 w-4 shrink-0 accent-[var(--klard-teal)]"
+                data-testid="checkbox-denkmalschutz"
+              />
+              <span className="text-sm text-foreground">Einzeldenkmal (Denkmalschutz)</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={!!d.ensembleschutz}
+                onChange={(e) => onPatch({ ensembleschutz: e.target.checked })}
+                className="h-4 w-4 shrink-0 accent-[var(--klard-teal)]"
+                data-testid="checkbox-ensembleschutz"
+              />
+              <span className="text-sm text-foreground">Ensemble-/Erhaltungssatzung</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={!!d.milieuschutz}
+                onChange={(e) => onPatch({ milieuschutz: e.target.checked })}
+                className="h-4 w-4 shrink-0 accent-[var(--klard-teal)]"
+                data-testid="checkbox-milieuschutz"
+              />
+              <span className="text-sm text-foreground">Soziale Erhaltungssatzung (Milieuschutz)</span>
+            </label>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

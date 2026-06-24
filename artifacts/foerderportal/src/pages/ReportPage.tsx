@@ -250,6 +250,7 @@ function ReportDetail({
   }, [report.id]);
 
   const e = calcEnergie(d);
+  const isNwg = e.nutzung === "nichtwohngebaeude";
   const w = calcWert(d);
   const val = calcValue(d, e);
   const rest = calcRestnutzung(d, e, w);
@@ -294,21 +295,64 @@ function ReportDetail({
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center justify-between">
-              <span>Energiebilanz</span>
-              <Badge style={{ background: e.klasse.col, color: "#fff" }}>{e.klasse.c}</Badge>
+              <span>{isNwg ? "Energiebilanz (Nichtwohngebäude)" : "Energiebilanz"}</span>
+              {isNwg && e.nwgBenchmark ? (
+                <Badge style={{ background: e.nwgBenchmark.col, color: "#fff" }} data-testid="badge-report-nwg-benchmark">
+                  {e.nwgBenchmark.stufe}
+                </Badge>
+              ) : (
+                <Badge style={{ background: e.klasse.col, color: "#fff" }}>{e.klasse.c}</Badge>
+              )}
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <Metric label="Endenergie" value={`${e.endenergie}`} unit="kWh/(m²·a)" />
               <Metric label="Primärenergie" value={`${e.primaerenergie}`} unit="kWh/(m²·a)" />
               <Metric label="CO₂-Ausstoß" value={`${e.co2Tonnen} t`} unit="pro Jahr" />
               <Metric label="Heizwärmebedarf" value={`${e.qH}`} unit="kWh/(m²·a)" />
             </div>
+            <div className="border-t border-border pt-4">
+              <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-2">
+                Heizlast (Auslegung)
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <Metric label="Gebäude-Heizlast" value={e.heizlastKw.toFixed(1)} unit="kW" />
+                <Metric label="Spezifisch" value={`${Math.round(e.heizlastWProM2)}`} unit="W/m²" />
+                <Metric label="Auslegungstemp." value={`${e.tNorm}`} unit="°C außen" />
+                <Metric label="Raumtemperatur" value={`${e.thetaInt}`} unit="°C" />
+              </div>
+              <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
+                Überschlägige Norm-Heizlast zur ersten Dimensionierung der Wärmeerzeugung.
+                Ersetzt keine raumweise Berechnung nach DIN EN 12831.
+              </p>
+            </div>
+            {isNwg && e.nwgBenchmark && (
+              <div
+                className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 leading-relaxed"
+                data-testid="report-nwg-caveat"
+              >
+                {e.nwgBenchmark.hinweis} Für Nichtwohngebäude erfolgt keine Einordnung in
+                die Energieeffizienzklassen A+–H und keine wohnwirtschaftliche
+                Wert-/AfA-Schätzung; maßgeblich ist der flächenbezogene Verbrauchskennwert
+                bezogen auf die Nettogrundfläche.
+              </div>
+            )}
+            {e.hinweise && e.hinweise.length > 0 && (
+              <ul className="space-y-1 text-[11px] text-muted-foreground leading-relaxed">
+                {e.hinweise.map((h, i) => (
+                  <li key={i} className="flex gap-1.5">
+                    <span className="text-[var(--klard-teal-d)]">•</span>
+                    <span>{h}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </CardContent>
         </Card>
 
-        {/* Wert & Restnutzung */}
+        {/* Wert & Restnutzung — nur für Wohngebäude (NWG ohne wohnwirtschaftliche Bewertung) */}
+        {!isNwg && (
         <div className="grid sm:grid-cols-2 gap-4">
           <Card>
             <CardHeader className="pb-3"><CardTitle className="text-base">Gebäudewert (Schätzung)</CardTitle></CardHeader>
@@ -329,6 +373,7 @@ function ReportDetail({
             </CardContent>
           </Card>
         </div>
+        )}
 
         {/* Risk / ESG / Solar */}
         <div className="grid sm:grid-cols-3 gap-4">

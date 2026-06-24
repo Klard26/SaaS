@@ -16,6 +16,7 @@ import {
   useCreateEnergieausweisCheckout, useReconcileEnergieausweis,
   useListMyEnergieausweisOrders, type EnergieausweisOrderInputAusweisTyp,
 } from "@workspace/api-client-react";
+import { NWG_KATEGORIEN } from "@workspace/energie-calc";
 
 const eurCents = (c: number) =>
   (c / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
@@ -44,6 +45,10 @@ const HEIZUNGSARTEN = [
   "Gas", "Öl", "Fernwärme", "Wärmepumpe", "Pellet / Holz", "Nachtspeicher (Strom)", "Sonstige",
 ];
 const ANLAESSE = ["Verkauf", "Vermietung", "Modernisierung", "Sonstiges"];
+const NWG_KATEGORIE_LABELS = NWG_KATEGORIEN.map((k) => k.l);
+const BETRIEBSZEITEN = [
+  "Bis 40 h/Woche", "40–60 h/Woche", "60–80 h/Woche", "Durchgehend (24/7)",
+];
 const MODERNISIERUNGEN = [
   "Fassade gedämmt", "Dach gedämmt", "Kellerdecke gedämmt", "Fenster erneuert",
   "Heizung erneuert", "Lüftungsanlage", "Photovoltaik / Solarthermie",
@@ -71,6 +76,11 @@ export default function EnergieausweisPage() {
   const reconciledRef = useRef(false);
 
   const [ausweisTyp, setAusweisTyp] = useState<AusweisTyp>("verbrauch");
+  const [nutzung, setNutzung] = useState<"wohngebaeude" | "nichtwohngebaeude">("wohngebaeude");
+  const [nwgKategorie, setNwgKategorie] = useState(NWG_KATEGORIE_LABELS[0] ?? "");
+  const [nettoflaeche, setNettoflaeche] = useState("");
+  const [betriebszeiten, setBetriebszeiten] = useState(BETRIEBSZEITEN[0] ?? "");
+  const [kuehlung, setKuehlung] = useState(false);
   const [strasse, setStrasse] = useState("");
   const [plz, setPlz] = useState("");
   const [ort, setOrt] = useState("");
@@ -121,11 +131,12 @@ export default function EnergieausweisPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const isNwg = nutzung === "nichtwohngebaeude";
   const emailValid = /.+@.+\..+/.test(kontaktEmail);
   const valid =
     kontaktName.trim().length > 0 && emailValid &&
     plz.length >= 5 && strasse.trim().length > 0 && ort.trim().length > 0 &&
-    baujahr.length > 0 && wohnflaeche.length > 0;
+    baujahr.length > 0 && (isNwg ? nettoflaeche.length > 0 : wohnflaeche.length > 0);
 
   function toggleModernisierung(m: string) {
     setModernisierungen((p) => (p.includes(m) ? p.filter((x) => x !== m) : [...p, m]));
@@ -143,15 +154,23 @@ export default function EnergieausweisPage() {
     setSubmitting(true);
 
     const intake: Record<string, unknown> = {
+      nutzung,
       gebaeudeadresse: { strasse, plz, ort },
-      gebaeudetyp,
+      gebaeudetyp: isNwg ? nwgKategorie : gebaeudetyp,
       baujahr: Number(baujahr) || baujahr,
-      wohnflaeche: Number(wohnflaeche) || wohnflaeche,
-      anzahlWohneinheiten: Number(anzahlWohneinheiten) || anzahlWohneinheiten,
       heizungsart,
       baujahrHeizung: baujahrHeizung ? Number(baujahrHeizung) || baujahrHeizung : null,
       anlass,
     };
+    if (isNwg) {
+      intake.nwgKategorie = nwgKategorie;
+      intake.nettoflaeche = Number(nettoflaeche) || nettoflaeche;
+      intake.betriebszeiten = betriebszeiten;
+      intake.kuehlung = kuehlung;
+    } else {
+      intake.wohnflaeche = Number(wohnflaeche) || wohnflaeche;
+      intake.anzahlWohneinheiten = Number(anzahlWohneinheiten) || anzahlWohneinheiten;
+    }
     if (ausweisTyp === "verbrauch") {
       intake.verbrauchsdaten = [verbrauch1, verbrauch2, verbrauch3];
       intake.leerstandsmonate = leerstandsmonate ? Number(leerstandsmonate) || leerstandsmonate : 0;
@@ -259,26 +278,65 @@ export default function EnergieausweisPage() {
                 </Field>
               </div>
 
+              {/* Gebäudenutzung — steuert Wohn- vs. Nichtwohngebäude-Felder */}
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Gebäudenutzung" full>
+                  <SelectField
+                    value={isNwg ? "Nichtwohngebäude" : "Wohngebäude"}
+                    onChange={(v) => setNutzung(v === "Nichtwohngebäude" ? "nichtwohngebaeude" : "wohngebaeude")}
+                    options={["Wohngebäude", "Nichtwohngebäude"]}
+                    testId="select-nutzung"
+                  />
+                </Field>
+              </div>
+
               {/* Gebäudedaten */}
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Gebäudetyp">
-                  <SelectField value={gebaeudetyp} onChange={setGebaeudetyp} options={GEBAEUDETYPEN} testId="select-gebaeudetyp" />
-                </Field>
+                {isNwg ? (
+                  <Field label="Nutzungsart">
+                    <SelectField value={nwgKategorie} onChange={setNwgKategorie} options={NWG_KATEGORIE_LABELS} testId="select-nwg-kategorie" />
+                  </Field>
+                ) : (
+                  <Field label="Gebäudetyp">
+                    <SelectField value={gebaeudetyp} onChange={setGebaeudetyp} options={GEBAEUDETYPEN} testId="select-gebaeudetyp" />
+                  </Field>
+                )}
                 <Field label="Baujahr">
                   <Input type="number" value={baujahr} onChange={(e) => setBaujahr(e.target.value)} placeholder="1985" data-testid="input-baujahr" />
                 </Field>
-                <Field label="Wohnfläche (m²)">
-                  <Input type="number" value={wohnflaeche} onChange={(e) => setWohnflaeche(e.target.value)} placeholder="140" data-testid="input-wohnflaeche" />
-                </Field>
-                <Field label="Anzahl Wohneinheiten">
-                  <Input type="number" value={anzahlWohneinheiten} onChange={(e) => setAnzahlWohneinheiten(e.target.value)} placeholder="1" data-testid="input-wohneinheiten" />
-                </Field>
+                {isNwg ? (
+                  <>
+                    <Field label="Nettogrundfläche (m²)">
+                      <Input type="number" value={nettoflaeche} onChange={(e) => setNettoflaeche(e.target.value)} placeholder="800" data-testid="input-nettoflaeche" />
+                    </Field>
+                    <Field label="Betriebszeiten">
+                      <SelectField value={betriebszeiten} onChange={setBetriebszeiten} options={BETRIEBSZEITEN} testId="select-betriebszeiten" />
+                    </Field>
+                  </>
+                ) : (
+                  <>
+                    <Field label="Wohnfläche (m²)">
+                      <Input type="number" value={wohnflaeche} onChange={(e) => setWohnflaeche(e.target.value)} placeholder="140" data-testid="input-wohnflaeche" />
+                    </Field>
+                    <Field label="Anzahl Wohneinheiten">
+                      <Input type="number" value={anzahlWohneinheiten} onChange={(e) => setAnzahlWohneinheiten(e.target.value)} placeholder="1" data-testid="input-wohneinheiten" />
+                    </Field>
+                  </>
+                )}
                 <Field label="Heizungsart">
                   <SelectField value={heizungsart} onChange={setHeizungsart} options={HEIZUNGSARTEN} testId="select-heizungsart" />
                 </Field>
                 <Field label="Baujahr Heizung">
                   <Input type="number" value={baujahrHeizung} onChange={(e) => setBaujahrHeizung(e.target.value)} placeholder="2005" data-testid="input-baujahr-heizung" />
                 </Field>
+                {isNwg && (
+                  <Field label="Kühlung / Klimatisierung" full>
+                    <label className="flex items-center gap-2 text-sm cursor-pointer h-9" data-testid="check-kuehlung">
+                      <Checkbox checked={kuehlung} onCheckedChange={(v) => setKuehlung(v === true)} />
+                      <span className="text-foreground">Gebäude ist gekühlt / klimatisiert</span>
+                    </label>
+                  </Field>
+                )}
                 <Field label="Anlass" full>
                   <SelectField value={anlass} onChange={setAnlass} options={ANLAESSE} testId="select-anlass" />
                 </Field>

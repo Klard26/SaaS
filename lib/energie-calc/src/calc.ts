@@ -1,5 +1,6 @@
 import {
-  ageBand, bautyp, BPI, EC, HT, INS, PEF, plzKlima, plzPreisIndex, WI,
+  ageBand, bautyp, BPI, EC, HT, INS, nwgBenchmark, nwgProfil, PEF,
+  plzKlima, plzPreisIndex, WI,
 } from "./constants";
 import type {
   BuildingInput,
@@ -9,12 +10,88 @@ import type {
   RenovationSzenario,
   RestnutzungResult,
   RiskResult,
+  SanierungDetail,
   SolarResult,
   ValueResult,
   WertResult,
 } from "./types";
 
 const HEUTE = new Date().getFullYear();
+
+/** Zuordnung Bauteil → U-Wert-Feld einer Baualtersklasse. */
+const BAUTEIL_KEY = {
+  fassade: "uAw",
+  dach: "uDa",
+  kellerdecke: "uKe",
+  fenster: "uFe",
+} as const;
+
+type OpakBauteil = keyof typeof BAUTEIL_KEY;
+
+/**
+ * Verfeinert den effektiven U-Wert eines Bauteils anhand eines Sanierungsjahrs:
+ * Eine Sanierung bringt das Bauteil mindestens auf den zum Sanierungszeitpunkt
+ * gültigen Neubaustandard (Baualtersklasse des Sanierungsjahrs). Der U-Wert
+ * verschlechtert sich nie — es gilt min(Bestand/Ziel, Sanierungs-Standard).
+ * Ohne Jahr bleibt der Basiswert (Schnellpfad-Verhalten) unverändert.
+ */
+function refineBauteilU(baseU: number, bauteil: OpakBauteil, details?: SanierungDetail[]): number {
+  const det = details?.find((x) => x.bauteil === bauteil);
+  if (det?.jahr && det.jahr > 1900 && det.jahr <= HEUTE) {
+    const sb = ageBand(det.jahr);
+    return Math.min(baseU, sb[BAUTEIL_KEY[bauteil]]);
+  }
+  return baseU;
+}
+
+interface HuelleParams {
+  area: number; av: number; geschossHoehe: number;
+  shAw: number; shDa: number; shKe: number; shFe: number;
+}
+
+interface HuelleResult {
+  HT_sum: number; V: number; A: number; A_FE: number;
+  u_aw: number; u_fe: number; wiG: number;
+}
+
+/**
+ * Geometrie + spezifischer Transmissionswärmeverlust H_T der thermischen Hülle.
+ * Identisch für Wohn- und Nichtwohngebäude — nur die Geometrieparameter (A/V,
+ * Geschosshöhe, Hüllflächenanteile) unterscheiden sich.
+ */
+function computeHuelle(d: BuildingInput, p: HuelleParams): HuelleResult {
+  const ag  = ageBand(d.baujahr);
+  const ins = INS.find((x) => x.id === d.daemmung) ?? INS[0]!;
+  const wi  = WI.find((x) => x.id === d.fenster) ?? WI[1]!;
+
+  const V    = p.area * p.geschossHoehe;
+  const A    = p.av * V;
+  const A_AW = A * p.shAw;
+  const A_DA = A * p.shDa;
+  const A_KE = A * p.shKe;
+  const A_FE = A * p.shFe;
+
+  const u_aw = refineBauteilU(Math.min(ag.uAw, ins.tAw), "fassade", d.sanierungDetails);
+  const u_da = refineBauteilU(Math.min(ag.uDa, ins.tDa), "dach", d.sanierungDetails);
+  const u_ke = refineBauteilU(Math.min(ag.uKe, ins.tKe), "kellerdecke", d.sanierungDetails);
+  const u_fe = refineBauteilU(wi.u, "fenster", d.sanierungDetails);
+
+  const Fx_KE = 0.6; // gegen Erdreich (DIN V 18599-2 Tab. 5)
+  const dU_WB =
+    d.zustand === "saniert"     ? 0.03 :
+    d.zustand === "teilsaniert" ? 0.05 :
+    d.zustand === "unsaniert"   ? 0.10 :
+                                  0.05;
+
+  const HT_sum =
+      u_aw * A_AW
+    + u_da * A_DA
+    + u_ke * A_KE * Fx_KE
+    + u_fe * A_FE
+    + dU_WB * A;
+
+  return { HT_sum, V, A, A_FE, u_aw, u_fe, wiG: wi.g };
+}
 
 /**
  * Endenergiebedarf eines Wohngebäudes nach vereinfachtem Tabellenverfahren.
@@ -37,49 +114,24 @@ const HEUTE = new Date().getFullYear();
  * Ergebnis ist eine fundierte Schnelleinschätzung — kein Energieausweis.
  */
 export function calcEnergie(d: BuildingInput): EnergyResult {
-  const ag   = ageBand(d.baujahr);
+  // Dispatch: Nichtwohngebäude folgen einem eigenen Nutzungsprofil-Verfahren.
+  // Default (kein/leeres nutzung-Feld) = Wohngebäude → volle Rückwärtskompatibilität
+  // für bereits gespeicherte Reports.
+  if (d.nutzung === "nichtwohngebaeude") {
+    return calcNichtwohngebaeude(d);
+  }
+
   const h    = HT.find((x) => x.id === d.heizung) ?? HT[2]!;
-  const ins  = INS.find((x) => x.id === d.daemmung) ?? INS[0]!;
-  const wi   = WI.find((x) => x.id === d.fenster) ?? WI[1]!;
   const cl   = plzKlima(d.plz);
   const bt   = bautyp(d.gebaeudetyp);
 
-  // ── 1) Geometrie ───────────────────────────────────────────────
+  // ── 1) Geometrie + Hülle ───────────────────────────────────────
   const A_N = d.wohnflaeche * 1.20;                              // GEG-Nutzfläche A_N
-  const V   = d.wohnflaeche * bt.geschossHoehe;                   // beheiztes Volumen V_e
-  const A   = bt.av * V;                                          // Hüllfläche A
-  const A_AW = A * bt.shAw;
-  const A_DA = A * bt.shDa;
-  const A_KE = A * bt.shKe;
-  const A_FE = A * bt.shFe;
-
-  // ── 2) Effektive Bauteil-U-Werte: min(Bestand, Sanierungs-Ziel) ──
-  // Eine Nachdämmung verbessert das Bauteil nie über das Ziel-Niveau hinaus,
-  // ein bereits modernes Bauteil wird durch INS nicht weiter herabgesetzt.
-  const u_aw = Math.min(ag.uAw, ins.tAw);
-  const u_da = Math.min(ag.uDa, ins.tDa);
-  const u_ke = Math.min(ag.uKe, ins.tKe);
-  const u_fe = wi.u;                                              // Fenster eigenständig
-
-  // Temperatur-Korrekturfaktoren Fxi (DIN V 18599-2 Tab. 5)
-  const Fx_AW = 1.0;   // gegen Außenluft
-  const Fx_DA = 1.0;   // gegen Außenluft
-  const Fx_KE = 0.6;   // gegen Erdreich
-  const Fx_FE = 1.0;
-  // Wärmebrückenzuschlag: in modernisierten Gebäuden ist die Anschlussdetaillierung
-  // besser, im Originalbestand schlechter (DIN V 18599-2, pauschale Annahme).
-  const dU_WB =
-    d.zustand === "saniert"     ? 0.03 :
-    d.zustand === "teilsaniert" ? 0.05 :
-    d.zustand === "unsaniert"   ? 0.10 :
-                                  0.05;
-
-  const HT_sum =
-      u_aw * A_AW * Fx_AW
-    + u_da * A_DA * Fx_DA
-    + u_ke * A_KE * Fx_KE
-    + u_fe * A_FE * Fx_FE
-    + dU_WB * A;
+  const hu = computeHuelle(d, {
+    area: d.wohnflaeche, av: bt.av, geschossHoehe: bt.geschossHoehe,
+    shAw: bt.shAw, shDa: bt.shDa, shKe: bt.shKe, shFe: bt.shFe,
+  });
+  const { HT_sum, V, A, A_FE, u_aw, u_fe } = hu;
   const HT_strich = HT_sum / A;                                   // W/(m²·K) Hülle
 
   // ── 3) Wärmeverluste (kWh/a) ───────────────────────────────────
@@ -96,7 +148,7 @@ export function calcEnergie(d: BuildingInput): EnergyResult {
 
   // ── 4) Wärmegewinne ────────────────────────────────────────────
   // Solare Gewinne: 4 Orientierungen gemittelt, Fenster über alle Seiten
-  const Q_S = A_FE * wi.g * cl.iSol * 0.567;                      // 0,567 = F_S·F_F·F_C
+  const Q_S = A_FE * hu.wiG * cl.iSol * 0.567;                    // 0,567 = F_S·F_F·F_C
   const Q_I = A_N * 22;                                           // intern, DIN 18599-10
 
   // ── 5) Heizwärmebedarf mit monatlichem Ausnutzungsgrad η_g ─────
@@ -140,7 +192,13 @@ export function calcEnergie(d: BuildingInput): EnergyResult {
 
   const klasse = EC.find((c) => endenergie <= c.m) ?? EC[EC.length - 1]!;
 
-  // ── 8) Pflichten nach GEG ──────────────────────────────────────
+  // ── 8) Norm-Heizlast (DIN EN 12831, vereinfacht) ───────────────
+  // Auslegungs-Wärmeverlust bei Norm-Außentemperatur — OHNE Abzug interner/
+  // solarer Gewinne (die zählen nur in der Jahresbilanz, nicht im Auslegungsfall).
+  const thetaInt = 20;
+  const heizlast = calcHeizlast(HT_sum, n_LW, V, thetaInt, cl.tNorm, d.wohnflaeche);
+
+  // ── 9) Pflichten nach GEG ──────────────────────────────────────
   const pflichten: string[] = [];
   if (klasse.c === "F" || klasse.c === "G" || klasse.c === "H") {
     pflichten.push(
@@ -181,6 +239,139 @@ export function calcEnergie(d: BuildingInput): EnergyResult {
     uW: Math.round(u_aw * 100) / 100,
     uWN: Math.round(u_fe * 100) / 100,
     pflichten,
+    heizlastKw: heizlast.kw,
+    heizlastWProM2: heizlast.wProM2,
+    tNorm: cl.tNorm,
+    thetaInt,
+    flaeche: d.wohnflaeche,
+    nutzung: "wohngebaeude",
+  };
+}
+
+/**
+ * Norm-Heizlast (vereinfacht nach DIN EN 12831): Auslegungs-Wärmeverlust bei
+ * Norm-Außentemperatur. Φ = (H_T + H_V) · (θ_int − θ_e). Interne und solare
+ * Gewinne werden im Auslegungsfall bewusst NICHT angerechnet.
+ */
+function calcHeizlast(
+  HT_sum: number, n_LW: number, V: number, thetaInt: number, tNorm: number, area: number,
+): { kw: number; wProM2: number } {
+  const H_V = 0.34 * n_LW * V;            // W/K Lüftung
+  const phiW = (HT_sum + H_V) * (thetaInt - tNorm); // W (gesamtes Gebäude)
+  const A = Math.max(1, area);
+  return { kw: Math.round((phiW / 1000) * 10) / 10, wProM2: Math.round(phiW / A) };
+}
+
+/**
+ * Endenergiebedarf eines Nichtwohngebäudes (NWG) — vereinfachte Schnell­einschätzung
+ * auf Basis der NWG-Standardnutzungsprofile (DIN V 18599-10). NWG werden NICHT mit
+ * der Wohngebäude-Skala A+…H nach GEG § 86 bewertet; stattdessen liefert die Funktion
+ * ein qualitatives Benchmark-Band. Ein GEG-konformer NWG-Energieausweis (Zonierung
+ * nach DIN V 18599) ist nur durch einen zertifizierten Aussteller möglich.
+ */
+function calcNichtwohngebaeude(d: BuildingInput): EnergyResult {
+  const h  = HT.find((x) => x.id === d.heizung) ?? HT[2]!;
+  const cl = plzKlima(d.plz);
+  const p  = nwgProfil(d.nwgKategorie);
+
+  // Flächenbasis = Nettogrundfläche (NGF); Fallback auf wohnflaeche, falls NGF
+  // nicht erfasst wurde (z. B. Schnellpfad mit repräsentativem Wert).
+  const A_N = Math.max(1, d.nettoflaeche ?? d.wohnflaeche);
+
+  const hu = computeHuelle(d, {
+    area: A_N, av: p.av, geschossHoehe: p.geschossHoehe,
+    shAw: p.shAw, shDa: p.shDa, shKe: p.shKe, shFe: p.shFe,
+  });
+  const { HT_sum, V, A, A_FE, u_aw, u_fe } = hu;
+  const HT_strich = HT_sum / A;
+
+  // ── Wärmeverluste ──────────────────────────────────────────────
+  const HGT_kKh = cl.hgt * 24 / 1000;
+  const Q_T = HT_sum * HGT_kKh;
+
+  // Lüftung: hygienischer Mindestluftwechsel des Nutzungsprofils, durch eine
+  // WRG-Anlage gemindert.
+  const n_LW = d.lueftung === "wrg" ? p.nLuft * 0.55 : p.nLuft;
+  const Q_V = 0.34 * n_LW * V * HGT_kKh;
+
+  // Setpoint-Faktor: skaliert die HGT-basierten Verluste (Basis 20 °C) auf die
+  // abweichende Raum-Solltemperatur des Profils; zusätzlich Minderung für den
+  // reduzierten Betrieb (Nacht-/Wochenendabsenkung).
+  const fSet = Math.min(1.4, Math.max(0.3, (p.thetaInt - cl.t) / (20 - cl.t)));
+  const losses = (Q_T + Q_V) * fSet * p.betrieb;
+
+  // ── Wärmegewinne ───────────────────────────────────────────────
+  const Q_S = A_FE * hu.wiG * cl.iSol * 0.567;
+  const Q_I = A_N * p.qIntern;
+  const gains = Q_S + Q_I;
+
+  const gamma = gains / Math.max(losses, 1);
+  const eta_g = Math.abs(gamma - 1) < 1e-6
+    ? 1 / 2
+    : (1 - Math.pow(gamma, 1)) / (1 - Math.pow(gamma, 2));
+  const Q_h = Math.max(0, losses - eta_g * gains);
+  const q_h = Q_h / A_N;
+  const q_w = p.qWarmwasser;
+
+  const q_end_calc = h.isJaz
+    ? (q_h + q_w) / Math.max(h.e, 0.5)
+    : (q_h + q_w) / Math.max(h.e, 0.3);
+  const hatKennwert =
+    !!d.energieausweisVorhanden &&
+    typeof d.energiekennwert === "number" &&
+    d.energiekennwert > 0;
+  const q_end = hatKennwert ? d.energiekennwert! : q_end_calc;
+
+  const pef  = PEF[h.f] ?? PEF["erdgas"]!;
+  const endenergie     = Math.round(q_end);
+  const primaerenergie = Math.round(q_end * pef.fp);
+  const q_co2          = q_end * pef.co2;
+  const co2Pro_m2      = Math.round(q_co2 * 10) / 10;
+  const co2Tonnen      = Math.round((q_co2 * A_N) / 100) / 10;
+
+  // Wohngebäude-Klasse intern weiterhin bestimmt (Downstream-Kompatibilität),
+  // im UI aber durch das NWG-Benchmark ersetzt.
+  const klasse = EC.find((c) => endenergie <= c.m) ?? EC[EC.length - 1]!;
+  const bench  = nwgBenchmark(endenergie);
+
+  // ── Norm-Heizlast ──────────────────────────────────────────────
+  const heizlast = calcHeizlast(HT_sum, n_LW, V, p.thetaInt, cl.tNorm, A_N);
+
+  const pflichten: string[] = [];
+  if (d.denkmalschutz) {
+    pflichten.push("Denkmalschutz: Energetische Maßnahmen sind genehmigungspflichtig; eine Außendämmung ist meist unzulässig (Innendämmung prüfen). Befreiung von GEG-Anforderungen nach § 105 möglich.");
+  }
+  if (hatKennwert) {
+    pflichten.push(`Grundlage: Endenergiekennwert ${endenergie} kWh/(m²·a) aus vorhandenem ${d.energieausweisTyp === "verbrauch" ? "Verbrauchs" : "Bedarfs"}ausweis.`);
+  }
+
+  const hinweise = [
+    `Schnelleinschätzung für Nichtwohngebäude (Nutzungsprofil „${p.l}“). Nichtwohngebäude werden nicht nach der Wohngebäude-Skala A+ bis H (GEG § 86) bewertet.`,
+    "Ein GEG-konformer Energieausweis für Nichtwohngebäude erfordert eine Zonierung nach DIN V 18599 durch einen zertifizierten Aussteller.",
+  ];
+  if (p.kuehlung || d.kuehlungVorhanden) {
+    hinweise.push("Kühlung/Klimatisierung sowie Strombedarf für Beleuchtung und Lüftung sind in dieser Heizenergie-Schätzung nicht enthalten und können den Gesamt-Endenergiebedarf deutlich erhöhen.");
+  }
+
+  return {
+    endenergie,
+    primaerenergie,
+    klasse,
+    co2Pro_m2,
+    co2Tonnen,
+    qH: Math.round(q_h),
+    htP: Math.round(HT_strich * 100) / 100,
+    uW: Math.round(u_aw * 100) / 100,
+    uWN: Math.round(u_fe * 100) / 100,
+    pflichten,
+    heizlastKw: heizlast.kw,
+    heizlastWProM2: heizlast.wProM2,
+    tNorm: cl.tNorm,
+    thetaInt: p.thetaInt,
+    flaeche: A_N,
+    nutzung: "nichtwohngebaeude",
+    nwgBenchmark: { stufe: bench.stufe, col: bench.col, hinweis: hinweise[0]! },
+    hinweise,
   };
 }
 

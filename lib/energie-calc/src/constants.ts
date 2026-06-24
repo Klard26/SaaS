@@ -1,4 +1,4 @@
-import type { EnergyClass, GebaeudeTyp } from "./types.ts";
+import type { EnergyClass, GebaeudeTyp, NwgKategorie } from "./types.ts";
 
 /**
  * Primärenergiefaktoren (nicht erneuerbarer Anteil) und CO2-Emissionsfaktoren
@@ -141,6 +141,73 @@ export const BT: Bautyp[] = [
 ];
 
 /**
+ * Vereinfachte Nutzungsprofile für Nichtwohngebäude (NWG), angelehnt an die
+ * Standardnutzungsprofile der DIN V 18599-10. Für eine belastbare
+ * Schnelleinschätzung — der GEG-konforme NWG-Energieausweis (Zonierung nach
+ * DIN V 18599) wird weiterhin durch einen zertifizierten Aussteller erstellt.
+ *   thetaInt = Raum-Solltemperatur Heizfall [°C]
+ *   qIntern  = interne Wärmequellen (Personen, Geräte, Beleuchtung) [kWh/(m²·a)]
+ *   betrieb  = Minderungsfaktor für reduzierten Betrieb (Nacht-/Wochenendabsenkung)
+ *   qWarmwasser = Trinkwarmwasser-Nutzenergie [kWh/(m²·a)]
+ *   nLuft    = hygienischer Mindestluftwechsel [1/h]
+ *   kuehlung = typischerweise gekühlt/klimatisiert
+ *   av       = mittleres Hüllfläche/Volumen-Verhältnis
+ *   geschossHoehe = lichte Geschosshöhe [m]
+ *   shAw/shDa/shKe/shFe = Hüllflächenanteile (Summe der opaken + Fenster = 1.0)
+ */
+export interface NwgProfil {
+  id: NwgKategorie;
+  l: string;
+  thetaInt: number;
+  qIntern: number;
+  betrieb: number;
+  qWarmwasser: number;
+  nLuft: number;
+  kuehlung: boolean;
+  av: number;
+  geschossHoehe: number;
+  shAw: number; shDa: number; shKe: number; shFe: number;
+}
+
+export const NWG_PROFILE: Record<NwgKategorie, NwgProfil> = {
+  buero:      { id: "buero",      l: "Bürogebäude / Verwaltung",       thetaInt: 20, qIntern: 25, betrieb: 0.82, qWarmwasser: 3,  nLuft: 0.7, kuehlung: true,  av: 0.34, geschossHoehe: 3.2, shAw: 0.42, shDa: 0.16, shKe: 0.16, shFe: 0.26 },
+  handel:     { id: "handel",     l: "Handel / Verkauf",              thetaInt: 19, qIntern: 30, betrieb: 0.88, qWarmwasser: 3,  nLuft: 0.9, kuehlung: true,  av: 0.38, geschossHoehe: 3.6, shAw: 0.45, shDa: 0.18, shKe: 0.18, shFe: 0.19 },
+  schule:     { id: "schule",     l: "Schule / Bildung",              thetaInt: 20, qIntern: 15, betrieb: 0.78, qWarmwasser: 5,  nLuft: 0.9, kuehlung: false, av: 0.36, geschossHoehe: 3.3, shAw: 0.44, shDa: 0.18, shKe: 0.18, shFe: 0.20 },
+  hotel:      { id: "hotel",      l: "Hotel / Beherbergung",          thetaInt: 21, qIntern: 18, betrieb: 0.92, qWarmwasser: 25, nLuft: 0.6, kuehlung: true,  av: 0.40, geschossHoehe: 2.9, shAw: 0.46, shDa: 0.16, shKe: 0.16, shFe: 0.22 },
+  gesundheit: { id: "gesundheit", l: "Gesundheit / Pflege",           thetaInt: 22, qIntern: 20, betrieb: 0.95, qWarmwasser: 20, nLuft: 1.0, kuehlung: true,  av: 0.40, geschossHoehe: 3.1, shAw: 0.46, shDa: 0.16, shKe: 0.16, shFe: 0.22 },
+  lager:      { id: "lager",      l: "Lager / Logistik (beheizt)",    thetaInt: 16, qIntern: 8,  betrieb: 0.70, qWarmwasser: 1,  nLuft: 0.4, kuehlung: false, av: 0.26, geschossHoehe: 5.0, shAw: 0.50, shDa: 0.22, shKe: 0.22, shFe: 0.06 },
+  produktion: { id: "produktion", l: "Produktion / Gewerbe",          thetaInt: 18, qIntern: 22, betrieb: 0.80, qWarmwasser: 3,  nLuft: 0.8, kuehlung: false, av: 0.30, geschossHoehe: 4.5, shAw: 0.48, shDa: 0.20, shKe: 0.20, shFe: 0.12 },
+  sonstiges:  { id: "sonstiges",  l: "Sonstiges Nichtwohngebäude",    thetaInt: 20, qIntern: 18, betrieb: 0.82, qWarmwasser: 5,  nLuft: 0.7, kuehlung: false, av: 0.35, geschossHoehe: 3.3, shAw: 0.44, shDa: 0.18, shKe: 0.18, shFe: 0.20 },
+};
+
+/** Reihenfolge + Labels der NWG-Kategorien für die UI. */
+export const NWG_KATEGORIEN: { id: NwgKategorie; l: string }[] =
+  (Object.keys(NWG_PROFILE) as NwgKategorie[]).map((id) => ({ id, l: NWG_PROFILE[id].l }));
+
+export interface NwgBenchmarkBand { max: number; stufe: string; col: string }
+
+/**
+ * Qualitative Endenergie-Benchmarkbänder für Nichtwohngebäude [kWh/(m²·a)].
+ * NWG werden NICHT mit der Wohngebäude-Skala A+…H bewertet (GEG § 86 gilt nur
+ * für Wohngebäude); diese Bänder dienen einer groben Einordnung des Bestands.
+ */
+export const NWG_BENCHMARK: NwgBenchmarkBand[] = [
+  { max: 80,   stufe: "Sehr effizient",      col: "#00843D" },
+  { max: 130,  stufe: "Effizient",           col: "#8BC34A" },
+  { max: 200,  stufe: "Durchschnittlich",    col: "#FFC107" },
+  { max: 300,  stufe: "Hoher Verbrauch",     col: "#FF5722" },
+  { max: 9999, stufe: "Sehr hoher Verbrauch", col: "#D32F2F" },
+];
+
+export function nwgProfil(id: NwgKategorie | undefined): NwgProfil {
+  return (id && NWG_PROFILE[id]) || NWG_PROFILE.buero;
+}
+
+export function nwgBenchmark(endenergie: number): NwgBenchmarkBand {
+  return NWG_BENCHMARK.find((b) => endenergie <= b.max) ?? NWG_BENCHMARK[NWG_BENCHMARK.length - 1]!;
+}
+
+/**
  * Energieeffizienzklassen Wohngebäude nach GEG § 86 (Endenergie kWh/(m²·a)).
  */
 export const EC: EnergyClass[] = [
@@ -163,25 +230,27 @@ export const EC: EnergyClass[] = [
  */
 export interface KlimaZone {
   hgt: number; t: number; iSol: number; l: string;
+  /** Norm-Außentemperatur θ_e [°C] nach DIN EN 12831 / DIN/TS 12831-1 (für Heizlast). */
+  tNorm: number;
   /** Heiztage-Äquivalent (HGT/14, gerundet) für Legacy-UI-Anzeige. */
   d: number;
 }
 
-function zone(hgt: number, t: number, iSol: number, l: string): KlimaZone {
-  return { hgt, t, iSol, l, d: Math.round(hgt / 14) };
+function zone(hgt: number, t: number, iSol: number, tNorm: number, l: string): KlimaZone {
+  return { hgt, t, iSol, tNorm, l, d: Math.round(hgt / 14) };
 }
 
 export const CL: Record<number, KlimaZone> = {
-  0: zone(3850, 7.8, 360, "Mecklenburg-Vorpommern / Ostsee"),
-  1: zone(3700, 8.2, 365, "Berlin / Brandenburg"),
-  2: zone(3500, 8.6, 355, "Hamburg / Norddeutschland"),
-  3: zone(3650, 8.4, 350, "Sachsen-Anhalt / Mitteldeutschland"),
-  4: zone(3400, 9.0, 340, "Nordrhein-Westfalen"),
-  5: zone(3200, 9.6, 360, "Rhein-Main / Saarland"),
-  6: zone(3100, 9.8, 365, "Oberrheingraben / Pfalz"),
-  7: zone(3500, 8.9, 370, "Baden-Württemberg"),
-  8: zone(3900, 7.9, 390, "Bayern (Voralpen)"),
-  9: zone(3700, 8.3, 380, "Franken / Thüringen"),
+  0: zone(3850, 7.8, 360, -12, "Mecklenburg-Vorpommern / Ostsee"),
+  1: zone(3700, 8.2, 365, -14, "Berlin / Brandenburg"),
+  2: zone(3500, 8.6, 355, -12, "Hamburg / Norddeutschland"),
+  3: zone(3650, 8.4, 350, -14, "Sachsen-Anhalt / Mitteldeutschland"),
+  4: zone(3400, 9.0, 340, -10, "Nordrhein-Westfalen"),
+  5: zone(3200, 9.6, 360, -10, "Rhein-Main / Saarland"),
+  6: zone(3100, 9.8, 365, -10, "Oberrheingraben / Pfalz"),
+  7: zone(3500, 8.9, 370, -12, "Baden-Württemberg"),
+  8: zone(3900, 7.9, 390, -16, "Bayern (Voralpen)"),
+  9: zone(3700, 8.3, 380, -14, "Franken / Thüringen"),
 };
 
 export interface SspSzenario {

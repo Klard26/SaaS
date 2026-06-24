@@ -3,6 +3,30 @@ export type GebaeudeTyp = "efh" | "dhh" | "rh" | "mfh_s" | "mfh_m" | "mfh_l";
 export type Zustand = "unsaniert" | "teilsaniert" | "saniert";
 export type EnergieausweisTyp = "bedarf" | "verbrauch";
 
+/** Gebäudenutzung: Wohngebäude (WG) oder Nichtwohngebäude (NWG). */
+export type Nutzung = "wohngebaeude" | "nichtwohngebaeude";
+
+/** Nichtwohngebäude-Kategorie (vereinfachte Nutzungsprofile nach DIN V 18599-10). */
+export type NwgKategorie =
+  | "buero"
+  | "handel"
+  | "schule"
+  | "hotel"
+  | "gesundheit"
+  | "lager"
+  | "produktion"
+  | "sonstiges";
+
+/** Sanierbares Bauteil der thermischen Hülle bzw. Anlagentechnik. */
+export type Bauteil = "fassade" | "dach" | "kellerdecke" | "fenster" | "heizung";
+
+/** Pro Bauteil durchgeführte Sanierung mit Jahr — verfeinert den effektiven U-Wert. */
+export interface SanierungDetail {
+  bauteil: Bauteil;
+  /** Sanierungsjahr — der zu diesem Zeitpunkt gültige Neubaustandard verbessert den U-Wert. */
+  jahr?: number;
+}
+
 export interface BuildingInput {
   plz: string;
   city?: string;
@@ -46,12 +70,31 @@ export interface BuildingInput {
   lueftung?: string;
   /** Photovoltaik-/Solaranlage bereits vorhanden. */
   pvVorhanden?: boolean;
+
+  /** Gebäudenutzung — steuert Wohn- vs. Nichtwohngebäude-Verfahren (default: wohngebaeude). */
+  nutzung?: Nutzung;
+  /** Nichtwohngebäude-Kategorie (nur relevant bei nutzung === "nichtwohngebaeude"). */
+  nwgKategorie?: NwgKategorie;
+  /** Nettogrundfläche (NGF) in m² — Flächenbasis für Nichtwohngebäude. */
+  nettoflaeche?: number;
+  /** Kühlung / Klimatisierung vorhanden (v. a. Nichtwohngebäude). */
+  kuehlungVorhanden?: boolean;
+  /** Pro Bauteil durchgeführte Sanierungen mit Jahr — verfeinern die effektiven U-Werte. */
+  sanierungDetails?: SanierungDetail[];
 }
 
 export interface EnergyClass {
   c: string;
   m: number;
   col: string;
+}
+
+export interface NwgBenchmark {
+  /** Bewertungsstufe, z. B. "Sehr effizient" … "Sehr hoher Verbrauch". */
+  stufe: string;
+  col: string;
+  /** Erläuternder Hinweis zur Einordnung. */
+  hinweis: string;
 }
 
 export interface EnergyResult {
@@ -65,6 +108,23 @@ export interface EnergyResult {
   uW: number;
   uWN: number;
   pflichten: string[];
+
+  /** Norm-Heizlast des gesamten Gebäudes in kW (vereinfacht nach DIN EN 12831). */
+  heizlastKw: number;
+  /** Spezifische Heizlast pro m² beheizter Fläche in W/m². */
+  heizlastWProM2: number;
+  /** Verwendete Norm-Außentemperatur in °C. */
+  tNorm: number;
+  /** Verwendete Innen-Solltemperatur (Heizfall) in °C. */
+  thetaInt: number;
+  /** Flächenbasis der Auswertung in m² (Wohnfläche bzw. Nettogrundfläche). */
+  flaeche: number;
+  /** Gebäudenutzung dieser Auswertung. */
+  nutzung: Nutzung;
+  /** Bei Nichtwohngebäuden: qualitatives Benchmark-Band statt Wohngebäude-Klasse. */
+  nwgBenchmark?: NwgBenchmark;
+  /** Methodische Hinweise zur Einschätzung (z. B. NWG-Schnelleinschätzung). */
+  hinweise?: string[];
 }
 
 export interface WertResult {
