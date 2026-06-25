@@ -7,11 +7,23 @@ import {
   getUncachableStripeClient,
   isStripeConfigured,
   STRIPE_CONFIG,
+  premiumConfigForWorld,
 } from "../lib/stripeClient";
 import {
   isConnectSplitEligible,
   computeApplicationFeeCents,
 } from "../lib/commission";
+import {
+  getCategoryClassification,
+  allowsBooking,
+} from "../lib/providerClassification";
+import {
+  grantLeadCredits,
+  revokeMonthlyPremiumGrants,
+  LEAD_GRANT_SOURCES,
+  ONE_TIME_PERIOD,
+  PREMIUM_ACTIVATION_LEADS,
+} from "../lib/leadGrants";
 
 const router: IRouter = Router();
 
@@ -37,12 +49,14 @@ router.get("/providers/me/subscription", async (req, res): Promise<void> => {
       res.status(404).json({ error: "Provider not found" });
       return;
     }
+    const { worldId } = await getCategoryClassification(provider.categorySlug);
     res.json({
       tier: provider.subscriptionTier,
       status: provider.stripeSubscriptionId ? "active" : null,
       currentPeriodEnd: null,
       cancelAtPeriodEnd: false,
-      priceEur: STRIPE_CONFIG.premiumPriceEur,
+      priceEur: premiumConfigForWorld(worldId).priceEur,
+      world: worldId,
     });
   } catch (err) {
     req.log.error({ err }, "Failed to load subscription");
@@ -81,29 +95,34 @@ router.post(
         return;
       }
 
+      // World-aware Premium: each world has its own Stripe product (unique name
+      // + metadata) and monthly price (pro 89 € / alltag 69 €).
+      const { worldId } = await getCategoryClassification(provider.categorySlug);
+      const premium = premiumConfigForWorld(worldId);
+
       const search = await stripe.products.search({
-        query: `name:'${STRIPE_CONFIG.premiumProductName}'`,
+        query: `name:'${premium.productName}'`,
       });
       let productId = search.data[0]?.id;
       let priceId: string | undefined = undefined;
       if (!productId) {
         const product = await stripe.products.create({
-          name: STRIPE_CONFIG.premiumProductName,
+          name: premium.productName,
           description: "Premium-Mitgliedschaft für Berater auf Klard",
-          metadata: { tier: "premium" },
+          metadata: { kind: "subscription", tier: "premium", worldId },
         });
         productId = product.id;
       }
       const prices = await stripe.prices.list({ product: productId, active: true, limit: 10 });
       const monthly = prices.data.find(
-        (p) => p.recurring?.interval === "month" && p.unit_amount === STRIPE_CONFIG.premiumPriceEur * 100,
+        (p) => p.recurring?.interval === "month" && p.unit_amount === premium.priceEur * 100,
       );
       if (monthly) {
         priceId = monthly.id;
       } else {
         const price = await stripe.prices.create({
           product: productId,
-          unit_amount: STRIPE_CONFIG.premiumPriceEur * 100,
+          unit_amount: premium.priceEur * 100,
           currency: STRIPE_CONFIG.currency,
           recurring: { interval: "month" },
         });
@@ -131,7 +150,7 @@ router.post(
         line_items: [{ price: priceId, quantity: 1 }],
         success_url: `${baseUrl}/dashboard?subscription=success`,
         cancel_url: `${baseUrl}/dashboard?subscription=cancelled`,
-        metadata: { providerId: String(provider.id), kind: "subscription" },
+        metadata: { providerId: String(provider.id), kind: "subscription", worldId },
       });
       res.json({ url: session.url, sessionId: session.id });
     } catch (err) {
@@ -165,12 +184,14 @@ router.delete("/providers/me/subscription", async (req, res): Promise<void> => {
     await stripe.subscriptions.update(provider.stripeSubscriptionId, {
       cancel_at_period_end: true,
     });
+    const { worldId } = await getCategoryClassification(provider.categorySlug);
     res.json({
       tier: provider.subscriptionTier,
       status: "active",
       currentPeriodEnd: null,
       cancelAtPeriodEnd: true,
-      priceEur: STRIPE_CONFIG.premiumPriceEur,
+      priceEur: premiumConfigForWorld(worldId).priceEur,
+      world: worldId,
     });
   } catch (err) {
     req.log.error({ err }, "Failed to cancel subscription");
@@ -220,6 +241,19 @@ router.post("/bookings/:id/payment/checkout", async (req, res): Promise<void> =>
       .from(providersTable)
       .where(eq(providersTable.id, booking.providerId))
       .limit(1);
+
+    // Model B: booking commission applies to booking categories only (now /
+    // hybrid). Lead-only categories never charge a booking commission — reject
+    // a booking payment for them rather than silently mischarging.
+    const classification = await getCategoryClassification(provider?.categorySlug);
+    if (!allowsBooking(classification.pricingModel)) {
+      res.status(400).json({
+        error:
+          "Diese Kategorie rechnet über Pay-per-Lead ab und kann nicht per Buchung bezahlt werden.",
+      });
+      return;
+    }
+
     const baseUrl = getBaseUrl(req);
     const totalCents = Math.round(booking.totalPrice * 100);
 
@@ -234,6 +268,7 @@ router.post("/bookings/:id/payment/checkout", async (req, res): Promise<void> =>
         ? {
             application_fee_amount: computeApplicationFeeCents(
               provider,
+              classification.worldId,
               totalCents,
             ),
             transfer_data: { destination: provider.stripeAccountId! },
@@ -320,23 +355,39 @@ router.post("/billing/reconcile", async (req, res): Promise<void> => {
       });
       const sub = subs.data[0];
       if (sub && provider.subscriptionTier !== "premium") {
-        await db
-          .update(providersTable)
-          .set({
-            subscriptionTier: "premium",
-            stripeSubscriptionId: sub.id,
-            premiumSince: new Date(),
-          })
-          .where(eq(providersTable.id, provider.id));
+        await db.transaction(async (tx) => {
+          await tx
+            .update(providersTable)
+            .set({
+              subscriptionTier: "premium",
+              stripeSubscriptionId: sub.id,
+              premiumSince: new Date(),
+            })
+            .where(eq(providersTable.id, provider.id));
+          // Activation bonus: 5 free leads, once ever. Idempotent, so reconcile
+          // re-runs (and a prior webhook grant) never double-grant.
+          await grantLeadCredits(tx, {
+            providerId: provider.id,
+            source: LEAD_GRANT_SOURCES.premiumActivation,
+            periodMonth: ONE_TIME_PERIOD,
+            count: PREMIUM_ACTIVATION_LEADS,
+            expiresAt: null,
+          });
+        });
         updated = true;
       } else if (!sub && provider.subscriptionTier === "premium") {
-        await db
-          .update(providersTable)
-          .set({
-            subscriptionTier: "basic",
-            stripeSubscriptionId: null,
-          })
-          .where(eq(providersTable.id, provider.id));
+        // Flip to basic AND revoke unused monthly free leads atomically (no
+        // window where a downgraded provider can still spend monthly free leads).
+        await db.transaction(async (tx) => {
+          await tx
+            .update(providersTable)
+            .set({
+              subscriptionTier: "basic",
+              stripeSubscriptionId: null,
+            })
+            .where(eq(providersTable.id, provider.id));
+          await revokeMonthlyPremiumGrants(tx, provider.id);
+        });
         updated = true;
       }
     }

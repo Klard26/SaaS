@@ -149,6 +149,7 @@ export * from "./serviceTemplatePriceType";
 export * from "./serviceUpdate";
 export * from "./subscriptionStatus";
 export * from "./subscriptionStatusTier";
+export * from "./subscriptionStatusWorld";
 export * from "./tarifAngebot";
 export * from "./timeSlot";
 export * from "./timeSlotInput";

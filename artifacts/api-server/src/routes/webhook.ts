@@ -14,6 +14,13 @@ import {
 } from "../lib/foerderschiene";
 import { createFinanceLeadsForPaidReport } from "../lib/financeAffiliate";
 import { applyWalletMovement } from "../lib/wallet";
+import {
+  grantLeadCredits,
+  revokeMonthlyPremiumGrants,
+  LEAD_GRANT_SOURCES,
+  ONE_TIME_PERIOD,
+  PREMIUM_ACTIVATION_LEADS,
+} from "../lib/leadGrants";
 
 const router: IRouter = Router();
 
@@ -68,20 +75,35 @@ router.post(
               // Stripe webhook retries/replays don't resend the email. After a
               // cancellation the tier is reset to "basic", so a genuine
               // re-subscription still transitions and re-notifies.
-              const [activated] = await db
-                .update(providersTable)
-                .set({
-                  subscriptionTier: "premium",
-                  stripeSubscriptionId: String(session.subscription),
-                  premiumSince: new Date(),
-                })
-                .where(
-                  and(
-                    eq(providersTable.id, providerId),
-                    ne(providersTable.subscriptionTier, "premium"),
-                  ),
-                )
-                .returning();
+              const activated = await db.transaction(async (tx) => {
+                const [row] = await tx
+                  .update(providersTable)
+                  .set({
+                    subscriptionTier: "premium",
+                    stripeSubscriptionId: String(session.subscription),
+                    premiumSince: new Date(),
+                  })
+                  .where(
+                    and(
+                      eq(providersTable.id, providerId),
+                      ne(providersTable.subscriptionTier, "premium"),
+                    ),
+                  )
+                  .returning();
+                // Activation bonus: 5 free leads (never expire), once ever.
+                // Idempotent on (provider, premium_activation, "once"), so a
+                // re-subscription after cancellation does not re-grant.
+                if (row) {
+                  await grantLeadCredits(tx, {
+                    providerId,
+                    source: LEAD_GRANT_SOURCES.premiumActivation,
+                    periodMonth: ONE_TIME_PERIOD,
+                    count: PREMIUM_ACTIVATION_LEADS,
+                    expiresAt: null,
+                  });
+                }
+                return row;
+              });
               if (activated?.email) {
                 void sendStripeActivated({
                   email: activated.email,
@@ -203,10 +225,19 @@ router.post(
         }
         case "customer.subscription.deleted": {
           const sub = event.data.object as Stripe.Subscription;
-          await db
-            .update(providersTable)
-            .set({ subscriptionTier: "basic", stripeSubscriptionId: null })
-            .where(eq(providersTable.stripeSubscriptionId, sub.id));
+          // Flip to basic AND revoke unused monthly free leads in one tx so there
+          // is no window where a downgraded provider can still spend premium-only
+          // free leads. One-time activation/signup grants are preserved.
+          await db.transaction(async (tx) => {
+            const downgraded = await tx
+              .update(providersTable)
+              .set({ subscriptionTier: "basic", stripeSubscriptionId: null })
+              .where(eq(providersTable.stripeSubscriptionId, sub.id))
+              .returning({ id: providersTable.id });
+            for (const p of downgraded) {
+              await revokeMonthlyPremiumGrants(tx, p.id);
+            }
+          });
           break;
         }
         case "account.updated": {

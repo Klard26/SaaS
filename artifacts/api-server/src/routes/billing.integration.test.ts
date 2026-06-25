@@ -77,6 +77,10 @@ vi.mock("../lib/stripeClient", () => ({
     premiumProductName: "Klard Premium (Berater)",
     currency: "eur",
   },
+  premiumConfigForWorld: (worldId: "pro" | "alltag" | null | undefined) =>
+    worldId === "alltag"
+      ? { priceEur: 69, productName: "Klard Premium (Alltag & Handwerk)" }
+      : { priceEur: 89, productName: "Klard Premium (Berater)" },
   isStripeConfigured: async () => true,
   getUncachableStripeClient: async () => ({
     products: {

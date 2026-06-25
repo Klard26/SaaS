@@ -228,8 +228,24 @@ async function main() {
     priceUnit: string | null;
     exampleServices: string | null;
     requirements: string[];
+    leadPriceCents: number | null;
   }
   const categoryRows: CategoryRow[] = [];
+
+  // Server-authoritative Alltag lead-fee tiers (A/B/C) in cents, defaulted per
+  // area. Pro categories use the flat pro lead price in code (leadPriceCents=null).
+  const LEAD_TIER_CENTS = { A: 600, B: 1000, C: 1500 } as const;
+  const LEAD_TIER_BY_AREA: Record<string, keyof typeof LEAD_TIER_CENTS> = {
+    alltag_haus: "A",
+    alltag_garten: "B",
+    alltag_hw: "C",
+    alltag_mode: "A",
+    alltag_beauty: "A",
+    alltag_tier: "A",
+    alltag_fam: "A",
+    alltag_evt: "B",
+    alltag_sen: "A",
+  };
 
   for (const w of classification.worlds) {
     worldCount++;
@@ -260,6 +276,10 @@ async function main() {
           priceUnit: p.price_unit ?? null,
           exampleServices: p.example_services ?? null,
           requirements: p.requirements ?? [],
+          leadPriceCents:
+            w.id === "alltag"
+              ? LEAD_TIER_CENTS[LEAD_TIER_BY_AREA[a.id] ?? "B"]
+              : null,
         });
       });
     }
@@ -393,6 +413,7 @@ async function main() {
           priceUnit: r.priceUnit,
           exampleServices: r.exampleServices,
           requirements: r.requirements,
+          leadPriceCents: r.leadPriceCents,
         })
         .onConflictDoUpdate({
           target: categoriesTable.slug,
@@ -413,6 +434,7 @@ async function main() {
             priceUnit: r.priceUnit,
             exampleServices: r.exampleServices,
             requirements: r.requirements,
+            leadPriceCents: r.leadPriceCents,
           },
         });
     }

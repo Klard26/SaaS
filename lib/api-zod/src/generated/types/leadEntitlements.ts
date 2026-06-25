@@ -17,4 +17,6 @@ export interface LeadEntitlements {
   leadsUsed: number;
   leadDiscountPct: number;
   rankingBoost: number;
+  /** Free leads (grants) the provider can still use right now. */
+  freeLeadsRemaining: number;
 }

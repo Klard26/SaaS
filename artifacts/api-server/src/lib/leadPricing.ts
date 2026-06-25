@@ -2,60 +2,45 @@
  * Server-authoritative lead pricing for the Pay-per-Lead (RfQ) marketplace.
  *
  * ALL amounts are integer cents — client-supplied prices are never trusted; the
- * lead fee a provider pays is always recomputed here from the request + the
- * provider's tier discount.
+ * lead fee a provider pays is recomputed here from the request's category world.
  *
- * Ported from the reference (euros) to integer cents:
- *   base 4,90 € + 3 € (funding-relevant) + 4 € (budget > 2.000 €)
- *   + 6 € (budget > 10.000 €) + 2 € (specialist category),
- *   then reduced by the provider's tier discount percentage.
+ * World-aware (Model B):
+ *   - world `pro`    (Beratung & Bau)    → flat lead price of 15,00 €.
+ *   - world `alltag` (Alltag & Handwerk) → tiered per category (A/B/C):
+ *       A = 6,00 €, B = 10,00 €, C = 15,00 €. The exact cents come from the
+ *       category row (`categories.lead_price_cents`); B is the fallback when a
+ *       category has no tier recorded.
+ *
+ * There is no tier discount: Basic and Premium pay the same lead fee (Premium's
+ * value is the monthly free-lead grants + unlimited cap + ranking boost).
  */
+import type { WorldId } from "./providerClassification";
 
-export const BASE_LEAD_PRICE_CENTS = 490;
-export const FUNDING_SURCHARGE_CENTS = 300;
-export const BUDGET_MID_SURCHARGE_CENTS = 400; // budget over 2.000 €
-export const BUDGET_HIGH_SURCHARGE_CENTS = 600; // budget over 10.000 €
-export const SPECIALIST_SURCHARGE_CENTS = 200;
+/** Flat lead price for the "pro" world, in integer cents (15,00 €). */
+export const LEAD_PRICE_PRO_CENTS = 1500;
 
-const BUDGET_MID_THRESHOLD_CENTS = 2_000 * 100;
-const BUDGET_HIGH_THRESHOLD_CENTS = 10_000 * 100;
+/** Alltag lead-price tiers (A/B/C), in integer cents. */
+export const LEAD_TIER_CENTS = { A: 600, B: 1000, C: 1500 } as const;
 
-/**
- * Category slugs that command the specialist lead surcharge. These map the
- * reference's enb/stat/bauphysik branches onto Klard's category slugs.
- */
-export const SPECIALIST_CATEGORY_SLUGS: ReadonlySet<string> = new Set([
-  "energieberatung",
-  "statiker-tragwerksplaner",
-  "bauphysik-spezialberatung",
-]);
+/** Fallback alltag lead price (tier B) when a category has no tier recorded. */
+export const DEFAULT_ALLTAG_LEAD_CENTS = LEAD_TIER_CENTS.B;
 
 export interface LeadPriceInput {
-  fundingRelevant?: boolean | null;
-  budgetMaxCents?: number | null;
-  categorySlug?: string | null;
+  worldId: WorldId;
+  /** Category-level lead price in cents (alltag tiers); null/0 → fallback. */
+  categoryLeadPriceCents?: number | null;
 }
 
-/** Base lead price (before any tier discount), in integer cents. */
-export function calcBaseLeadPriceCents(input: LeadPriceInput): number {
-  let cents = BASE_LEAD_PRICE_CENTS;
-  if (input.fundingRelevant) cents += FUNDING_SURCHARGE_CENTS;
-  const budget = input.budgetMaxCents ?? 0;
-  if (budget > BUDGET_MID_THRESHOLD_CENTS) cents += BUDGET_MID_SURCHARGE_CENTS;
-  if (budget > BUDGET_HIGH_THRESHOLD_CENTS) cents += BUDGET_HIGH_SURCHARGE_CENTS;
-  if (input.categorySlug && SPECIALIST_CATEGORY_SLUGS.has(input.categorySlug)) {
-    cents += SPECIALIST_SURCHARGE_CENTS;
+/** The set of valid alltag lead-price tiers, in integer cents. */
+const ALLTAG_TIER_VALUES: readonly number[] = Object.values(LEAD_TIER_CENTS);
+
+/** Final, server-authoritative lead price for a request, in integer cents. */
+export function calcLeadPriceCents(input: LeadPriceInput): number {
+  if (input.worldId === "alltag") {
+    const c = input.categoryLeadPriceCents;
+    // Defensive: only honor a category lead price that matches a known tier
+    // (A/B/C). Anything else (bad seed/admin data, 0, null) falls back to B.
+    return c != null && ALLTAG_TIER_VALUES.includes(c) ? c : DEFAULT_ALLTAG_LEAD_CENTS;
   }
-  return cents;
-}
-
-/** Apply a provider's tier discount (percent) to a base price, rounded to cents. */
-export function applyTierDiscountCents(baseCents: number, discountPct: number): number {
-  const pct = Number.isFinite(discountPct) ? Math.max(0, Math.min(100, discountPct)) : 0;
-  return Math.round((baseCents * (100 - pct)) / 100);
-}
-
-/** Final lead price for a provider on a request (base minus tier discount), in cents. */
-export function calcLeadPriceCents(input: LeadPriceInput, discountPct: number): number {
-  return applyTierDiscountCents(calcBaseLeadPriceCents(input), discountPct);
+  return LEAD_PRICE_PRO_CENTS;
 }

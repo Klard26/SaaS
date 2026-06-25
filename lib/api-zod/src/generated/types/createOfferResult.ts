@@ -11,6 +11,10 @@ export interface CreateOfferResult {
   offer: RfqOffer;
   leadFeeCents: number;
   basePriceCents: number;
+  /** True when this lead was paid from a free-lead grant (leadFeeCents is then 0). */
+  freeLeadUsed: boolean;
+  /** Free leads the provider can still use after this offer. */
+  freeLeadsRemaining: number;
   tier: string;
   walletBalanceCents: number;
 }

@@ -128,9 +128,14 @@ export default function AGB() {
             Stripe. Es gelten ergänzend dessen Bedingungen.
           </p>
           <p>
-            (3) Für die Vermittlung erhält Klard vom Berater eine Provision in Höhe von 9 % (Tarif
-            Basic) bzw. 4 % (Tarif Premium) des vermittelten Honorars. Für den Kunden entstehen durch
-            die Nutzung der Plattform keine zusätzlichen Vermittlungsgebühren.
+            (3) Die Vergütung von Klard richtet sich nach dem Bereich und der Kategorie des Beraters.
+            Bei buchungsbasierten Kategorien erhält Klard eine Provision auf das vermittelte Honorar:
+            im Bereich Beratung &amp; Bauwesen 14 % (Tarif Basic) bzw. 9 % (Tarif Premium), im Bereich
+            Alltag &amp; Handwerk 15 % (Tarif Basic) bzw. 10 % (Tarif Premium). Bei Pay-per-Lead-Kategorien
+            zahlt der Berater stattdessen eine feste Lead-Gebühr je vermittelter Anfrage (Beratung &amp;
+            Bauwesen 15 € je Anfrage; Alltag &amp; Handwerk 6 €–15 € je Anfrage, je nach Fachbereich); eine
+            Buchungsprovision fällt in diesem Fall nicht an. Für den Kunden entstehen durch die Nutzung
+            der Plattform keine zusätzlichen Vermittlungsgebühren.
           </p>
           <p>
             (4) Für reglementierte Honorare (insbesondere nach RVG und StBVV – z. B. bei
@@ -206,9 +211,11 @@ export default function AGB() {
 
         <Section n="§ 9" title="Premium-Mitgliedschaft (Berater)">
           <p>
-            (1) Berater können eine kostenpflichtige Premium-Mitgliedschaft zum Preis von 89 €/Monat
-            abschließen. Diese umfasst u. a. eine reduzierte Provision (4 %), KI-Werkzeuge,
-            Kalendersynchronisation und eine bevorzugte Platzierung.
+            (1) Berater können eine kostenpflichtige Premium-Mitgliedschaft abschließen. Der Preis
+            richtet sich nach dem Bereich: 89 €/Monat im Bereich Beratung &amp; Bauwesen, 69 €/Monat im
+            Bereich Alltag &amp; Handwerk. Die Mitgliedschaft umfasst u. a. eine reduzierte Buchungsprovision
+            (9 % bzw. 10 % je nach Bereich), KI-Werkzeuge, Kalendersynchronisation und eine bevorzugte
+            Platzierung.
           </p>
           <p>
             (2) Die Mitgliedschaft verlängert sich automatisch um jeweils einen Monat und ist zum

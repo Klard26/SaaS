@@ -102,6 +102,7 @@ export default function ProviderRequests() {
   });
   const walletQuery = useGetMyWallet({ query: { enabled: providerReady, queryKey: getGetMyWalletQueryKey() } });
   const balanceCents = walletQuery.data?.balanceCents ?? 0;
+  const freeLeadsRemaining = walletQuery.data?.entitlements.freeLeadsRemaining ?? 0;
 
   const [selected, setSelected] = useState<RfqRequestForProvider | null>(null);
 
@@ -217,6 +218,7 @@ export default function ProviderRequests() {
       <RequestDialog
         request={selected}
         balanceCents={balanceCents}
+        freeLeadsRemaining={freeLeadsRemaining}
         categoryName={categoryName}
         onClose={() => setSelected(null)}
       />
@@ -227,11 +229,13 @@ export default function ProviderRequests() {
 function RequestDialog({
   request,
   balanceCents,
+  freeLeadsRemaining,
   categoryName,
   onClose,
 }: {
   request: RfqRequestForProvider | null;
   balanceCents: number;
+  freeLeadsRemaining: number;
   categoryName: (slug: string) => string;
   onClose: () => void;
 }) {
@@ -271,9 +275,11 @@ function RequestDialog({
       });
       toast({
         title: "Angebot gesendet",
-        description: `Lead-Gebühr ${eur(result.leadFeeCents)} abgebucht. Neues Guthaben: ${eur(
-          result.walletBalanceCents,
-        )}.`,
+        description: result.freeLeadUsed
+          ? `Kostenloser Lead eingelöst – keine Gebühr. Noch ${result.freeLeadsRemaining} kostenlose Lead(s) übrig.`
+          : `Lead-Gebühr ${eur(result.leadFeeCents)} abgebucht. Neues Guthaben: ${eur(
+              result.walletBalanceCents,
+            )}.`,
       });
       qc.invalidateQueries({ queryKey: getListProviderRequestsQueryKey() });
       qc.invalidateQueries({ queryKey: getGetProviderRequestQueryKey(request.id) });
@@ -432,10 +438,26 @@ function RequestDialog({
               ) : (
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                    <div className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2 text-sm">
-                      <span className="text-muted-foreground">Lead-Gebühr für dieses Angebot</span>
-                      <span className="font-semibold text-foreground">{eur(estimatedLead)}</span>
-                    </div>
+                    {freeLeadsRemaining > 0 ? (
+                      <div className="rounded-lg border border-green-600/30 bg-green-600/10 px-3 py-2 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Lead-Gebühr für dieses Angebot</span>
+                          <span className="font-semibold text-foreground">
+                            <span className="text-muted-foreground line-through mr-1.5">{eur(estimatedLead)}</span>
+                            kostenlos
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground" data-testid="text-free-lead-note">
+                          Dieses Angebot wird mit einem Ihrer {freeLeadsRemaining} kostenlosen Leads
+                          verrechnet – Ihr Guthaben bleibt unberührt.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2 text-sm">
+                        <span className="text-muted-foreground">Lead-Gebühr für dieses Angebot</span>
+                        <span className="font-semibold text-foreground">{eur(estimatedLead)}</span>
+                      </div>
+                    )}
 
                     <div className="grid grid-cols-2 gap-3">
                       <FormField

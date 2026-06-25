@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { SubscriptionStatusTier } from "./subscriptionStatusTier";
+import type { SubscriptionStatusWorld } from "./subscriptionStatusWorld";
 
 export interface SubscriptionStatus {
   tier: SubscriptionStatusTier;
@@ -15,4 +16,5 @@ export interface SubscriptionStatus {
   currentPeriodEnd?: string | null;
   cancelAtPeriodEnd?: boolean;
   priceEur?: number;
+  world?: SubscriptionStatusWorld;
 }

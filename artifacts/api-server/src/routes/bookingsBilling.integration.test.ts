@@ -847,7 +847,7 @@ describe("POST /api/bookings/:id/payment/checkout (Stripe Connect split)", () =>
     authState.userId = customerId;
     const total = 200;
     const id = await insertBillableBooking({
-      providerId: providerB.id, // onboarded, basic tier → 9%
+      providerId: providerB.id, // onboarded, basic tier, pro world → 14%
       serviceId: serviceB.id,
       serviceName: serviceB.name,
       providerName: providerB.displayName,
@@ -861,8 +861,8 @@ describe("POST /api/bookings/:id/payment/checkout (Stripe Connect split)", () =>
       string,
       unknown
     >;
-    // basic tier default commission = 9% of 20000 cents = 1800.
-    expect(pid.application_fee_amount).toBe(Math.round(total * 100 * 0.09));
+    // basic tier, pro world commission = 14% of 20000 cents = 2800.
+    expect(pid.application_fee_amount).toBe(Math.round(total * 100 * 0.14));
     expect(pid.transfer_data).toEqual({
       destination: "acct_test_integration",
     });

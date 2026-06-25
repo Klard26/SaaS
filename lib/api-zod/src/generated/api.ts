@@ -750,6 +750,7 @@ export const GetMySubscriptionResponse = zod.object({
   currentPeriodEnd: zod.string().nullish(),
   cancelAtPeriodEnd: zod.boolean().optional(),
   priceEur: zod.number().optional(),
+  world: zod.enum(["pro", "alltag"]).optional(),
 });
 
 /**
@@ -761,6 +762,7 @@ export const CancelMySubscriptionResponse = zod.object({
   currentPeriodEnd: zod.string().nullish(),
   cancelAtPeriodEnd: zod.boolean().optional(),
   priceEur: zod.number().optional(),
+  world: zod.enum(["pro", "alltag"]).optional(),
 });
 
 /**
@@ -1425,6 +1427,9 @@ export const GetMyWalletResponse = zod.object({
     leadsUsed: zod.number(),
     leadDiscountPct: zod.number(),
     rankingBoost: zod.number(),
+    freeLeadsRemaining: zod
+      .number()
+      .describe("Free leads (grants) the provider can still use right now."),
   }),
   transactions: zod.array(
     zod.object({

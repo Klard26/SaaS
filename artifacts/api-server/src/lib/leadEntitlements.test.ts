@@ -29,11 +29,11 @@ describe("entitlementsForTier", () => {
     });
   });
 
-  it("gives premium unlimited leads, a 20% discount and a ranking boost", () => {
+  it("gives premium unlimited leads, no lead-fee discount and a ranking boost", () => {
     expect(entitlementsForTier("premium")).toEqual({
       tier: "premium",
       maxLeadsMonth: null,
-      leadDiscountPct: 20,
+      leadDiscountPct: 0,
       rankingBoost: 10,
     });
   });

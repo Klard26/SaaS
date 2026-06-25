@@ -28,6 +28,7 @@ import ProviderWallet from "./pages/ProviderWallet";
 import Pricing from "./pages/Pricing";
 import BeraterWerden from "./pages/BeraterWerden";
 import DienstleisterWerden from "./pages/DienstleisterWerden";
+import AuthChooser from "./pages/AuthChooser";
 import Impressum from "./pages/legal/Impressum";
 import AGB from "./pages/legal/AGB";
 import Datenschutz from "./pages/legal/Datenschutz";
@@ -112,16 +113,20 @@ const clerkAppearance = {
 };
 
 function SignInPage() {
-  const world = useMemo(() => worldFromSearch(window.location.search), []);
+  const world = useMemo(
+    () => worldFromSearch(window.location.search) ?? readRememberedWorld(),
+    [],
+  );
   useEffect(() => {
     if (world) rememberProviderWorld(world);
   }, [world]);
+  if (!world) return <AuthChooser mode="sign-in" />;
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4 py-12">
       <SignIn
         routing="path"
         path={`${basePath}/sign-in`}
-        signUpUrl={`${basePath}/sign-up`}
+        signUpUrl={`${basePath}/sign-up?world=${world}`}
         forceRedirectUrl={`${basePath}/`}
         fallbackRedirectUrl={`${basePath}/`}
       />
@@ -137,13 +142,14 @@ function SignUpPage() {
   useEffect(() => {
     if (world) rememberProviderWorld(world);
   }, [world]);
-  const onboardingUrl = `${basePath}/provider/onboarding${world ? `?world=${world}` : ""}`;
+  if (!world) return <AuthChooser mode="sign-up" />;
+  const onboardingUrl = `${basePath}/provider/onboarding?world=${world}`;
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4 py-12">
       <SignUp
         routing="path"
         path={`${basePath}/sign-up`}
-        signInUrl={`${basePath}/sign-in`}
+        signInUrl={`${basePath}/sign-in?world=${world}`}
         forceRedirectUrl={onboardingUrl}
         fallbackRedirectUrl={onboardingUrl}
       />
@@ -307,7 +313,9 @@ function ClerkProviderWithRoutes() {
           <Route path="/sign-in/*?" component={SignInPage} />
           <Route path="/sign-up/*?" component={SignUpPage} />
           <Route path="/dienstleister-werden" component={DienstleisterWerden} />
-          <Route path="/pricing" component={Pricing} />
+          <Route path="/pricing">
+            {() => <AuthRoute component={Pricing} />}
+          </Route>
           <Route path="/impressum" component={Impressum} />
           <Route path="/agb" component={AGB} />
           <Route path="/datenschutz" component={Datenschutz} />

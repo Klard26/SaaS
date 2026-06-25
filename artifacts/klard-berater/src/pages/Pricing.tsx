@@ -11,29 +11,69 @@ import {
 } from "@workspace/api-client-react";
 import { Check, Sparkles, ArrowRight, Crown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { readRememberedWorld, type ProviderWorld } from "@/lib/providerWorld";
 
-const BASIC_FEATURES = [
-  "Berater-Profil mit Bio & Foto",
-  "Bis zu 3 Leistungen anbieten",
-  "Live-Verfügbarkeitskalender",
-  "Buchungen über Klard entgegennehmen",
-  "Bewertungen sammeln",
-  "Klard-Provision: 9 % je Buchung",
-];
+// World-aware monetization. Each world has booking categories (percentage
+// commission per booking) AND lead categories (pay-per-lead fee per request).
+// Commission rates and lead prices differ by world.
+const COMMISSION = {
+  pro: { basic: 14, premium: 9 },
+  alltag: { basic: 15, premium: 10 },
+} as const;
 
-const PREMIUM_FEATURES = [
-  "Alles aus Basic",
-  "Unbegrenzte Leistungen",
-  "Hervorgehoben in der Suche (Top-Berater)",
-  "Premium-Badge auf Profil & Suche",
-  "Priorisierte Anzeige je Branche & Stadt",
-  "AI-Angebotsgenerator (Claude)",
-  "Kalendersynchronisierung (iCal-Feed)",
-  "Detaillierte Statistiken & Insights",
-  "Reduzierte Klard-Provision: 4 %",
-  "E-Mail-Vorlagen für Mandantenkommunikation",
-  "Vorrangiger Support",
-];
+const PREMIUM_PRICE: Record<ProviderWorld, number> = { pro: 89, alltag: 69 };
+
+function basicFeatures(world: ProviderWorld): string[] {
+  const base = [
+    "Berater-Profil mit Bio & Foto",
+    "Bis zu 3 Leistungen anbieten",
+    "Live-Verfügbarkeitskalender",
+    "Bewertungen sammeln",
+  ];
+  if (world === "alltag") {
+    return [
+      ...base,
+      "Buchungen über Klard entgegennehmen",
+      `Klard-Provision: ${COMMISSION.alltag.basic} % je Buchung (Buchungs-Kategorien)`,
+      "Pay-per-Lead: 6–15 € je Anfrage (Lead-Kategorien)",
+    ];
+  }
+  return [
+    ...base,
+    "Buchungen über Klard entgegennehmen",
+    `Klard-Provision: ${COMMISSION.pro.basic} % je Buchung (Buchungs-Kategorien)`,
+    "Pay-per-Lead: 15 € je Anfrage (Lead-Kategorien)",
+  ];
+}
+
+function premiumFeatures(world: ProviderWorld): string[] {
+  const head = [
+    "Alles aus Basic",
+    "Unbegrenzte Leistungen",
+    "Hervorgehoben in der Suche (Top-Berater)",
+    "Premium-Badge auf Profil & Suche",
+    "Priorisierte Anzeige je Branche & Stadt",
+    "AI-Angebotsgenerator (Claude)",
+    "Kalendersynchronisierung (iCal-Feed)",
+    "Detaillierte Statistiken & Insights",
+  ];
+  const tail = [
+    "E-Mail-Vorlagen für Mandantenkommunikation",
+    "Vorrangiger Support",
+  ];
+  if (world === "alltag") {
+    return [
+      ...head,
+      `Reduzierte Klard-Provision: ${COMMISSION.alltag.premium} % (statt ${COMMISSION.alltag.basic} %)`,
+      ...tail,
+    ];
+  }
+  return [
+    ...head,
+    `Reduzierte Klard-Provision: ${COMMISSION.pro.premium} % (statt ${COMMISSION.pro.basic} %)`,
+    ...tail,
+  ];
+}
 
 export default function Pricing() {
   const [, setLocation] = useLocation();
@@ -48,8 +88,11 @@ export default function Pricing() {
   });
   const checkout = useCreateSubscriptionCheckout();
 
+  const world: ProviderWorld = sub?.world ?? readRememberedWorld() ?? "pro";
+  const basicFeats = basicFeatures(world);
+  const premiumFeats = premiumFeatures(world);
   const isPremium = sub?.tier === "premium";
-  const priceEur = sub?.priceEur ?? 89;
+  const priceEur = sub?.priceEur ?? PREMIUM_PRICE[world];
 
   async function handleUpgrade() {
     if (!isSignedIn) {
@@ -83,7 +126,7 @@ export default function Pricing() {
         <div className="text-center mb-12">
           <Badge variant="outline" className="mb-4 px-3 py-1">
             <Sparkles className="h-3 w-3 mr-1.5 text-primary" />
-            Klard für Berater
+            Klard Business
           </Badge>
           <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
             Gewinnen Sie planbar neue Mandanten
@@ -111,7 +154,7 @@ export default function Pricing() {
             </CardHeader>
             <CardContent>
               <ul className="space-y-2.5">
-                {BASIC_FEATURES.map((f) => (
+                {basicFeats.map((f) => (
                   <li key={f} className="flex items-start gap-2 text-sm">
                     <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                     <span className="text-foreground">{f}</span>
@@ -153,7 +196,7 @@ export default function Pricing() {
             </CardHeader>
             <CardContent>
               <ul className="space-y-2.5">
-                {PREMIUM_FEATURES.map((f) => (
+                {premiumFeats.map((f) => (
                   <li key={f} className="flex items-start gap-2 text-sm">
                     <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                     <span className="text-foreground">{f}</span>
@@ -178,8 +221,9 @@ export default function Pricing() {
 
         <div className="mt-16 text-center text-sm text-muted-foreground">
           <p>
-            Klard ist auf die Bau- und Energiebranche fokussiert: Energieberatung, Architektur,
-            Tragwerksplanung, Bauberatung, Sachverständige, Vermessung, TGA-Fachplanung und Bauphysik.
+            {world === "alltag"
+              ? "Klard Alltag & Handwerk verbindet Sie mit Kund:innen für Haushalt, Garten, Renovierung, Pflege und mehr."
+              : "Klard ist auf die Bau- und Energiebranche fokussiert: Energieberatung, Architektur, Tragwerksplanung, Bauberatung, Sachverständige, Vermessung, TGA-Fachplanung und Bauphysik."}
           </p>
         </div>
       </div>

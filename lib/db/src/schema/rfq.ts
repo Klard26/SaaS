@@ -153,6 +153,10 @@ export const leadFeesTable = pgTable(
     amountCents: integer("amount_cents").notNull(),
     currency: text("currency").notNull().default("eur"),
     paidFromCredit: boolean("paid_from_credit").notNull().default(true),
+    // When this lead was paid from a free-lead grant instead of the wallet, the
+    // consumed grant id is recorded here (amountCents is then 0). Null = a normal
+    // wallet-charged lead. Audit-only; refunds for free leads are no-ops.
+    leadGrantId: integer("lead_grant_id"),
     // pending | paid | refunded
     status: text("status").notNull().default("pending"),
     refundReason: text("refund_reason"),
@@ -232,3 +236,42 @@ export const leadUsageTable = pgTable(
 );
 
 export type LeadUsage = typeof leadUsageTable.$inferSelect;
+
+/**
+ * Free-lead grants ("Frei-Leads"). Premium's lead value (and a Basic welcome
+ * bonus) is delivered as a pool of free leads that are consumed BEFORE any
+ * wallet debit on the offer flow. Sources:
+ *   - `basic_signup`        : 2 leads, once at provider creation (periodMonth "once").
+ *   - `premium_activation`  : 5 leads, once at premium activation (periodMonth "once").
+ *   - `premium_monthly`     : 3 leads/month while premium (periodMonth "YYYY-MM",
+ *                             use-it-or-lose-it via `expiresAt` = start of next month).
+ *
+ * Idempotency: UNIQUE(provider, source, periodMonth) means re-running a grant
+ * (webhook retry, scheduler re-tick, reconcile) is a no-op. `remainingCount` is
+ * decremented atomically on consumption; `expiresAt` null = never expires.
+ */
+export const providerLeadGrantsTable = pgTable(
+  "provider_lead_grants",
+  {
+    id: serial("id").primaryKey(),
+    providerId: integer("provider_id").notNull(),
+    // basic_signup | premium_activation | premium_monthly
+    source: text("source").notNull(),
+    // "once" for one-time grants; "YYYY-MM" for the monthly premium grant.
+    periodMonth: text("period_month").notNull(),
+    grantedCount: integer("granted_count").notNull(),
+    remainingCount: integer("remaining_count").notNull(),
+    // null = never expires (one-time grants); set to start-of-next-month for the
+    // monthly premium grant so unused free leads do not accumulate.
+    expiresAt: timestamp("expires_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => ({
+    providerSourcePeriodUnique: uniqueIndex(
+      "provider_lead_grants_provider_source_period_unique",
+    ).on(t.providerId, t.source, t.periodMonth),
+  }),
+);
+
+export type ProviderLeadGrant = typeof providerLeadGrantsTable.$inferSelect;

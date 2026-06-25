@@ -58,7 +58,7 @@ export default function DienstleisterWerden() {
     },
     {
       q: "Was kostet die Nutzung von Klard?",
-      a: "Der Basis-Tarif ist kostenlos. Details zu Gebühren und zum Premium-Tarif finden Sie auf der Preisübersicht.",
+      a: "Der Basis-Tarif ist kostenlos. Details zu Gebühren und zum Premium-Tarif sehen Sie nach der Registrierung in Ihrem Anbieterbereich.",
     },
     {
       q: "Wie schnell bin ich startklar?",
@@ -176,21 +176,20 @@ export default function DienstleisterWerden() {
         </div>
       </section>
 
-      {/* Preise */}
+      {/* Konditionen */}
       <section className="max-w-[1100px] mx-auto px-4 sm:px-8 py-16 w-full">
         <div className="rounded-2xl border border-border bg-white px-6 sm:px-12 py-12 text-center max-w-3xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-bold text-foreground">Transparente Preise</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-foreground">Faire Konditionen</h2>
           <p className="text-muted-foreground mt-2 max-w-xl mx-auto">
-            Kostenlos starten, jederzeit auf Premium upgraden. Alle Details zu Gebühren
-            und Leistungen finden Sie in der Preisübersicht.
+            Kostenlos starten, jederzeit auf Premium upgraden. Ihre genauen Konditionen
+            sehen Sie nach der Registrierung in Ihrem Anbieterbereich.
           </p>
           <Button
-            variant="outline"
-            onClick={() => setLocation("/pricing")}
-            className="mt-6 rounded-full h-11 px-8 text-sm font-semibold"
-            data-testid="button-dienstleister-pricing"
+            onClick={startRegistration}
+            className="mt-6 rounded-full h-11 px-8 text-sm font-semibold bg-primary hover:bg-[var(--klard-teal-d)] text-white"
+            data-testid="button-dienstleister-konditionen"
           >
-            Preise ansehen
+            Jetzt registrieren
           </Button>
         </div>
       </section>

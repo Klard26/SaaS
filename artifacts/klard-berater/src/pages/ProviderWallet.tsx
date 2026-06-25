@@ -149,6 +149,12 @@ export default function ProviderWallet() {
                         {entitlements.maxLeadsMonth != null ? ` / ${entitlements.maxLeadsMonth}` : " / ∞"}
                       </p>
                     </div>
+                    <div>
+                      <p className="text-muted-foreground">Kostenlose Leads</p>
+                      <p className="font-semibold text-foreground" data-testid="text-free-leads">
+                        {entitlements.freeLeadsRemaining}
+                      </p>
+                    </div>
                     {entitlements.leadDiscountPct > 0 && (
                       <div>
                         <p className="text-muted-foreground">Lead-Rabatt</p>

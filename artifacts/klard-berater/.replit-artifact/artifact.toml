@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/berater/"
-title = "Klard für Berater"
+title = "Klard Business"
 version = "1.0.0"
 id = "artifacts/klard-berater"
 router = "path"

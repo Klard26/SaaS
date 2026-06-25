@@ -6,6 +6,8 @@ import {
   requestOffersTable,
   leadFeesTable,
   providersTable,
+  categoriesTable,
+  providerWalletTable,
   type Request as RfqRequest,
 } from "@workspace/db";
 import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
@@ -21,16 +23,17 @@ import {
 import { getUncachableStripeClient, STRIPE_CONFIG } from "../lib/stripeClient";
 import {
   canRespondToLead,
-  entitlementsForTier,
   incrementLeadUsage,
 } from "../lib/leadEntitlements";
+import { calcLeadPriceCents } from "../lib/leadPricing";
 import {
-  applyTierDiscountCents,
-  calcBaseLeadPriceCents,
-  calcLeadPriceCents,
-} from "../lib/leadPricing";
+  getCategoryClassification,
+  normalizeWorld,
+  allowsLead,
+} from "../lib/providerClassification";
 import { applyWalletMovement, ensureWallet, listWalletTransactions } from "../lib/wallet";
 import { sendOfferReceivedToCustomer } from "../lib/email";
+import { consumeFreeLead, countRemainingFreeLeads } from "../lib/leadGrants";
 
 const router: IRouter = Router();
 
@@ -114,6 +117,8 @@ router.get("/providers/me/requests", async (req, res): Promise<void> => {
         request: requestsTable,
         offerId: requestOffersTable.id,
         leadFeeId: requestOffersTable.leadFeeId,
+        worldId: categoriesTable.worldId,
+        categoryLeadPriceCents: categoriesTable.leadPriceCents,
       })
       .from(requestMatchesTable)
       .innerJoin(requestsTable, eq(requestsTable.id, requestMatchesTable.requestId))
@@ -124,6 +129,7 @@ router.get("/providers/me/requests", async (req, res): Promise<void> => {
           eq(requestOffersTable.providerId, provider.id),
         ),
       )
+      .leftJoin(categoriesTable, eq(categoriesTable.slug, requestsTable.categorySlug))
       .where(
         and(
           eq(requestMatchesTable.providerId, provider.id),
@@ -144,20 +150,15 @@ router.get("/providers/me/requests", async (req, res): Promise<void> => {
       for (const g of grouped) counts.set(g.requestId, Number(g.n));
     }
 
-    const discountPct = entitlementsForTier(provider.subscriptionTier).leadDiscountPct;
     const dto = rows.map((r) =>
       toProviderRequestDto(r.request, {
         hasOffered: r.offerId != null,
         offerCount: counts.get(r.request.id) ?? 0,
         leadFeeId: r.leadFeeId ?? null,
-        estimatedLeadPriceCents: calcLeadPriceCents(
-          {
-            fundingRelevant: r.request.fundingRelevant,
-            budgetMaxCents: r.request.budgetMaxCents,
-            categorySlug: r.request.categorySlug,
-          },
-          discountPct,
-        ),
+        estimatedLeadPriceCents: calcLeadPriceCents({
+          worldId: normalizeWorld(r.worldId),
+          categoryLeadPriceCents: r.categoryLeadPriceCents,
+        }),
       }),
     );
     res.json(dto);
@@ -231,20 +232,16 @@ router.get("/providers/me/requests/:requestId", async (req, res): Promise<void> 
       .from(requestOffersTable)
       .where(eq(requestOffersTable.requestId, matched.request.id));
 
-    const discountPct = entitlementsForTier(provider.subscriptionTier).leadDiscountPct;
+    const classification = await getCategoryClassification(matched.request.categorySlug);
     res.json(
       toProviderRequestDto(matched.request, {
         hasOffered: !!ownOffer,
         offerCount: Number(offerCount),
         leadFeeId: ownOffer?.leadFeeId ?? null,
-        estimatedLeadPriceCents: calcLeadPriceCents(
-          {
-            fundingRelevant: matched.request.fundingRelevant,
-            budgetMaxCents: matched.request.budgetMaxCents,
-            categorySlug: matched.request.categorySlug,
-          },
-          discountPct,
-        ),
+        estimatedLeadPriceCents: calcLeadPriceCents({
+          worldId: classification.worldId,
+          categoryLeadPriceCents: classification.leadPriceCents,
+        }),
       }),
     );
   } catch (err) {
@@ -289,7 +286,6 @@ router.post("/providers/me/requests/:requestId/offers", async (req, res): Promis
       res.status(403).json({ error: gate.reason, upgradeRequired: true });
       return;
     }
-    const discountPct = gate.entitlements.leadDiscountPct;
 
     let result;
     try {
@@ -338,29 +334,59 @@ router.post("/providers/me/requests/:requestId/offers", async (req, res): Promis
           .where(eq(requestOffersTable.requestId, request.id));
         if (Number(offerCount) >= request.maxOffers) throw new Error("MAX_OFFERS");
 
-        const basePriceCents = calcBaseLeadPriceCents({
-          fundingRelevant: request.fundingRelevant,
-          budgetMaxCents: request.budgetMaxCents,
-          categorySlug: request.categorySlug,
+        // Model B + world-aware lead price: resolve the request's category world
+        // and pricing model. Lead/hybrid categories charge the world lead fee;
+        // now-only categories reject (they monetize via booking commission).
+        const [cat] = await tx
+          .select({
+            worldId: categoriesTable.worldId,
+            pricingModel: categoriesTable.pricingModel,
+            leadPriceCents: categoriesTable.leadPriceCents,
+          })
+          .from(categoriesTable)
+          .where(eq(categoriesTable.slug, request.categorySlug))
+          .limit(1);
+        if (!allowsLead(cat?.pricingModel ?? null)) throw new Error("WRONG_MODEL");
+        const leadFeeCents = calcLeadPriceCents({
+          worldId: normalizeWorld(cat?.worldId),
+          categoryLeadPriceCents: cat?.leadPriceCents ?? null,
         });
-        const leadFeeCents = applyTierDiscountCents(basePriceCents, discountPct);
+        const basePriceCents = leadFeeCents;
 
-        // Debit the wallet (throws INSUFFICIENT_FUNDS on overdraw).
-        const walletBalanceCents = await applyWalletMovement(tx, provider.id, {
-          type: "lead_charge",
-          amountCents: -leadFeeCents,
-          referenceId: request.id,
-          note: `Lead-Gebühr für Anfrage #${request.id}`,
-        });
+        // Free leads first: consume a free-lead grant (Basic welcome bonus or
+        // Premium allotment) BEFORE touching the wallet. When one is available
+        // the lead is free (chargedCents 0, no wallet movement); otherwise we
+        // debit the wallet as usual (throws INSUFFICIENT_FUNDS on overdraw).
+        const grantId = await consumeFreeLead(tx, provider.id);
+        const freeLeadUsed = grantId !== null;
+        const chargedCents = freeLeadUsed ? 0 : leadFeeCents;
+
+        let walletBalanceCents: number;
+        if (freeLeadUsed) {
+          const [wallet] = await tx
+            .select({ balanceCents: providerWalletTable.balanceCents })
+            .from(providerWalletTable)
+            .where(eq(providerWalletTable.providerId, provider.id))
+            .limit(1);
+          walletBalanceCents = wallet?.balanceCents ?? 0;
+        } else {
+          walletBalanceCents = await applyWalletMovement(tx, provider.id, {
+            type: "lead_charge",
+            amountCents: -leadFeeCents,
+            referenceId: request.id,
+            note: `Lead-Gebühr für Anfrage #${request.id}`,
+          });
+        }
 
         const [leadFee] = await tx
           .insert(leadFeesTable)
           .values({
             providerId: provider.id,
             requestId: request.id,
-            amountCents: leadFeeCents,
+            amountCents: chargedCents,
             currency: STRIPE_CONFIG.currency,
-            paidFromCredit: true,
+            paidFromCredit: !freeLeadUsed,
+            leadGrantId: grantId,
             status: "paid",
           })
           .returning();
@@ -390,7 +416,14 @@ router.post("/providers/me/requests/:requestId/offers", async (req, res): Promis
             .where(eq(requestsTable.id, request.id));
         }
 
-        return { offer, leadFeeCents, basePriceCents, walletBalanceCents, request };
+        return {
+          offer,
+          leadFeeCents: chargedCents,
+          basePriceCents,
+          walletBalanceCents,
+          freeLeadUsed,
+          request,
+        };
       });
     } catch (txErr) {
       const msg = txErr instanceof Error ? txErr.message : "";
@@ -398,6 +431,7 @@ router.post("/providers/me/requests/:requestId/offers", async (req, res): Promis
         NOT_FOUND: [404, "Anfrage nicht gefunden."],
         NOT_OPEN: [409, "Diese Anfrage nimmt keine Angebote mehr an."],
         WRONG_CATEGORY: [403, "Diese Anfrage gehört nicht zu Ihrer Kategorie."],
+        WRONG_MODEL: [403, "Diese Kategorie nimmt keine bezahlten Leads an."],
         NOT_MATCHED: [403, "Diese Anfrage wurde Ihnen nicht zugewiesen."],
         ALREADY_OFFERED: [409, "Sie haben auf diese Anfrage bereits ein Angebot abgegeben."],
         MAX_OFFERS: [409, "Diese Anfrage hat bereits die maximale Anzahl an Angeboten."],
@@ -426,6 +460,10 @@ router.post("/providers/me/requests/:requestId/offers", async (req, res): Promis
       requestUrl: customerUrl,
     }).catch((err) => req.log.error({ err }, "offer_received email failed"));
 
+    // Free leads remaining AFTER this offer — surfaced so the UI can show the
+    // provider their remaining allotment without a second request.
+    const freeLeadsRemaining = await countRemainingFreeLeads(provider.id);
+
     res.status(201).json({
       offer: {
         id: result.offer.id,
@@ -444,6 +482,8 @@ router.post("/providers/me/requests/:requestId/offers", async (req, res): Promis
       },
       leadFeeCents: result.leadFeeCents,
       basePriceCents: result.basePriceCents,
+      freeLeadUsed: result.freeLeadUsed,
+      freeLeadsRemaining,
       tier: gate.entitlements.tier,
       walletBalanceCents: result.walletBalanceCents,
     });
@@ -473,6 +513,7 @@ router.get("/providers/me/wallet", async (req, res): Promise<void> => {
     const balanceCents = await ensureWallet(provider.id);
     const gate = await canRespondToLead(provider.id, provider.subscriptionTier);
     const transactions = await listWalletTransactions(provider.id);
+    const freeLeadsRemaining = await countRemainingFreeLeads(provider.id);
 
     res.json({
       balanceCents,
@@ -483,6 +524,7 @@ router.get("/providers/me/wallet", async (req, res): Promise<void> => {
         leadsUsed: gate.leadsUsed,
         leadDiscountPct: gate.entitlements.leadDiscountPct,
         rankingBoost: gate.entitlements.rankingBoost,
+        freeLeadsRemaining,
       },
       transactions: transactions.map((t) => ({
         id: t.id,
@@ -614,6 +656,25 @@ router.post("/leads/:leadFeeId/refund", async (req, res): Promise<void> => {
           .where(eq(requestOffersTable.leadFeeId, leadFee.id))
           .limit(1);
         if (linkedOffer?.status === "accepted") throw new Error("LEAD_CONVERTED");
+
+        // Free leads (paid from a grant, amountCents 0) cost the provider
+        // nothing, so the Lead-Garantie has nothing to refund: mark it refunded
+        // for bookkeeping but move no money and do NOT re-credit the grant.
+        if (leadFee.amountCents <= 0) {
+          const [wallet] = await tx
+            .select({ balanceCents: providerWalletTable.balanceCents })
+            .from(providerWalletTable)
+            .where(eq(providerWalletTable.providerId, provider.id))
+            .limit(1);
+          await tx
+            .update(leadFeesTable)
+            .set({
+              status: "refunded",
+              refundReason: body.data.reason ?? "Lead-Garantie",
+            })
+            .where(eq(leadFeesTable.id, leadFee.id));
+          return { refundedCents: 0, balanceCents: wallet?.balanceCents ?? 0 };
+        }
 
         const balanceCents = await applyWalletMovement(tx, provider.id, {
           type: "refund",

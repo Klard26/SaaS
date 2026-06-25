@@ -9,6 +9,13 @@ import {
 } from "./email";
 import { issueInvoiceForBooking, sendInvoiceEmail } from "./invoiceService";
 import { logger } from "./logger";
+import {
+  grantLeadCredits,
+  currentPeriodMonth,
+  startOfNextMonthUtc,
+  LEAD_GRANT_SOURCES,
+  PREMIUM_MONTHLY_LEADS,
+} from "./leadGrants";
 
 const CHECK_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 
@@ -167,12 +174,50 @@ export async function autoCompleteBookings(now: Date): Promise<void> {
   logger.info({ count: past.length }, "Auto-completed past bookings");
 }
 
+/**
+ * Monthly Premium free-lead top-up: 3 leads per calendar month while premium.
+ * Idempotent via the unique (provider, premium_monthly, "YYYY-MM") grant, so the
+ * 15-minute tick re-running within the same month is a no-op. Use-it-or-lose-it:
+ * the grant expires at the start of next month so unused free leads don't pile up.
+ */
+async function grantMonthlyPremiumLeads(now: Date): Promise<void> {
+  const periodMonth = currentPeriodMonth(now);
+  const expiresAt = startOfNextMonthUtc(now);
+  const premium = await db
+    .select({ id: providersTable.id })
+    .from(providersTable)
+    .where(eq(providersTable.subscriptionTier, "premium"));
+  let granted = 0;
+  for (const p of premium) {
+    try {
+      const did = await grantLeadCredits(db, {
+        providerId: p.id,
+        source: LEAD_GRANT_SOURCES.premiumMonthly,
+        periodMonth,
+        count: PREMIUM_MONTHLY_LEADS,
+        expiresAt,
+      });
+      if (did) granted += 1;
+    } catch (err) {
+      logger.error({ err, providerId: p.id }, "Monthly premium free-lead grant failed");
+    }
+  }
+  if (granted > 0) {
+    logger.info({ count: granted, periodMonth }, "Granted monthly premium free leads");
+  }
+}
+
 async function tick(): Promise<void> {
   const now = new Date();
   try {
     await send24hReminders(now);
   } catch (err) {
     logger.error({ err }, "24h reminder tick failed");
+  }
+  try {
+    await grantMonthlyPremiumLeads(now);
+  } catch (err) {
+    logger.error({ err }, "Monthly premium free-lead tick failed");
   }
   try {
     await send1hReminders(now);

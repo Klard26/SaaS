@@ -35,7 +35,7 @@ export function Navbar() {
       <div className="max-w-[1280px] mx-auto px-4 sm:px-8 flex h-16 items-center gap-4">
         <Link href="/" className="shrink-0 flex items-baseline gap-1.5" data-testid="link-logo">
           <span className="klard-logo text-2xl">klar<span>d</span></span>
-          <span className="text-sm font-medium text-muted-foreground">für Berater</span>
+          <span className="text-sm font-medium text-muted-foreground">Business</span>
         </Link>
 
         <nav className="hidden lg:flex items-center gap-5 text-sm font-medium ml-auto">
@@ -62,9 +62,11 @@ export function Navbar() {
               Vorteile
             </Link>
           )}
-          <Link href="/pricing" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-pricing">
-            Preise
-          </Link>
+          {isSignedIn && (
+            <Link href="/pricing" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-pricing">
+              Preise
+            </Link>
+          )}
           <Link href="/dienstleister-werden" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-alltag-area">
             Alltag &amp; Handwerk
           </Link>
@@ -91,7 +93,7 @@ export function Navbar() {
                   <p className="text-xs text-muted-foreground truncate">{user?.primaryEmailAddress?.emailAddress}</p>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">Beraterbereich</DropdownMenuLabel>
+                <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">Anbieterbereich</DropdownMenuLabel>
                 {hasProvider ? (
                   <>
                     <DropdownMenuItem onClick={() => setLocation("/dashboard")} data-testid="menu-item-dashboard">Dashboard</DropdownMenuItem>
@@ -131,7 +133,7 @@ export function Navbar() {
                 className="rounded-full bg-primary hover:bg-[var(--klard-teal-d)] text-white px-4 h-9 text-xs font-semibold"
                 data-testid="button-signup"
               >
-                Als Berater starten
+                Jetzt starten
               </Button>
             </div>
           )}
@@ -161,7 +163,9 @@ export function Navbar() {
             ) : (
               <Link href="/" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Vorteile</Link>
             )}
-            <Link href="/pricing" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Preise</Link>
+            {isSignedIn && (
+              <Link href="/pricing" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Preise</Link>
+            )}
             <Link href="/dienstleister-werden" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Alltag &amp; Handwerk</Link>
             <a href="/" className="py-2 text-sm text-foreground">Für Kunden</a>
           </nav>

@@ -7,7 +7,7 @@ export function Footer() {
         <div>
           <div className="klard-logo text-[1.4rem] text-white mb-2">
             klar<span className="text-[rgba(8,145,178,0.85)]">d</span>
-            <span className="text-white/40 text-[0.9rem] font-normal ml-1">für Berater</span>
+            <span className="text-white/40 text-[0.9rem] font-normal ml-1">Business</span>
           </div>
           <p className="text-[0.78rem] leading-[1.7] max-w-[280px]">
             Gewinnen Sie planbar neue Mandanten. Profil, Leistungen, Verfügbarkeit und

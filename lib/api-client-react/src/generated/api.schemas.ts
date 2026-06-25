@@ -1112,6 +1112,14 @@ export const SubscriptionStatusTier = {
   premium: "premium",
 } as const;
 
+export type SubscriptionStatusWorld =
+  (typeof SubscriptionStatusWorld)[keyof typeof SubscriptionStatusWorld];
+
+export const SubscriptionStatusWorld = {
+  pro: "pro",
+  alltag: "alltag",
+} as const;
+
 export interface SubscriptionStatus {
   tier: SubscriptionStatusTier;
   /** @nullable */
@@ -1120,6 +1128,7 @@ export interface SubscriptionStatus {
   currentPeriodEnd?: string | null;
   cancelAtPeriodEnd?: boolean;
   priceEur?: number;
+  world?: SubscriptionStatusWorld;
 }
 
 export interface PlatformStats {
@@ -1484,6 +1493,10 @@ export interface CreateOfferResult {
   offer: RfqOffer;
   leadFeeCents: number;
   basePriceCents: number;
+  /** True when this lead was paid from a free-lead grant (leadFeeCents is then 0). */
+  freeLeadUsed: boolean;
+  /** Free leads the provider can still use after this offer. */
+  freeLeadsRemaining: number;
   tier: string;
   walletBalanceCents: number;
 }
@@ -1506,6 +1519,8 @@ export interface LeadEntitlements {
   leadsUsed: number;
   leadDiscountPct: number;
   rankingBoost: number;
+  /** Free leads (grants) the provider can still use right now. */
+  freeLeadsRemaining: number;
 }
 
 export interface WalletTransactionDto {

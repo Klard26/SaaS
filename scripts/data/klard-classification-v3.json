@@ -2,7 +2,7 @@
   "$schema": "https://klard.de/schemas/classification/v3",
   "version": "3.0.0",
   "generated_at": "2026-06-25",
-  "description": "Klard Anbieter-Klassifikation v3.0 — 2 Welten, 13 Bereiche, 78 Berufsgruppen. Erweitert die bestehende v2-Branchen-Liste um Welt 02 (Alltag & Handwerk, Armut-Modell).",
+  "description": "Klard Anbieter-Klassifikation v3.0 — 2 Welten, 13 Bereiche, 78 Berufsgruppen. Erweitert die bestehende v2-Branchen-Liste um Welt 02 (Alltag & Handwerk, Lead-Modell).",
   "pricing_models": {
     "now": {
       "label": "Sofortbuchung",
@@ -10,7 +10,7 @@
     },
     "lead": {
       "label": "Pay-per-Lead",
-      "desc": "Kunde stellt Anfrage, Anbieter kauft qualifizierte Leads wie bei Armut.com."
+      "desc": "Kunde stellt Anfrage, Anbieter kauft qualifizierte Leads."
     },
     "hybrid": {
       "label": "Hybrid",
@@ -448,7 +448,7 @@
     {
       "id": "alltag",
       "title": "Alltag & Handwerk",
-      "description": "Lokale Dienstleistungen für Privatkunden und Kleinbetriebe nach dem Armut-Modell aus der Türkei. Anbieter zahlen pro qualifizierter Anfrage, kein Provisionsmodell.",
+      "description": "Lokale Dienstleistungen für Privatkunden und Kleinbetriebe nach dem Lead-Modell. Anbieter zahlen pro qualifizierter Anfrage, kein Provisionsmodell.",
       "default_pricing_model": "lead",
       "areas": [
         {

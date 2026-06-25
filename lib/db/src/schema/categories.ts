@@ -22,6 +22,10 @@ export const categoriesTable = pgTable("categories", {
   professionCode: text("profession_code"),
   // Abrechnungsmodell: now (Sofortbuchung) | lead (Pay-per-Lead) | hybrid.
   pricingModel: text("pricing_model"),
+  // Server-authoritative lead fee in integer cents for Pay-per-Lead categories.
+  // Seeded per category (Alltag worlds use the area tier A/B/C = 600/1000/1500);
+  // null for "pro" categories, which use the flat pro lead price in code.
+  leadPriceCents: integer("lead_price_cents"),
   // Indicative price in EUR (nullable when "auf Anfrage"); numeric to allow
   // fractional unit prices such as 2.50 €/Stück (Bügelservice).
   indicativePrice: numeric("indicative_price", { mode: "number" }),

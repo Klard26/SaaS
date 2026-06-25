@@ -13,7 +13,6 @@ import {
   UserPlus,
   ListChecks,
   CalendarClock,
-  Check,
 } from "lucide-react";
 import { rememberProviderWorld } from "@/lib/providerWorld";
 
@@ -30,6 +29,11 @@ export default function BeraterWerden() {
     } else {
       window.location.assign(`${basePath}/sign-up?intent=berater&world=pro`);
     }
+  }
+
+  function startLogin() {
+    rememberProviderWorld("pro");
+    window.location.assign(`${basePath}/sign-in?world=pro`);
   }
 
   const vorteile = [
@@ -50,7 +54,7 @@ export default function BeraterWerden() {
   const faqs = [
     {
       q: "Was kostet die Nutzung von Klard?",
-      a: "Der Basis-Tarif ist kostenlos – es fällt lediglich eine Vermittlungsgebühr von 9 % pro vermittelter Buchung an. Premium kostet 89 € pro Monat und reduziert die Gebühr auf 4 %.",
+      a: "Der Basis-Tarif ist kostenlos. Ihre genauen Konditionen – Gebühren und der Premium-Tarif – sehen Sie nach der Registrierung in Ihrem Anbieterbereich.",
     },
     {
       q: "Für welche Fachbereiche ist Klard geeignet?",
@@ -100,15 +104,15 @@ export default function BeraterWerden() {
             <Button
               size="lg"
               variant="outline"
-              onClick={() => setLocation("/pricing")}
+              onClick={startLogin}
               className="rounded-full border-[1.5px] px-8 h-12 text-sm font-semibold"
-              data-testid="button-berater-pricing"
+              data-testid="button-berater-login"
             >
-              Preise ansehen
+              Einloggen
             </Button>
           </div>
           <p className="text-xs text-muted-foreground mt-4">
-            Kostenlos starten · keine Grundgebühr im Basis-Tarif · nur Vermittlungsgebühr pro Buchung
+            Kostenlos starten · keine Grundgebühr im Basis-Tarif
           </p>
           <p className="text-xs text-muted-foreground mt-2">
             Sie bieten Handwerks- oder Alltagsleistungen an?{" "}
@@ -170,79 +174,6 @@ export default function BeraterWerden() {
             })}
           </div>
         </div>
-      </section>
-
-      {/* Preise */}
-      <section className="max-w-[1100px] mx-auto px-4 sm:px-8 py-16 w-full">
-        <div className="text-center mb-10">
-          <h2 className="text-2xl sm:text-3xl font-bold text-foreground">Transparente Preise</h2>
-          <p className="text-muted-foreground mt-2">Kostenlos starten, jederzeit auf Premium upgraden.</p>
-        </div>
-        <div className="grid sm:grid-cols-2 gap-5 max-w-3xl mx-auto">
-          <div className="rounded-2xl border border-border bg-white p-7 flex flex-col">
-            <h3 className="font-semibold text-foreground">Basis</h3>
-            <div className="mt-2 flex items-baseline gap-1">
-              <span className="text-3xl font-bold text-foreground">0 €</span>
-              <span className="text-sm text-muted-foreground">/ Monat</span>
-            </div>
-            <p className="text-sm text-muted-foreground mt-1">9 % Vermittlungsgebühr pro Buchung</p>
-            <ul className="mt-5 space-y-2.5 text-sm text-foreground flex-1">
-              {["Öffentliches Berater-Profil", "Online-Terminbuchung", "Bewertungen sammeln", "Per-Buchung Kalender-Export"].map((f) => (
-                <li key={f} className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" aria-hidden="true" />
-                  <span>{f}</span>
-                </li>
-              ))}
-            </ul>
-            <Button
-              variant="outline"
-              onClick={startRegistration}
-              className="mt-6 rounded-full h-11 text-sm font-semibold"
-              data-testid="button-berater-basis"
-            >
-              Kostenlos starten
-            </Button>
-          </div>
-
-          <div className="rounded-2xl border-2 border-primary bg-white p-7 flex flex-col relative">
-            <span className="absolute -top-3 left-7 text-xs font-semibold uppercase tracking-wide text-white bg-primary rounded-full px-3 py-1">
-              Empfohlen
-            </span>
-            <h3 className="font-semibold text-foreground">Premium</h3>
-            <div className="mt-2 flex items-baseline gap-1">
-              <span className="text-3xl font-bold text-foreground">89 €</span>
-              <span className="text-sm text-muted-foreground">/ Monat</span>
-            </div>
-            <p className="text-sm text-muted-foreground mt-1">nur 4 % Vermittlungsgebühr pro Buchung</p>
-            <ul className="mt-5 space-y-2.5 text-sm text-foreground flex-1">
-              {["Alles aus Basis", "Priorisiert in Suche & Startseite", "KI-Angebote & Bedarfsanalyse", "Kalender-Sync (iCal-Abo)"].map((f) => (
-                <li key={f} className="flex items-start gap-2">
-                  <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" aria-hidden="true" />
-                  <span>{f}</span>
-                </li>
-              ))}
-            </ul>
-            <Button
-              onClick={startRegistration}
-              className="mt-6 rounded-full h-11 text-sm font-semibold bg-primary hover:bg-[var(--klard-teal-d)] text-white"
-              data-testid="button-berater-premium"
-            >
-              Mit Premium starten
-            </Button>
-          </div>
-        </div>
-        <p className="text-center text-xs text-muted-foreground mt-5">
-          Premium ist monatlich kündbar. Details auf der{" "}
-          <button
-            type="button"
-            onClick={() => setLocation("/pricing")}
-            className="text-primary font-medium hover:underline"
-            data-testid="link-berater-pricing-details"
-          >
-            Preisübersicht
-          </button>
-          .
-        </p>
       </section>
 
       {/* FAQ */}

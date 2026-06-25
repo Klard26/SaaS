@@ -57,9 +57,19 @@ import {
   requestOffersTable,
   leadFeesTable,
   categoriesTable,
+  providerLeadGrantsTable,
 } from "@workspace/db";
 import { and, eq, inArray } from "drizzle-orm";
-import { BASE_LEAD_PRICE_CENTS } from "../lib/leadPricing";
+import { LEAD_PRICE_PRO_CENTS } from "../lib/leadPricing";
+import {
+  grantLeadCredits,
+  revokeMonthlyPremiumGrants,
+  countRemainingFreeLeads,
+  LEAD_GRANT_SOURCES,
+  ONE_TIME_PERIOD,
+  currentPeriodMonth,
+  startOfNextMonthUtc,
+} from "../lib/leadGrants";
 
 function makeApp(): Express {
   const app = express();
@@ -159,6 +169,9 @@ beforeAll(async () => {
     name: "RfQ Test Kategorie",
     slug: categorySlug,
     requiresDirectBilling: false,
+    // Pay-per-Lead category in the professional world → flat pro lead price.
+    worldId: "pro",
+    pricingModel: "lead",
   });
 
   const inserted = await db
@@ -220,6 +233,7 @@ afterAll(async () => {
     await db.delete(walletTransactionsTable).where(inArray(walletTransactionsTable.providerId, providerIds));
     await db.delete(providerWalletTable).where(inArray(providerWalletTable.providerId, providerIds));
     await db.delete(leadUsageTable).where(inArray(leadUsageTable.providerId, providerIds));
+    await db.delete(providerLeadGrantsTable).where(inArray(providerLeadGrantsTable.providerId, providerIds));
     await db.delete(providersTable).where(inArray(providersTable.id, providerIds));
   }
   await db.delete(categoriesTable).where(eq(categoriesTable.slug, categorySlug));
@@ -234,6 +248,9 @@ beforeEach(async () => {
   const providerIds = [p1?.id, p2?.id, poor?.id].filter(Boolean) as number[];
   if (providerIds.length > 0) {
     await db.delete(leadUsageTable).where(inArray(leadUsageTable.providerId, providerIds));
+    // Free-lead grants must not bleed across tests either — every grant test
+    // seeds exactly the grants it needs.
+    await db.delete(providerLeadGrantsTable).where(inArray(providerLeadGrantsTable.providerId, providerIds));
   }
 });
 
@@ -284,7 +301,7 @@ describe("provider inbox — anonymization before offering", () => {
     expect(entry.customerEmail).toBeNull();
     expect(entry.customerPhone).toBeNull();
     // Plain request → base lead price, no discount for basic.
-    expect(entry.estimatedLeadPriceCents).toBe(BASE_LEAD_PRICE_CENTS);
+    expect(entry.estimatedLeadPriceCents).toBe(LEAD_PRICE_PRO_CENTS);
 
     const detail = await api("GET", `/api/providers/me/requests/${requestId}`);
     expect(detail.status).toBe(200);
@@ -311,11 +328,11 @@ describe("POST /providers/me/requests/:id/offers — wallet charge + PII reveal"
       leadFeeCents: 1,
     });
     expect(res.status).toBe(201);
-    expect(res.body.leadFeeCents).toBe(BASE_LEAD_PRICE_CENTS);
-    expect(res.body.walletBalanceCents).toBe(before - BASE_LEAD_PRICE_CENTS);
+    expect(res.body.leadFeeCents).toBe(LEAD_PRICE_PRO_CENTS);
+    expect(res.body.walletBalanceCents).toBe(before - LEAD_PRICE_PRO_CENTS);
     expect(emailSpies.sendOfferReceivedToCustomer).toHaveBeenCalledTimes(1);
 
-    expect(await walletBalance(p1.id)).toBe(before - BASE_LEAD_PRICE_CENTS);
+    expect(await walletBalance(p1.id)).toBe(before - LEAD_PRICE_PRO_CENTS);
 
     // Contact is now revealed to this provider.
     const detail = await api("GET", `/api/providers/me/requests/${requestId}`);
@@ -491,11 +508,11 @@ describe("POST /leads/:leadFeeId/refund — owner-only, single-use", () => {
     });
     expect(offerRes.status).toBe(201);
     const leadFeeId = offerRes.body.offer.leadFeeId as number;
-    expect(await walletBalance(p2.id)).toBe(before - BASE_LEAD_PRICE_CENTS);
+    expect(await walletBalance(p2.id)).toBe(before - LEAD_PRICE_PRO_CENTS);
 
     const refund = await api("POST", `/api/leads/${leadFeeId}/refund`, { reason: "Test" });
     expect(refund.status).toBe(200);
-    expect(refund.body.refundedCents).toBe(BASE_LEAD_PRICE_CENTS);
+    expect(refund.body.refundedCents).toBe(LEAD_PRICE_PRO_CENTS);
     expect(await walletBalance(p2.id)).toBe(before);
 
     // Second refund is rejected.
@@ -545,5 +562,203 @@ describe("auth gating", () => {
     authState.userId = null;
     const res = await api("GET", "/api/providers/me/requests");
     expect(res.status).toBe(401);
+  });
+});
+
+describe("free-lead grants — consume before wallet debit", () => {
+  it("uses a free lead first: lead fee 0, wallet untouched, remaining decremented", async () => {
+    // Two free leads for p1; the wallet is fully funded but must NOT be touched.
+    await grantLeadCredits(db, {
+      providerId: p1.id,
+      source: LEAD_GRANT_SOURCES.basicSignup,
+      periodMonth: ONE_TIME_PERIOD,
+      count: 2,
+    });
+    const before = await walletBalance(p1.id);
+    const { requestId } = await createRequest();
+    authState.userId = userP1;
+
+    const res = await api("POST", `/api/providers/me/requests/${requestId}/offers`, {
+      priceCents: 12_000,
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.freeLeadUsed).toBe(true);
+    expect(res.body.leadFeeCents).toBe(0);
+    // Wallet balance is reported unchanged AND actually unchanged in the DB.
+    expect(res.body.walletBalanceCents).toBe(before);
+    expect(await walletBalance(p1.id)).toBe(before);
+    // One of the two free leads was spent.
+    expect(res.body.freeLeadsRemaining).toBe(1);
+    expect(await countRemainingFreeLeads(p1.id)).toBe(1);
+
+    // The lead fee row records the free lead: amount 0, not paid from credit,
+    // and linked to the grant it was drawn from.
+    const [fee] = await db
+      .select()
+      .from(leadFeesTable)
+      .where(eq(leadFeesTable.id, res.body.offer.leadFeeId));
+    expect(fee.amountCents).toBe(0);
+    expect(fee.paidFromCredit).toBe(false);
+    expect(fee.leadGrantId).not.toBeNull();
+  });
+
+  it("debits the wallet once the free leads are exhausted", async () => {
+    // Exactly one free lead: the first offer is free, the second pays full price.
+    await grantLeadCredits(db, {
+      providerId: p1.id,
+      source: LEAD_GRANT_SOURCES.basicSignup,
+      periodMonth: ONE_TIME_PERIOD,
+      count: 1,
+    });
+    const before = await walletBalance(p1.id);
+
+    const first = await createRequest();
+    authState.userId = userP1;
+    const firstRes = await api("POST", `/api/providers/me/requests/${first.requestId}/offers`, {
+      priceCents: 9_000,
+    });
+    expect(firstRes.status).toBe(201);
+    expect(firstRes.body.freeLeadUsed).toBe(true);
+    expect(firstRes.body.leadFeeCents).toBe(0);
+    expect(await walletBalance(p1.id)).toBe(before);
+
+    const second = await createRequest();
+    authState.userId = userP1;
+    const secondRes = await api("POST", `/api/providers/me/requests/${second.requestId}/offers`, {
+      priceCents: 9_000,
+    });
+    expect(secondRes.status).toBe(201);
+    expect(secondRes.body.freeLeadUsed).toBe(false);
+    expect(secondRes.body.leadFeeCents).toBe(LEAD_PRICE_PRO_CENTS);
+    expect(await walletBalance(p1.id)).toBe(before - LEAD_PRICE_PRO_CENTS);
+    expect(await countRemainingFreeLeads(p1.id)).toBe(0);
+  });
+
+  it("spends both free leads from a single aggregate grant row (no false debit)", async () => {
+    // Regression guard for the aggregate-counter consumption: a grant row with
+    // remainingCount=2 must be fully drained across two offers, with the wallet
+    // untouched both times — never a premature wallet debit while a free lead
+    // still remains in the (momentarily locked) row.
+    await grantLeadCredits(db, {
+      providerId: p1.id,
+      source: LEAD_GRANT_SOURCES.basicSignup,
+      periodMonth: ONE_TIME_PERIOD,
+      count: 2,
+    });
+    const before = await walletBalance(p1.id);
+
+    for (let i = 0; i < 2; i++) {
+      const { requestId } = await createRequest();
+      authState.userId = userP1;
+      const res = await api("POST", `/api/providers/me/requests/${requestId}/offers`, {
+        priceCents: 9_000,
+      });
+      expect(res.status).toBe(201);
+      expect(res.body.freeLeadUsed).toBe(true);
+      expect(res.body.leadFeeCents).toBe(0);
+    }
+    expect(await walletBalance(p1.id)).toBe(before);
+    expect(await countRemainingFreeLeads(p1.id)).toBe(0);
+  });
+
+  it("spends the soonest-expiring (monthly) grant before the one-time grant", async () => {
+    // p1 has a monthly grant (expires next month) and a one-time grant. The
+    // monthly one must be drawn down first so use-it-or-lose-it leads aren't lost.
+    await grantLeadCredits(db, {
+      providerId: p1.id,
+      source: LEAD_GRANT_SOURCES.premiumActivation,
+      periodMonth: ONE_TIME_PERIOD,
+      count: 1,
+    });
+    await grantLeadCredits(db, {
+      providerId: p1.id,
+      source: LEAD_GRANT_SOURCES.premiumMonthly,
+      periodMonth: currentPeriodMonth(),
+      count: 1,
+      expiresAt: startOfNextMonthUtc(),
+    });
+
+    const { requestId } = await createRequest();
+    authState.userId = userP1;
+    const res = await api("POST", `/api/providers/me/requests/${requestId}/offers`, {
+      priceCents: 9_000,
+    });
+    expect(res.status).toBe(201);
+    expect(res.body.freeLeadUsed).toBe(true);
+
+    // The monthly grant was drained; the one-time activation grant survives.
+    const grants = await db
+      .select()
+      .from(providerLeadGrantsTable)
+      .where(eq(providerLeadGrantsTable.providerId, p1.id));
+    const monthly = grants.find((g) => g.source === LEAD_GRANT_SOURCES.premiumMonthly);
+    const oneTime = grants.find((g) => g.source === LEAD_GRANT_SOURCES.premiumActivation);
+    expect(monthly?.remainingCount).toBe(0);
+    expect(oneTime?.remainingCount).toBe(1);
+  });
+
+  it("refunding a free lead is a no-op: marked refunded, no wallet movement", async () => {
+    await grantLeadCredits(db, {
+      providerId: p2.id,
+      source: LEAD_GRANT_SOURCES.basicSignup,
+      periodMonth: ONE_TIME_PERIOD,
+      count: 1,
+    });
+    const before = await walletBalance(p2.id);
+    const { requestId } = await createRequest();
+    authState.userId = userP2;
+    const offerRes = await api("POST", `/api/providers/me/requests/${requestId}/offers`, {
+      priceCents: 11_000,
+    });
+    expect(offerRes.status).toBe(201);
+    expect(offerRes.body.freeLeadUsed).toBe(true);
+    const leadFeeId = offerRes.body.offer.leadFeeId as number;
+    expect(await walletBalance(p2.id)).toBe(before);
+
+    const refund = await api("POST", `/api/leads/${leadFeeId}/refund`, { reason: "Test" });
+    expect(refund.status).toBe(200);
+    // Nothing is refunded (the lead cost nothing) and the wallet is untouched.
+    expect(refund.body.refundedCents).toBe(0);
+    expect(await walletBalance(p2.id)).toBe(before);
+
+    // The lead fee is marked refunded, but the grant is NOT re-credited.
+    const [fee] = await db
+      .select()
+      .from(leadFeesTable)
+      .where(eq(leadFeesTable.id, leadFeeId));
+    expect(fee.status).toBe("refunded");
+    expect(await countRemainingFreeLeads(p2.id)).toBe(0);
+  });
+
+  it("downgrade revokes unused monthly grants but keeps one-time grants", async () => {
+    await grantLeadCredits(db, {
+      providerId: p1.id,
+      source: LEAD_GRANT_SOURCES.premiumActivation,
+      periodMonth: ONE_TIME_PERIOD,
+      count: 5,
+    });
+    await grantLeadCredits(db, {
+      providerId: p1.id,
+      source: LEAD_GRANT_SOURCES.premiumMonthly,
+      periodMonth: currentPeriodMonth(),
+      count: 3,
+      expiresAt: startOfNextMonthUtc(),
+    });
+    expect(await countRemainingFreeLeads(p1.id)).toBe(8);
+
+    await db.transaction(async (tx) => {
+      await revokeMonthlyPremiumGrants(tx, p1.id);
+    });
+
+    // Only the 5 one-time activation leads survive; the 3 monthly are revoked.
+    expect(await countRemainingFreeLeads(p1.id)).toBe(5);
+    const grants = await db
+      .select()
+      .from(providerLeadGrantsTable)
+      .where(eq(providerLeadGrantsTable.providerId, p1.id));
+    const monthly = grants.find((g) => g.source === LEAD_GRANT_SOURCES.premiumMonthly);
+    const oneTime = grants.find((g) => g.source === LEAD_GRANT_SOURCES.premiumActivation);
+    expect(monthly?.remainingCount).toBe(0);
+    expect(oneTime?.remainingCount).toBe(5);
   });
 });

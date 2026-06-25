@@ -2830,6 +2830,7 @@ components:
         currentPeriodEnd: { type: ["string", "null"] }
         cancelAtPeriodEnd: { type: boolean }
         priceEur: { type: number }
+        world: { type: string, enum: [pro, alltag] }
 
     PlatformStats:
       type: object
@@ -3143,17 +3144,23 @@ components:
 
     CreateOfferResult:
       type: object
-      required: [offer, leadFeeCents, basePriceCents, tier, walletBalanceCents]
+      required: [offer, leadFeeCents, basePriceCents, freeLeadUsed, freeLeadsRemaining, tier, walletBalanceCents]
       properties:
         offer: { $ref: "#/components/schemas/RfqOffer" }
         leadFeeCents:  { type: integer }
         basePriceCents: { type: integer }
+        freeLeadUsed:
+          description: True when this lead was paid from a free-lead grant (leadFeeCents is then 0).
+          type: boolean
+        freeLeadsRemaining:
+          description: Free leads the provider can still use after this offer.
+          type: integer
         tier: { type: string }
         walletBalanceCents: { type: integer }
 
     LeadEntitlements:
       type: object
-      required: [tier, leadsUsed, leadDiscountPct, rankingBoost]
+      required: [tier, leadsUsed, leadDiscountPct, rankingBoost, freeLeadsRemaining]
       properties:
         tier: { type: string, enum: [basic, premium] }
         maxLeadsMonth:
@@ -3162,6 +3169,9 @@ components:
         leadsUsed: { type: integer }
         leadDiscountPct: { type: number }
         rankingBoost: { type: number }
+        freeLeadsRemaining:
+          description: Free leads (grants) the provider can still use right now.
+          type: integer
 
     WalletTransactionDto:
       type: object

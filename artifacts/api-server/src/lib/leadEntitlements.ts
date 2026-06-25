@@ -1,8 +1,9 @@
 /**
  * Tier entitlements for the Pay-per-Lead (RfQ) marketplace. REUSES the existing
  * `basic` / `premium` subscription tiers on the providers row (there is no
- * free/plus/pro). Premium relaxes the monthly lead cap, discounts every lead
- * fee, and boosts match ranking.
+ * free/plus/pro). Premium relaxes the monthly lead cap and boosts match ranking.
+ * Lead fees are NOT discounted by tier — both tiers pay the same lead fee;
+ * Premium's lead value is the monthly free-lead grants instead.
  */
 import { db } from "@workspace/db";
 import { leadUsageTable } from "@workspace/db";
@@ -23,7 +24,7 @@ export interface LeadEntitlements {
 
 const ENTITLEMENTS: Record<Tier, Omit<LeadEntitlements, "tier">> = {
   basic: { maxLeadsMonth: 3, leadDiscountPct: 0, rankingBoost: 0 },
-  premium: { maxLeadsMonth: null, leadDiscountPct: 20, rankingBoost: 10 },
+  premium: { maxLeadsMonth: null, leadDiscountPct: 0, rankingBoost: 10 },
 };
 
 export function normalizeTier(tier: string | null | undefined): Tier {

@@ -14,6 +14,12 @@ import { randomBytes } from "node:crypto";
 import { slugify } from "../lib/slugify";
 import { sendProviderWelcome } from "../lib/email";
 import { claimRole, RoleConflictError } from "../lib/userRole";
+import {
+  grantLeadCredits,
+  LEAD_GRANT_SOURCES,
+  ONE_TIME_PERIOD,
+  BASIC_SIGNUP_LEADS,
+} from "../lib/leadGrants";
 
 const router: IRouter = Router();
 
@@ -425,8 +431,23 @@ router.post("/providers", async (req, res): Promise<void> => {
       })
       .returning();
 
-    if (provider && email) {
-      void sendProviderWelcome({ email, displayName: provider.displayName });
+    if (provider) {
+      // Welcome bonus: 2 free leads (never expire). Idempotent + best-effort, so
+      // a grant hiccup never fails provider creation.
+      try {
+        await grantLeadCredits(db, {
+          providerId: provider.id,
+          source: LEAD_GRANT_SOURCES.basicSignup,
+          periodMonth: ONE_TIME_PERIOD,
+          count: BASIC_SIGNUP_LEADS,
+          expiresAt: null,
+        });
+      } catch (err) {
+        req.log.error({ err, providerId: provider.id }, "Basic free-lead grant failed");
+      }
+      if (email) {
+        void sendProviderWelcome({ email, displayName: provider.displayName });
+      }
     }
 
     res.status(201).json(provider);

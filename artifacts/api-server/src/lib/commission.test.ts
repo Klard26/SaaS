@@ -7,59 +7,68 @@ import {
 } from "./commission";
 
 describe("tierCommissionRate", () => {
-  it("returns the premium rate for premium providers", () => {
-    expect(tierCommissionRate("premium")).toBe(0.04);
+  it("uses the pro-world rates (Basic 14%, Premium 9%)", () => {
+    expect(tierCommissionRate("pro", "premium")).toBe(0.09);
+    expect(tierCommissionRate("pro", "basic")).toBe(0.14);
+    expect(tierCommissionRate("pro", undefined)).toBe(0.14);
+    expect(tierCommissionRate("pro", null)).toBe(0.14);
+    expect(tierCommissionRate("pro", "garbage")).toBe(0.14);
   });
 
-  it("falls back to the basic rate for everything else", () => {
-    expect(tierCommissionRate("basic")).toBe(0.09);
-    expect(tierCommissionRate(undefined)).toBe(0.09);
-    expect(tierCommissionRate(null)).toBe(0.09);
-    expect(tierCommissionRate("garbage")).toBe(0.09);
+  it("uses the alltag-world rates (Basic 15%, Premium 10%)", () => {
+    expect(tierCommissionRate("alltag", "premium")).toBe(0.1);
+    expect(tierCommissionRate("alltag", "basic")).toBe(0.15);
+    expect(tierCommissionRate("alltag", undefined)).toBe(0.15);
   });
 });
 
 describe("effectiveCommissionRate", () => {
-  it("uses the tier default when no per-provider override is set", () => {
+  it("uses the world+tier default when no per-provider override is set", () => {
     expect(
-      effectiveCommissionRate({ commissionRate: null, subscriptionTier: "premium" }),
-    ).toBe(0.04);
-    expect(
-      effectiveCommissionRate({ commissionRate: null, subscriptionTier: "basic" }),
+      effectiveCommissionRate({ commissionRate: null, subscriptionTier: "premium" }, "pro"),
     ).toBe(0.09);
+    expect(
+      effectiveCommissionRate({ commissionRate: null, subscriptionTier: "basic" }, "pro"),
+    ).toBe(0.14);
+    expect(
+      effectiveCommissionRate({ commissionRate: null, subscriptionTier: "premium" }, "alltag"),
+    ).toBe(0.1);
+    expect(
+      effectiveCommissionRate({ commissionRate: null, subscriptionTier: "basic" }, "alltag"),
+    ).toBe(0.15);
   });
 
   it("honors a valid per-provider override (numeric string from the DB)", () => {
     expect(
-      effectiveCommissionRate({ commissionRate: "0.015", subscriptionTier: "basic" }),
+      effectiveCommissionRate({ commissionRate: "0.015", subscriptionTier: "basic" }, "pro"),
     ).toBe(0.015);
   });
 
   it("allows a zero override", () => {
     expect(
-      effectiveCommissionRate({ commissionRate: "0", subscriptionTier: "basic" }),
+      effectiveCommissionRate({ commissionRate: "0", subscriptionTier: "basic" }, "alltag"),
     ).toBe(0);
   });
 
-  it("ignores an out-of-range override (>= 1) and falls back to the tier", () => {
+  it("ignores an out-of-range override (>= 1) and falls back to the world+tier", () => {
     expect(
-      effectiveCommissionRate({ commissionRate: "1", subscriptionTier: "premium" }),
-    ).toBe(0.04);
-    expect(
-      effectiveCommissionRate({ commissionRate: "1.5", subscriptionTier: "basic" }),
+      effectiveCommissionRate({ commissionRate: "1", subscriptionTier: "premium" }, "pro"),
     ).toBe(0.09);
+    expect(
+      effectiveCommissionRate({ commissionRate: "1.5", subscriptionTier: "basic" }, "alltag"),
+    ).toBe(0.15);
   });
 
-  it("ignores a negative override and falls back to the tier", () => {
+  it("ignores a negative override and falls back to the world+tier", () => {
     expect(
-      effectiveCommissionRate({ commissionRate: "-0.1", subscriptionTier: "basic" }),
-    ).toBe(0.09);
+      effectiveCommissionRate({ commissionRate: "-0.1", subscriptionTier: "basic" }, "pro"),
+    ).toBe(0.14);
   });
 
-  it("ignores a non-numeric override and falls back to the tier", () => {
+  it("ignores a non-numeric override and falls back to the world+tier", () => {
     expect(
-      effectiveCommissionRate({ commissionRate: "abc", subscriptionTier: "premium" }),
-    ).toBe(0.04);
+      effectiveCommissionRate({ commissionRate: "abc", subscriptionTier: "premium" }, "alltag"),
+    ).toBe(0.1);
   });
 });
 
@@ -91,37 +100,49 @@ describe("isConnectSplitEligible", () => {
 });
 
 describe("computeApplicationFeeCents", () => {
-  it("takes the tier commission of the total in cents", () => {
-    // 100.00 EUR = 10000 cents, basic 9% => 900 cents
+  it("takes the world+tier commission of the total in cents", () => {
+    // 100.00 EUR = 10000 cents, pro basic 14% => 1400 cents
     expect(
       computeApplicationFeeCents(
         { commissionRate: null, subscriptionTier: "basic" },
+        "pro",
         10000,
       ),
-    ).toBe(900);
-    // premium 4% => 400 cents
+    ).toBe(1400);
+    // pro premium 9% => 900 cents
     expect(
       computeApplicationFeeCents(
         { commissionRate: null, subscriptionTier: "premium" },
+        "pro",
         10000,
       ),
-    ).toBe(400);
+    ).toBe(900);
+    // alltag basic 15% => 1500 cents
+    expect(
+      computeApplicationFeeCents(
+        { commissionRate: null, subscriptionTier: "basic" },
+        "alltag",
+        10000,
+      ),
+    ).toBe(1500);
   });
 
   it("uses a per-provider override rate", () => {
     expect(
       computeApplicationFeeCents(
         { commissionRate: "0.05", subscriptionTier: "basic" },
+        "pro",
         10000,
       ),
     ).toBe(500);
   });
 
   it("rounds to the nearest cent", () => {
-    // 99.99 EUR = 9999 cents, 9% = 899.91 => 900
+    // 99.99 EUR = 9999 cents, pro premium 9% = 899.91 => 900
     expect(
       computeApplicationFeeCents(
-        { commissionRate: null, subscriptionTier: "basic" },
+        { commissionRate: null, subscriptionTier: "premium" },
+        "pro",
         9999,
       ),
     ).toBe(900);
