@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -14,6 +14,7 @@ import { Footer } from "@/components/Footer";
 import { QualificationsForm, type QualificationsValue } from "@/components/QualificationsForm";
 import { useCreateProvider, useGetMyProviderProfile, getGetMyProviderProfileQueryKey } from "@workspace/api-client-react";
 import { useClassifiedCategories } from "@/lib/classification";
+import { worldFromSearch, readRememberedWorld, clearRememberedWorld, type ProviderWorld } from "@/lib/providerWorld";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { UserCheck, Upload, Loader2 } from "lucide-react";
@@ -49,6 +50,16 @@ export default function ProviderOnboarding() {
   const [qualifications, setQualifications] = useState<QualificationsValue>({});
 
   const { categories, grouped } = useClassifiedCategories();
+  const search = useSearch();
+  const world: ProviderWorld | null = worldFromSearch(search) ?? readRememberedWorld();
+  const isAlltag = world === "alltag";
+  const filteredGroups = world ? grouped.filter((wg) => wg.world.id === world) : grouped;
+  const visibleGroups = filteredGroups.length > 0 ? filteredGroups : grouped;
+  const headerTitle = isAlltag ? "Als Dienstleister registrieren" : "Als Berater registrieren";
+  const headerSubtitle = isAlltag
+    ? "Erstellen Sie Ihr Profil und erhalten Sie neue Aufträge aus Ihrer Region über Klard."
+    : "Erstellen Sie Ihr Profil und erhalten Sie neue Mandanten über Klard.";
+  const profileCardTitle = isAlltag ? "Ihr Dienstleister-Profil" : "Ihr Berater-Profil";
   const createProvider = useCreateProvider();
 
   const { data: existingProfile } = useGetMyProviderProfile({
@@ -100,12 +111,14 @@ export default function ProviderOnboarding() {
       });
       qc.invalidateQueries({ queryKey: getGetMyProviderProfileQueryKey() });
       toast({ title: "Profil eingereicht", description: "Freigabe ausstehend – nach der Prüfung durch Klard wird Ihr Profil automatisch veröffentlicht." });
+      clearRememberedWorld();
       setLocation("/dashboard");
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number }; status?: number } | undefined);
       if (status?.response?.status === 409 || status?.status === 409) {
         qc.invalidateQueries({ queryKey: getGetMyProviderProfileQueryKey() });
         toast({ title: "Profil vorhanden", description: "Sie haben bereits ein Berater-Profil." });
+        clearRememberedWorld();
         setLocation("/dashboard");
         return;
       }
@@ -120,15 +133,15 @@ export default function ProviderOnboarding() {
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10 flex-1 w-full">
         <GuidedHeader
           icon={UserCheck}
-          title="Als Berater registrieren"
-          subtitle="Erstellen Sie Ihr Profil und erhalten Sie neue Mandanten über Klard."
+          title={headerTitle}
+          subtitle={headerSubtitle}
           steps={["Profil", "Leistungen", "Verfügbarkeit"]}
           current={0}
         />
 
         <Card>
           <CardHeader className="pb-4">
-            <CardTitle className="text-base">Ihr Berater-Profil</CardTitle>
+            <CardTitle className="text-base">{profileCardTitle}</CardTitle>
             <CardDescription>Alle Pflichtfelder sind mit * markiert.</CardDescription>
           </CardHeader>
           <CardContent>
@@ -161,7 +174,7 @@ export default function ProviderOnboarding() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {grouped.map(wg =>
+                          {visibleGroups.map(wg =>
                             wg.areas.map(ag => (
                               <SelectGroup key={ag.area.id}>
                                 <SelectLabel>{wg.world.title} · {ag.area.name}</SelectLabel>

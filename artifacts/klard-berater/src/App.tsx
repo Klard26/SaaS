@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ClerkProvider, SignIn, SignUp, Show, useClerk } from "@clerk/react";
 import { deDE } from "@clerk/localizations";
 import { publishableKeyFromHost } from "@clerk/react/internal";
@@ -27,11 +27,13 @@ import ProviderRequests from "./pages/ProviderRequests";
 import ProviderWallet from "./pages/ProviderWallet";
 import Pricing from "./pages/Pricing";
 import BeraterWerden from "./pages/BeraterWerden";
+import DienstleisterWerden from "./pages/DienstleisterWerden";
 import Impressum from "./pages/legal/Impressum";
 import AGB from "./pages/legal/AGB";
 import Datenschutz from "./pages/legal/Datenschutz";
 import Cookies from "./pages/legal/Cookies";
 import { CookieBanner } from "./components/CookieBanner";
+import { rememberProviderWorld, readRememberedWorld, worldFromSearch } from "./lib/providerWorld";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -110,6 +112,10 @@ const clerkAppearance = {
 };
 
 function SignInPage() {
+  const world = useMemo(() => worldFromSearch(window.location.search), []);
+  useEffect(() => {
+    if (world) rememberProviderWorld(world);
+  }, [world]);
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4 py-12">
       <SignIn
@@ -124,14 +130,22 @@ function SignInPage() {
 }
 
 function SignUpPage() {
+  // Capture the provider world from the URL once (?world=alltag|pro), falling
+  // back to a value remembered from the landing page so it survives Clerk's
+  // internal sign-in -> sign-up transitions which drop the query string.
+  const world = useMemo(() => worldFromSearch(window.location.search) ?? readRememberedWorld(), []);
+  useEffect(() => {
+    if (world) rememberProviderWorld(world);
+  }, [world]);
+  const onboardingUrl = `${basePath}/provider/onboarding${world ? `?world=${world}` : ""}`;
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4 py-12">
       <SignUp
         routing="path"
         path={`${basePath}/sign-up`}
         signInUrl={`${basePath}/sign-in`}
-        forceRedirectUrl={`${basePath}/provider/onboarding`}
-        fallbackRedirectUrl={`${basePath}/provider/onboarding`}
+        forceRedirectUrl={onboardingUrl}
+        fallbackRedirectUrl={onboardingUrl}
       />
     </div>
   );
@@ -292,6 +306,7 @@ function ClerkProviderWithRoutes() {
           <Route path="/" component={HomeRedirect} />
           <Route path="/sign-in/*?" component={SignInPage} />
           <Route path="/sign-up/*?" component={SignUpPage} />
+          <Route path="/dienstleister-werden" component={DienstleisterWerden} />
           <Route path="/pricing" component={Pricing} />
           <Route path="/impressum" component={Impressum} />
           <Route path="/agb" component={AGB} />

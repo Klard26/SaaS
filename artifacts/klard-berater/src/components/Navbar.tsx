@@ -65,6 +65,9 @@ export function Navbar() {
           <Link href="/pricing" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-pricing">
             Preise
           </Link>
+          <Link href="/dienstleister-werden" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-alltag-area">
+            Alltag &amp; Handwerk
+          </Link>
           <a href="/" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-customer-app">
             Für Kunden
           </a>
@@ -159,6 +162,7 @@ export function Navbar() {
               <Link href="/" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Vorteile</Link>
             )}
             <Link href="/pricing" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Preise</Link>
+            <Link href="/dienstleister-werden" className="py-2 text-sm text-foreground" onClick={() => setMobileOpen(false)}>Alltag &amp; Handwerk</Link>
             <a href="/" className="py-2 text-sm text-foreground">Für Kunden</a>
           </nav>
         </div>
