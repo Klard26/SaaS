@@ -40,6 +40,7 @@ import type {
   Category,
   CheckoutSession,
   ClaimRoleBody,
+  Classification,
   ConnectOnboardingLink,
   ConnectStatus,
   CreateOfferResult,
@@ -271,6 +272,81 @@ export function useListCategories<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getListCategoriesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get the world to area classification hierarchy (Welten and Bereiche)
+ */
+export const getGetClassificationUrl = () => {
+  return `/api/classification`;
+};
+
+export const getClassification = async (
+  options?: RequestInit,
+): Promise<Classification> => {
+  return customFetch<Classification>(getGetClassificationUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetClassificationQueryKey = () => {
+  return [`/api/classification`] as const;
+};
+
+export const getGetClassificationQueryOptions = <
+  TData = Awaited<ReturnType<typeof getClassification>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getClassification>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetClassificationQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getClassification>>
+  > = ({ signal }) => getClassification({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getClassification>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetClassificationQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getClassification>>
+>;
+export type GetClassificationQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get the world to area classification hierarchy (Welten and Bereiche)
+ */
+
+export function useGetClassification<
+  TData = Awaited<ReturnType<typeof getClassification>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getClassification>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetClassificationQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

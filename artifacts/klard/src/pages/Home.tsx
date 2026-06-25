@@ -2,40 +2,21 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { useListCategories, useListProviders, useGetPlatformStats } from "@workspace/api-client-react";
+import { useListProviders, useGetPlatformStats } from "@workspace/api-client-react";
 import {
   Search, MapPin, Briefcase, Star,
   CalendarCheck, ShieldCheck,
-  Calculator, Zap, Scale, TrendingUp, Home as HomeIcon, Monitor,
-  Megaphone, Users, Shield, Building, Target, FileSignature, ClipboardCheck,
-  Compass, Rocket, Coins, Newspaper, Laptop, Lock, ShieldCheck as ShieldCheck2,
-  UserCheck, Sparkles, Handshake, Brain, Apple, HeartPulse, Leaf, Ruler,
-  SearchCheck, Scroll, Truck, GitMerge, Lightbulb, Receipt,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 import { VerifiedBadge, PremiumBadge } from "@/components/journey/Badges";
-
-const ICONS: Record<string, LucideIcon> = {
-  calculator: Calculator, zap: Zap, briefcase: Briefcase, scale: Scale,
-  "trending-up": TrendingUp, home: HomeIcon, monitor: Monitor, megaphone: Megaphone,
-  users: Users, shield: Shield, building: Building, target: Target,
-  "file-signature": FileSignature, "clipboard-check": ClipboardCheck,
-  compass: Compass, rocket: Rocket, coins: Coins, search: Search,
-  newspaper: Newspaper, laptop: Laptop, lock: Lock, "shield-check": ShieldCheck2,
-  "user-check": UserCheck, sparkles: Sparkles, handshake: Handshake, brain: Brain,
-  apple: Apple, "heart-pulse": HeartPulse, leaf: Leaf, ruler: Ruler,
-  "search-check": SearchCheck, scroll: Scroll, truck: Truck, "git-merge": GitMerge,
-  lightbulb: Lightbulb, receipt: Receipt,
-};
+import { useClassifiedCategories, areaIconFor } from "@/lib/classification";
 
 export default function Home() {
   const [branche, setBranche] = useState("");
   const [plz, setPlz] = useState("");
   const [leistung, setLeistung] = useState("");
-  const [activeCat, setActiveCat] = useState<string | null>(null);
   const [, setLocation] = useLocation();
 
-  const { data: categories = [] } = useListCategories();
+  const { grouped } = useClassifiedCategories();
   const { data: providers = [] } = useListProviders({ limit: 6 });
   const { data: stats } = useGetPlatformStats();
 
@@ -84,9 +65,15 @@ export default function Home() {
                 data-testid="select-hero-branche"
               >
                 <option value="">Alle Branchen</option>
-                {categories.map(c => (
-                  <option key={c.id} value={c.slug}>{c.name}</option>
-                ))}
+                {grouped.map(wg =>
+                  wg.areas.map(ag => (
+                    <optgroup key={ag.area.id} label={`${wg.world.title} · ${ag.area.name}`}>
+                      {ag.categories.map(c => (
+                        <option key={c.id} value={c.slug}>{c.name}</option>
+                      ))}
+                    </optgroup>
+                  )),
+                )}
               </select>
             </div>
             <div className="klard-search-group">
@@ -125,33 +112,36 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CATEGORY PILL BAR */}
+      {/* WORLD -> AREA NAVIGATION */}
       <div className="bg-white border-b border-border px-4 sm:px-8">
-        <div className="max-w-[1280px] mx-auto flex gap-2 overflow-x-auto py-3 no-scrollbar">
-          <button
-            type="button"
-            onClick={() => { setActiveCat(null); setLocation("/search"); }}
-            className={`klard-cpill ${activeCat === null ? "active" : ""}`}
-            data-testid="cpill-all"
-          >
-            Alle Branchen
-          </button>
-          {categories.map(c => {
-            const Icon = ICONS[c.icon] ?? Briefcase;
-            const isActive = activeCat === c.slug;
-            return (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => { setActiveCat(c.slug); setLocation(`/search?category=${c.slug}`); }}
-                className={`klard-cpill ${isActive ? "active" : ""}`}
-                data-testid={`cpill-${c.slug}`}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                {c.name}
-              </button>
-            );
-          })}
+        <div className="max-w-[1280px] mx-auto py-5 space-y-4">
+          {grouped.map(wg => (
+            <div key={wg.world.id} data-testid={`world-${wg.world.id}`}>
+              <div className="flex items-baseline gap-2 mb-2">
+                <h3 className="font-serif text-sm font-semibold text-foreground">{wg.world.title}</h3>
+                {wg.world.description && (
+                  <span className="text-[0.72rem] text-muted-foreground">{wg.world.description}</span>
+                )}
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {wg.areas.map(ag => {
+                  const Icon = areaIconFor(ag.area.id);
+                  return (
+                    <button
+                      key={ag.area.id}
+                      type="button"
+                      onClick={() => setLocation(`/search?area=${ag.area.id}`)}
+                      className="klard-cpill"
+                      data-testid={`area-pill-${ag.area.id}`}
+                    >
+                      <Icon className="h-3.5 w-3.5" />
+                      {ag.area.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 

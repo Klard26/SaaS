@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Klard — Anbieter-Klassifikation</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700;9..144,900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Palette: industrial workshop — anthrazit, kraftpapier, blueprint cyan */
+  --ink:        #14181D;
+  --char:       #1E242C;
+  --char-2:     #2A3138;
+  --steel:      #3D4651;
+  --paper:      #FAF4E6;       /* warm kraft paper */
+  --paper-soft: #F4ECD6;
+  --mid:        #9AA0A6;
+  --mute:       #6B7280;
+  --border:     #E5DCC4;
+  --line:       #2B323A;
+
+  /* Accents */
+  --kraft:      #E8B339;       /* signature: kraft yellow */
+  --kraft-d:    #C49422;
+  --blueprint:  #2E7B9C;       /* signature: technical drawing blue */
+  --rust:       #B85C3A;       /* signature: industrial rust */
+  --moss:       #5F7142;       /* alltag green */
+  --plum:       #6E3B5F;
+
+  /* Type */
+  --serif:  "Fraunces", Georgia, serif;
+  --sans:   "Inter", -apple-system, sans-serif;
+  --mono:   "JetBrains Mono", "SF Mono", monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { font-family: var(--sans); color: var(--ink); background: var(--paper); -webkit-font-smoothing: antialiased; }
+
+/* ───── LAYOUT ───── */
+.app {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  min-height: 100vh;
+}
+
+/* ───── SIDEBAR ───── */
+.side {
+  background: var(--ink);
+  color: var(--paper);
+  position: sticky; top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  border-right: 1px solid var(--line);
+}
+.side::-webkit-scrollbar { width: 6px; }
+.side::-webkit-scrollbar-track { background: var(--ink); }
+.side::-webkit-scrollbar-thumb { background: var(--char-2); border-radius: 3px; }
+
+.side-head {
+  padding: 28px 28px 24px;
+  border-bottom: 1px solid var(--line);
+}
+.brand {
+  font-family: var(--serif);
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: -1.2px;
+  line-height: 0.95;
+}
+.brand .accent { color: var(--kraft); font-style: italic; }
+.brand-sub {
+  margin-top: 12px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--mid);
+  font-weight: 600;
+}
+
+/* World selector */
+.worlds {
+  padding: 20px 18px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.world {
+  padding: 14px 12px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  color: var(--paper);
+  font-family: var(--sans);
+  transition: all 0.18s;
+}
+.world:hover { border-color: var(--steel); }
+.world.active {
+  background: var(--kraft);
+  border-color: var(--kraft);
+  color: var(--ink);
+}
+.world-tag {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--mid);
+  margin-bottom: 6px;
+}
+.world.active .world-tag { color: var(--char); }
+.world-name {
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+.world-count {
+  font-size: 10px;
+  color: var(--mid);
+  margin-top: 4px;
+  font-family: var(--mono);
+}
+.world.active .world-count { color: var(--char-2); }
+
+/* Sections in sidebar */
+.side-section {
+  padding: 6px 0 24px;
+}
+.side-section-label {
+  padding: 16px 28px 10px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--mid);
+  text-transform: uppercase;
+}
+
+.area-item {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 28px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: background 0.15s;
+}
+.area-item:hover { background: rgba(255,255,255,0.03); }
+.area-item.active {
+  background: rgba(232,179,57,0.06);
+  border-left-color: var(--kraft);
+}
+.area-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--mid);
+  font-weight: 600;
+}
+.area-item.active .area-num { color: var(--kraft); }
+.area-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--paper);
+}
+.area-count {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--mid);
+  background: var(--char);
+  padding: 2px 7px;
+  border-radius: 3px;
+}
+.area-item.active .area-count { background: var(--kraft); color: var(--ink); }
+
+/* ───── MAIN ───── */
+.main {
+  background: var(--paper);
+  padding: 48px 56px 64px;
+  overflow-x: hidden;
+}
+
+/* Crumb / header */
+.crumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--mute);
+  margin-bottom: 8px;
+}
+.crumb .sep { color: var(--mid); }
+.crumb .here { color: var(--ink); font-weight: 700; }
+
+.h-tag {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  padding: 4px 10px;
+  background: var(--ink);
+  color: var(--kraft);
+  margin-bottom: 16px;
+  text-transform: uppercase;
+}
+.h-title {
+  font-family: var(--serif);
+  font-size: 64px;
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: -2.5px;
+  color: var(--ink);
+  margin-bottom: 16px;
+}
+.h-title .accent { color: var(--kraft-d); font-style: italic; }
+.h-desc {
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--steel);
+  max-width: 640px;
+  margin-bottom: 36px;
+}
+
+/* Pricing model legend */
+.legend {
+  display: flex;
+  gap: 24px;
+  padding: 18px 24px;
+  background: white;
+  border: 1px solid var(--border);
+  margin-bottom: 32px;
+  align-items: center;
+}
+.legend-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  color: var(--mute);
+  text-transform: uppercase;
+  margin-right: 4px;
+}
+.legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--steel); }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+.dot-now { background: var(--blueprint); }
+.dot-lead { background: var(--rust); }
+.dot-hybrid { background: linear-gradient(135deg, var(--blueprint) 50%, var(--rust) 50%); }
+
+/* Profession grid */
+.area-section {
+  margin-bottom: 56px;
+  padding-top: 28px;
+  border-top: 1px solid var(--border);
+}
+.area-section:first-child { border-top: none; padding-top: 0; }
+
+.area-head {
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  align-items: baseline;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.area-head-num {
+  font-family: var(--serif);
+  font-size: 42px;
+  font-weight: 900;
+  color: var(--kraft-d);
+  font-style: italic;
+  line-height: 1;
+}
+.area-head-meta {
+  display: flex;
+  flex-direction: column;
+}
+.area-head-name {
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--ink);
+  letter-spacing: -0.5px;
+}
+.area-head-sub {
+  font-size: 13px;
+  color: var(--mute);
+  margin-top: 6px;
+  max-width: 580px;
+  line-height: 1.5;
+}
+.area-head-stats {
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--mute);
+  line-height: 1.6;
+}
+.area-head-stats strong { color: var(--ink); font-size: 14px; }
+
+/* Profession cards */
+.prof-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+}
+.prof {
+  background: white;
+  padding: 22px 24px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: start;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.prof:hover { background: #FFFEF8; }
+.prof::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--kraft);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.prof:hover::before { opacity: 1; }
+
+.prof-id {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--mute);
+  font-weight: 600;
+  margin-bottom: 4px;
+  letter-spacing: 0.5px;
+}
+.prof-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.3;
+  margin-bottom: 6px;
+}
+.prof-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.prof-tag {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 6px;
+  background: var(--paper-soft);
+  color: var(--steel);
+  letter-spacing: 0.3px;
+  border-radius: 2px;
+}
+.prof-tag.req {
+  background: var(--ink);
+  color: var(--kraft);
+}
+.prof-services {
+  font-size: 11px;
+  color: var(--mute);
+  line-height: 1.5;
+  margin-top: 10px;
+  font-style: italic;
+}
+.prof-price {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.prof-price-amt {
+  font-family: var(--serif);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1;
+}
+.prof-price-unit {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--mute);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+.prof-model {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 3px 7px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-top: 6px;
+}
+.prof-model.now { background: rgba(46,123,156,0.1); color: var(--blueprint); }
+.prof-model.lead { background: rgba(184,92,58,0.1); color: var(--rust); }
+.prof-model.hybrid { background: linear-gradient(90deg, rgba(46,123,156,0.1), rgba(184,92,58,0.1)); color: var(--plum); }
+
+/* Replit integration note */
+.replit-note {
+  margin-top: 64px;
+  padding: 32px 40px;
+  background: var(--ink);
+  color: var(--paper);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 32px;
+  position: relative;
+  overflow: hidden;
+}
+.replit-note::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      transparent 0,
+      transparent 18px,
+      rgba(232,179,57,0.025) 18px,
+      rgba(232,179,57,0.025) 36px
+    );
+  pointer-events: none;
+}
+.replit-icon {
+  font-family: var(--serif);
+  font-size: 48px;
+  font-weight: 900;
+  color: var(--kraft);
+  font-style: italic;
+  line-height: 1;
+  position: relative;
+  z-index: 2;
+}
+.replit-text {
+  position: relative;
+  z-index: 2;
+}
+.replit-text-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: var(--kraft);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+.replit-text-title {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--paper);
+  margin-bottom: 6px;
+  letter-spacing: -0.3px;
+}
+.replit-text-desc {
+  font-size: 13px;
+  color: var(--mid);
+  line-height: 1.55;
+  max-width: 520px;
+}
+.replit-cta {
+  background: var(--kraft);
+  color: var(--ink);
+  padding: 14px 22px;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  z-index: 2;
+  white-space: nowrap;
+}
+.replit-cta:hover { background: var(--kraft-d); }
+
+/* Empty state */
+.empty {
+  padding: 80px;
+  text-align: center;
+  color: var(--mute);
+  font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .app { grid-template-columns: 1fr; }
+  .side { position: relative; height: auto; max-height: none; }
+  .main { padding: 32px 24px; }
+  .h-title { font-size: 44px; }
+  .prof-grid { grid-template-columns: 1fr; }
+  .area-head { grid-template-columns: 56px 1fr; }
+  .area-head-stats { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- SIDEBAR -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <aside class="side">
+
+    <div class="side-head">
+      <div class="brand">klar<span class="accent">d</span></div>
+      <div class="brand-sub">Anbieter-Klassifikation v3.0</div>
+    </div>
+
+    <!-- World toggle -->
+    <div class="worlds">
+      <button class="world active" data-world="pro" onclick="selectWorld('pro')">
+        <div class="world-tag">Welt 01</div>
+        <div class="world-name">Beratung &amp; Bauwesen</div>
+        <div class="world-count">32 Berufe · 5 Bereiche</div>
+      </button>
+      <button class="world" data-world="alltag" onclick="selectWorld('alltag')">
+        <div class="world-tag">Welt 02</div>
+        <div class="world-name">Alltag &amp; Handwerk</div>
+        <div class="world-count">56 Berufe · 9 Bereiche</div>
+      </button>
+    </div>
+
+    <!-- Areas list — populated by JS -->
+    <div class="side-section">
+      <div class="side-section-label">Bereiche</div>
+      <div id="areas-list"></div>
+    </div>
+
+    <div class="side-section">
+      <div class="side-section-label">Geschäftsmodell-Logik</div>
+      <div style="padding:0 28px;font-size:11px;color:var(--mid);line-height:1.6">
+        <p style="margin-bottom:10px"><strong style="color:var(--kraft)">Welt 01</strong> nutzt vorrangig <strong style="color:var(--blueprint);font-family:var(--mono);font-size:9px">SOFORTBUCHUNG</strong> mit Festpreisen und Live-Kalender.</p>
+        <p><strong style="color:var(--kraft)">Welt 02</strong> nutzt vorrangig <strong style="color:var(--rust);font-family:var(--mono);font-size:9px">PAY-PER-LEAD</strong> nach dem Armut-Modell — Anbieter kaufen Anfragen.</p>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- MAIN -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <main class="main" id="main">
+    <!-- Content rendered by JS -->
+  </main>
+
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════════════
+// DATA — Vollständige Klassifikation aller Anbieter
+// ════════════════════════════════════════════════════════════════════════
+
+const WORLDS = {
+
+  pro: {
+    title: "Beratung &",
+    titleAccent: "Bauwesen",
+    desc: "Professionelle Dienstleistungen mit Kammer-Pflicht, HOAI-Honorierung oder dena-Listung. Premium-Preise, terminbasierte Buchung, geringere Frequenz. Modell: Sofortbuchung mit Festpreisen, Pay-per-Lead nur für komplexe Projekte mit individuellem Aufwand.",
+    areas: [
+
+      // ───── BEREICH 1: Bau- & Energieberatung ─────
+      {
+        id: "bau",
+        num: "01",
+        name: "Bau- & Energieberatung",
+        sub: "Die 8 Berufsgruppen aus dem Leistungskatalog v2 — alle mit dena-Listung, HOAI oder Kammer-Pflicht.",
+        professions: [
+          { code: "ENB", name: "Energieberatung", services: "BAFA EBW, iSFP, BEG WG/EM, KfW KFN", req: ["dena"], price: "1.700", unit: "Ø EBW", model: "now" },
+          { code: "ARC", name: "Architektur", services: "Planung, Bauantrag, HOAI LPH 1–9", req: ["Kammer"], price: "12.000", unit: "Ø LPH 3", model: "hybrid" },
+          { code: "STA", name: "Statiker / Tragwerksplaner", services: "Standsicherheit, Bewehrung, Sanierung", req: ["Ing.-Kammer"], price: "3.500", unit: "Ø EFH", model: "lead" },
+          { code: "BAU", name: "Bauberatung", services: "Bauleitung, Abnahme, LV-Prüfung", req: [], price: "5.500", unit: "Ø Begleitg.", model: "lead" },
+          { code: "SAC", name: "Sachverständige", services: "Gutachten, Bewertung, Schäden", req: ["ö.b.u.v."], price: "1.490", unit: "Ø Kauf", model: "now" },
+          { code: "VRM", name: "Vermesser / Geodäten", services: "Grenzfeststellung, Lageplan, ÖbVI", req: ["ÖbVI"], price: "1.690", unit: "Ø Grenze", model: "now" },
+          { code: "TGA", name: "TGA-Fachplaner", services: "Heizung, Lüftung, Sanitär, Elektro", req: ["Ing.-Kammer"], price: "1.490", unit: "Ø WP-Plan.", model: "hybrid" },
+          { code: "BPS", name: "Bauphysik & Spezial", services: "Schallschutz, Brandschutz, Schadstoffe", req: ["Ing.-Kammer"], price: "1.690", unit: "Ø Brandsch.", model: "lead" },
+        ]
+      },
+
+      // ───── BEREICH 2: Finanzen, Recht & Steuern ─────
+      {
+        id: "fin",
+        num: "02",
+        name: "Finanzen, Recht & Steuern",
+        sub: "Reglementierte Beratungsberufe mit Standeskammern. Pflichtmitgliedschaft erforderlich, Standesgebühren teilweise vorgeschrieben.",
+        professions: [
+          { code: "STB", name: "Steuerberatung", services: "Steuererklärung, Bilanz, Beratung", req: ["StB-Kammer"], price: "120", unit: "€/Stunde", model: "now" },
+          { code: "RAB", name: "Rechtsberatung / Anwälte", services: "Erstberatung, Vertretung, Vertrag", req: ["RAK"], price: "240", unit: "€/Stunde", model: "hybrid" },
+          { code: "WPR", name: "Wirtschaftsprüfung", services: "Jahresabschluss, Prüfung, Due Diligence", req: ["WPK"], price: "180", unit: "€/Stunde", model: "lead" },
+          { code: "FIN", name: "Finanzberatung", services: "Geldanlage, Altersvorsorge, Bonität", req: ["§34f GewO"], price: "150", unit: "€/Stunde", model: "now" },
+          { code: "VRS", name: "Versicherungsberatung", services: "Bedarfsanalyse, Honorarberatung", req: ["§34d GewO"], price: "180", unit: "€/Stunde", model: "now" },
+          { code: "NOT", name: "Notariat", services: "Beurkundung, Erbrecht, Grundbuch", req: ["Notarkammer"], price: "—", unit: "GNotKG", model: "now" },
+        ]
+      },
+
+      // ───── BEREICH 3: Psychologie, Therapie & MPU ─────
+      {
+        id: "psy",
+        num: "03",
+        name: "Psychologie, Therapie & MPU",
+        sub: "Reglementierte Heilberufe (Approbation, Heilpraktiker-Erlaubnis) und beratende Berufe. Hohe Vertrauensschwelle, oft Krisensituationen. MPU/Verkehrspsychologie als eigener stark nachgefragter Bereich mit BfArM-zertifizierter Begutachtung.",
+        professions: [
+          { code: "PTH", name: "Psychotherapie (approbiert)", services: "Verhaltens-, tiefenpsychologisch, analytisch, systemisch · Kassenzulassung", req: ["Approbation"], price: "110", unit: "€/Std.", model: "now" },
+          { code: "KJP", name: "Kinder- & Jugendlichenpsychotherapie", services: "Approbierte KJP, oft mit Eltern-/Familiengesprächen", req: ["Approbation KJP"], price: "110", unit: "€/Std.", model: "now" },
+          { code: "HPP", name: "Heilpraktiker für Psychotherapie", services: "Psychotherapie ohne Kassenabrechnung, niedrigschwellig", req: ["HPG-Erl."], price: "90", unit: "€/Std.", model: "hybrid" },
+          { code: "PSB", name: "Psychologische Beratung", services: "Lebensberatung, Krisenbewältigung, Selbstreflexion", req: ["Gewerbe"], price: "80", unit: "€/Std.", model: "lead" },
+          { code: "PFT", name: "Paar- & Familientherapie", services: "Beziehungskonflikte, Trennung, Familiendynamik", req: ["DGSF/SG"], price: "130", unit: "€/Std.", model: "hybrid" },
+          { code: "TRG", name: "Trauerbegleitung", services: "Begleitung nach Verlust, Hospiz-Anschluss möglich", req: ["BVT"], price: "70", unit: "€/Std.", model: "lead" },
+          { code: "SUB", name: "Suchtberatung", services: "Alkohol, Drogen, Spiel, Co-Abhängige", req: ["Sozialpäd. + Sucht"], price: "75", unit: "€/Std.", model: "lead" },
+          { code: "MPU", name: "MPU-Vorbereitung", services: "Verkehrspsychologische Beratung Alkohol/Drogen/Punkte", req: ["Verkehrspsy."], price: "180", unit: "€/Std.", model: "lead" },
+          { code: "VPB", name: "Verkehrspsychologische Begutachtung", services: "Eigentliche MPU-Untersuchung, BfArM-zertifizierte Stelle", req: ["BfArM-Stelle"], price: "750", unit: "Ø MPU", model: "now" },
+          { code: "MED", name: "Mediation", services: "Wirtschafts-, Familien-, Erbschafts-Mediation", req: ["BMWA / BAFM"], price: "180", unit: "€/Std.", model: "hybrid" },
+        ]
+      },
+
+      // ───── BEREICH 4: Immobilien ─────
+      {
+        id: "imm",
+        num: "04",
+        name: "Immobilien",
+        sub: "Vermittlung, Verwaltung und Bewertung. Teilweise §34c GewO-pflichtig, je nach Geschäftsfeld.",
+        professions: [
+          { code: "MAK", name: "Immobilienmakler", services: "Vermarktung, Verkauf, Vermietung", req: ["§34c GewO"], price: "—", unit: "% v. Kaufpreis", model: "lead" },
+          { code: "VWA", name: "Hausverwaltung (WEG/SEV)", services: "WEG-Verwaltung, Mietverwaltung, Sondereig.", req: ["§34c GewO"], price: "28", unit: "€/WE/Monat", model: "lead" },
+          { code: "IMB", name: "Immobilienbewertung", services: "Verkehrswert, Ertragswert, BelWertV", req: ["Sachverst."], price: "1.900", unit: "Ø Vollgut.", model: "now" },
+        ]
+      },
+
+      // ───── BEREICH 5: Unternehmen & Strategie ─────
+      {
+        id: "biz",
+        num: "05",
+        name: "Unternehmen & Strategie",
+        sub: "B2B-Beratung ohne Kammerpflicht. Schwerpunkt: Skalierung, Digitalisierung, Personalisierung.",
+        professions: [
+          { code: "UBE", name: "Unternehmensberatung", services: "Strategie, Restrukturierung, M&A", req: [], price: "180", unit: "€/Stunde", model: "lead" },
+          { code: "MKT", name: "Marketingberatung", services: "SEO, Social, Brand, Performance", req: [], price: "120", unit: "€/Stunde", model: "lead" },
+          { code: "ITB", name: "IT & Digitalisierung", services: "ERP, Cloud, Cybersecurity, KI-Einsatz", req: [], price: "150", unit: "€/Stunde", model: "hybrid" },
+          { code: "PER", name: "Personalberatung", services: "Recruiting, Executive Search, HR-Strategie", req: ["AÜG bei Verleih"], price: "—", unit: "% Jahresgeh.", model: "lead" },
+          { code: "COA", name: "Coaching", services: "Führung, Karriere, Business-Mentoring", req: [], price: "180", unit: "€/Stunde", model: "now" },
+        ]
+      },
+
+    ]
+  },
+
+  alltag: {
+    title: "Alltag &",
+    titleAccent: "Handwerk",
+    desc: "Lokale Dienstleistungen für Privatkunden und Kleinbetriebe nach dem Armut-Modell aus der Türkei. Anbieter zahlen pro qualifizierter Anfrage, kein Provisionsmodell. Hohe Frequenz, niedrigere Einzelpreise, regional bedienter Markt.",
+    areas: [
+
+      // ───── BEREICH 1: Haushalt & Reinigung ─────
+      {
+        id: "haus",
+        num: "01",
+        name: "Haushalt & Reinigung",
+        sub: "Wiederkehrende Dienstleistungen für Privathaushalte. Schwarzarbeit-Bekämpfung durch Haushaltsscheckverfahren und §35a EStG (20% Steuerbonus für Kunden).",
+        professions: [
+          { code: "PUT", name: "Putzkraft / Reinigungskraft", services: "Wohnungsreinigung, Büroreinigung, Treppenhaus", req: ["§35a"], price: "18", unit: "€/Stunde", model: "lead" },
+          { code: "FRG", name: "Fensterreinigung", services: "Fenster außen, Wintergarten, Glasfassaden", req: [], price: "4", unit: "€/qm", model: "lead" },
+          { code: "TEP", name: "Teppich- & Polsterreinigung", services: "Sprühextraktion, Stuhl/Sofa, Matratze", req: [], price: "10", unit: "€/qm", model: "lead" },
+          { code: "BUE", name: "Bügelservice", services: "Hemden, Bettwäsche, Tischwäsche, Abhol-Service", req: [], price: "2,50", unit: "€/Hemd", model: "lead" },
+          { code: "WSC", name: "Wäscheservice", services: "Wäsche waschen, trocknen, Lieferung", req: [], price: "8", unit: "€/kg", model: "lead" },
+          { code: "ENT", name: "Entrümpelung & Wohnungsauflösung", services: "Haushaltsauflösung, Sperrmüll, Nachlass", req: ["§34h"], price: "—", unit: "Pauschal", model: "lead" },
+          { code: "UMZ", name: "Umzugshelfer & Möbeltransport", services: "Vollservice-Umzug, Klaviertransport, Lagerung", req: ["Güterkraft. ab 3,5t"], price: "35", unit: "€/Std./Helfer", model: "lead" },
+        ]
+      },
+
+      // ───── BEREICH 2: Garten & Außenanlagen ─────
+      {
+        id: "garten",
+        num: "02",
+        name: "Garten & Außenanlagen",
+        sub: "Saisonale Dienstleistungen rund ums Haus. §35a EStG-fähig für Privathaushalte, deshalb hohe Nachfrage.",
+        professions: [
+          { code: "GAR", name: "Gartenpflege", services: "Rasen mähen, Hecke schneiden, Unkraut", req: [], price: "28", unit: "€/Stunde", model: "lead" },
+          { code: "LAN", name: "Landschaftsbau & Gartengestaltung", services: "Planung, Bepflanzung, Wege, Teich", req: ["Meister"], price: "—", unit: "Pauschal", model: "lead" },
+          { code: "BAU", name: "Baumpflege & Baumfällung", services: "Kronen-Schnitt, Fällung, Wurzelentfernung", req: ["SKT-Schein"], price: "—", unit: "Pauschal", model: "lead" },
+          { code: "RAS", name: "Rasen verlegen / Vertikutieren", services: "Rollrasen, Aussaat, Vertikutieren, Düngen", req: [], price: "12", unit: "€/qm", model: "lead" },
+          { code: "WIN", name: "Winterdienst", services: "Schneeräumung, Streuen, Glättebekämpfung", req: ["Verkehrssich."], price: "35", unit: "€/Einsatz", model: "lead" },
+          { code: "SCH", name: "Schädlingsbekämpfung", services: "Wespen, Marder, Mäuse, Tauben, Bettwanzen", req: ["IHK-Sachk."], price: "—", unit: "Pauschal", model: "lead" },
+          { code: "POO", name: "Pool- & Teichpflege", services: "Reinigung, Wasserwerte, Winterfest machen", req: [], price: "—", unit: "Pauschal", model: "lead" },
+        ]
+      },
+
+      // ───── BEREICH 3: Handwerk klein ─────
+      {
+        id: "hw",
+        num: "03",
+        name: "Handwerk (Reparatur & Kleinarbeiten)",
+        sub: "Klassische Handwerksleistungen für Privatkunden. Eintragung in Handwerksrolle teilweise erforderlich.",
+        professions: [
+          { code: "MAL", name: "Maler & Lackierer", services: "Innenanstrich, Tapezieren, Fassade", req: ["HWO A"], price: "—", unit: "Pauschal", model: "lead" },
+          { code: "MAU", name: "Maurer & Putzer", services: "Wanddurchbruch, Verputzen, Fliesenleger", req: ["HWO A"], price: "—", unit: "Pauschal", model: "lead" },
+          { code: "ELK", name: "Elektriker", services: "Steckdose, Sicherung, E-Check, Lampen", req: ["HWO A"], price: "85", unit: "€/Stunde", model: "lead" },
+          { code: "SAN", name: "Sanitär / Heizung", services: "Heizung warten, Wasserhahn, Toilette, Bad", req: ["HWO A"], price: "85", unit: "€/Stunde", model: "lead" },
+          { code: "TIS", name: "Tischler & Schreiner", services: "Möbel, Türen, Fenster, Einbauten", req: ["HWO A"], price: "—", unit: "Pauschal", model: "lead" },
+          { code: "DAC", name: "Dachdecker", services: "Reparatur, Neueindeckung, Dachfenster", req: ["HWO A"], price: "—", unit: "Pauschal", model: "lead" },
+          { code: "SCH", name: "Schlüsseldienst", services: "Türöffnung, Schloss, Sicherheitstechnik", req: [], price: "—", unit: "Pauschal", model: "lead" },
+          { code: "GLR", name: "Glaser & Rolladen", services: "Glasbruch, Rolladen, Jalousien, Markisen", req: ["HWO A"], price: "—", unit: "Pauschal", model: "lead" },
+          { code: "BOD", name: "Bodenleger", services: "Parkett, Laminat, PVC, Teppich, Schleifen", req: ["HWO B"], price: "—", unit: "Pauschal", model: "lead" },
+        ]
+      },
+
+      // ───── BEREICH 4: Mode, Schneiderei & Reparatur ─────
+      {
+        id: "mode",
+        num: "04",
+        name: "Mode, Schneiderei & Reparatur",
+        sub: "Kleinbetriebe für Änderungen, Maßanfertigungen und Reparaturen. Klassische Pay-per-Lead-Branche mit lokalem Einzugsgebiet.",
+        professions: [
+          { code: "AEN", name: "Änderungsschneiderei", services: "Hose kürzen, Reißverschluss, Weiten/Engern", req: [], price: "—", unit: "Pauschal", model: "lead" },
+          { code: "MAS", name: "Maßschneiderei", services: "Maßanzüge, Brautkleid, Kleider, Hemden", req: ["HWO B"], price: "—", unit: "Pauschal", model: "lead" },
+          { code: "SCH", name: "Schuhmacher & Schuhreparatur", services: "Absätze, Sohlen, Reißverschluss, Lederpflege", req: ["HWO A"], price: "—", unit: "Pauschal", model: "lead" },
+          { code: "POL", name: "Polsterer", services: "Sofa neu beziehen, Stuhl, Auto-Sitze", req: ["HWO B"], price: "—", unit: "Pauschal", model: "lead" },
+          { code: "LED", name: "Lederreparatur", services: "Jacke, Tasche, Auto-Innenraum, Reinigung", req: [], price: "—", unit: "Pauschal", model: "lead" },
+        ]
+      },
+
+      // ───── BEREICH 5: Beauty, Wellness & Gesundheit ─────
+      {
+        id: "beauty",
+        num: "05",
+        name: "Beauty, Wellness & Gesundheit",
+        sub: "Mobile Dienstleistungen und stationäre Angebote. Gewerbe-Erlaubnis und teilweise Sachkundenachweis nötig.",
+        professions: [
+          { code: "FRS", name: "Friseur (mobil & Salon)", services: "Schnitt, Färbung, Hochzeitsfrisur, Bart", req: ["HWO A"], price: "—", unit: "Pauschal", model: "lead" },
+          { code: "KOS", name: "Kosmetik", services: "Gesichtsbehandlung, Permanent-Make-up", req: ["Gewerbe"], price: "65", unit: "€/Stunde", model: "lead" },
+          { code: "NAG", name: "Nagelstudio", services: "Maniküre, Pediküre, Gel, Acryl", req: ["Gewerbe"], price: "—", unit: "Pauschal", model: "lead" },
+          { code: "MAS", name: "Massage & Physiotherapie", services: "Wellness, medizinische Massage, Sport", req: ["Heilpraktiker / PT"], price: "65", unit: "€/Stunde", model: "lead" },
+          { code: "OST", name: "Osteopathie", services: "Erstanamnese, Behandlung, Kinder-Osteo.", req: ["Heilkundeberecht."], price: "95", unit: "€/Stunde", model: "now" },
+          { code: "ERN", name: "Ernährungsberatung", services: "Abnehmen, Sportler, Allergien, Diabetiker", req: ["Ökotrophologe"], price: "80", unit: "€/Stunde", model: "now" },
+        ]
+      },
+
+      // ───── BEREICH 6: Tier & Betreuung ─────
+      {
+        id: "tier",
+        num: "06",
+        name: "Tier & Betreuung",
+        sub: "Wachsender Markt mit hoher emotionaler Bindung. Pay-per-Lead besonders effektiv, da Kunden vorab vergleichen.",
+        professions: [
+          { code: "TSI", name: "Tiersitter / Hundesitter", services: "Stunden- oder Tagesbetreuung, Urlaub", req: ["Gewerbe"], price: "20", unit: "€/Tag", model: "lead" },
+          { code: "GAS", name: "Gassi-Service", services: "Tägliches Gassi-Gehen, Mehrhunde-Service", req: ["Gewerbe"], price: "15", unit: "€/Std.", model: "lead" },
+          { code: "HUS", name: "Hundeschule & Hundetrainer", services: "Welpenkurs, Einzelcoaching, Problemfälle", req: ["§11 TierSchG"], price: "70", unit: "€/Std.", model: "lead" },
+          { code: "GRO", name: "Hunde-Grooming / Salon", services: "Waschen, Schneiden, Scheren, Pflege", req: ["Gewerbe"], price: "—", unit: "Pauschal", model: "lead" },
+          { code: "KAT", name: "Katzenbetreuung zu Hause", services: "Füttern, Spielen, Streu wechseln (Urlaub)", req: ["Gewerbe"], price: "15", unit: "€/Besuch", model: "lead" },
+        ]
+      },
+
+      // ───── BEREICH 7: Kinder & Familie ─────
+      {
+        id: "fam",
+        num: "07",
+        name: "Kinder & Familie",
+        sub: "Hochsensibler Bereich mit Schutzbedarf — erweitertes Führungszeugnis als Pflicht-Upload bei der Registrierung.",
+        professions: [
+          { code: "BAB", name: "Babysitter", services: "Stundenweise, abends, Wochenende", req: ["EFZ Pflicht"], price: "12", unit: "€/Std.", model: "lead" },
+          { code: "TAG", name: "Tagesmutter / Tagespflege", services: "Ganztags, Halbtags, Kindbetreuung U3", req: ["Pflegeerl."], price: "—", unit: "Pauschal", model: "lead" },
+          { code: "NAH", name: "Nachhilfe / Lernförderung", services: "Mathematik, Englisch, Deutsch, Abitur", req: [], price: "25", unit: "€/Std.", model: "lead" },
+          { code: "MUS", name: "Musikunterricht", services: "Klavier, Gitarre, Geige, Gesang", req: [], price: "40", unit: "€/Std.", model: "lead" },
+          { code: "GEB", name: "Hebamme / Doula", services: "Schwangerschaftsbegleitung, Nachsorge", req: ["Hebammen-Erl."], price: "—", unit: "Pauschal", model: "now" },
+        ]
+      },
+
+      // ───── BEREICH 8: Foto, Event & Catering ─────
+      {
+        id: "evt",
+        num: "08",
+        name: "Foto, Event & Catering",
+        sub: "Hochzeit, Feier, Firmenevent. Sehr hohe Customer-Lifetime-Value bei Erstkontakten — Pay-per-Lead besonders profitabel.",
+        professions: [
+          { code: "FOT", name: "Fotograf", services: "Hochzeit, Familie, Business, Porträt", req: ["Gewerbe"], price: "—", unit: "Pauschal", model: "lead" },
+          { code: "VID", name: "Videograf & Filmproduktion", services: "Hochzeitsfilm, Imagefilm, Event-Recap", req: ["Gewerbe"], price: "—", unit: "Pauschal", model: "lead" },
+          { code: "DJD", name: "DJ & Live-Musik", services: "Hochzeit, Geburtstag, Firmenfeier", req: ["GEMA"], price: "—", unit: "Pauschal", model: "lead" },
+          { code: "CAT", name: "Catering & Partyservice", services: "Buffet, Fingerfood, Hochzeit, Firmenevent", req: ["Lebensmittel-Hyg."], price: "—", unit: "Pauschal", model: "lead" },
+          { code: "EVT", name: "Eventplanung & Hochzeitsplaner", services: "Komplettplanung, Day-of-Coordination", req: ["Gewerbe"], price: "—", unit: "Pauschal", model: "lead" },
+          { code: "DEC", name: "Dekoration & Floristik", services: "Hochzeitsdeko, Blumen, Tafel, Räume", req: [], price: "—", unit: "Pauschal", model: "lead" },
+          { code: "MOD", name: "Moderator / Trauredner", services: "Freie Trauung, Hochzeit, Firmenfeier", req: [], price: "—", unit: "Pauschal", model: "lead" },
+        ]
+      },
+
+      // ───── BEREICH 9: Senioren & Pflege-Assistenz ─────
+      {
+        id: "sen",
+        num: "09",
+        name: "Senioren & Alltagshilfe",
+        sub: "Demografisch wachsender Markt. §45a SGB XI-Entlastungsbetrag (131 € / Monat) erstattbar durch Pflegekasse — wichtiger Verkaufshebel.",
+        professions: [
+          { code: "ALT", name: "Alltagshilfe & Haushaltshilfe Senioren", services: "Einkauf, Kochen, Begleitung, Putzen", req: ["§45a-Anerk."], price: "30", unit: "€/Std.", model: "lead" },
+          { code: "BET", name: "Betreuung & Gesellschaft", services: "Spaziergänge, Vorlesen, Demenz-Begleitung", req: ["§45a-Anerk."], price: "28", unit: "€/Std.", model: "lead" },
+          { code: "FAH", name: "Fahrdienst Senioren / Begleitung", services: "Arzt-Fahrten, Behörden, Begleitung", req: ["P-Schein"], price: "35", unit: "€/Std.", model: "lead" },
+          { code: "PFA", name: "24-Stunden-Pflege-Vermittlung", services: "Vermittlung Pflegekraft (osteurop.)", req: ["§34c (Vermittl.)"], price: "—", unit: "Pauschal", model: "lead" },
+          { code: "BAR", name: "Barriere-Umbau", services: "Treppenlift, Wannentür, Haltegriffe", req: ["HWO A"], price: "—", unit: "Pauschal", model: "lead" },
+        ]
+      },
+
+    ]
+  }
+
+};
+
+// ════════════════════════════════════════════════════════════════════════
+// STATE + RENDERING
+// ════════════════════════════════════════════════════════════════════════
+let currentWorld = "pro";
+
+function selectWorld(world) {
+  currentWorld = world;
+  document.querySelectorAll(".world").forEach(b => {
+    b.classList.toggle("active", b.dataset.world === world);
+  });
+  renderAreasList();
+  renderMain();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function renderAreasList() {
+  const w = WORLDS[currentWorld];
+  const html = w.areas.map((a, i) => `
+    <div class="area-item ${i === 0 ? "active" : ""}" onclick="scrollToArea('${a.id}')">
+      <div class="area-num">${a.num}</div>
+      <div class="area-name">${a.name}</div>
+      <div class="area-count">${a.professions.length}</div>
+    </div>
+  `).join("");
+  document.getElementById("areas-list").innerHTML = html;
+}
+
+function modelLabel(m) {
+  if (m === "now") return { txt: "Sofortbuchung", cls: "now" };
+  if (m === "lead") return { txt: "Pay-per-Lead", cls: "lead" };
+  return { txt: "Hybrid", cls: "hybrid" };
+}
+
+function renderMain() {
+  const w = WORLDS[currentWorld];
+  const totalProfs = w.areas.reduce((s, a) => s + a.professions.length, 0);
+
+  const html = `
+    <div class="crumb">
+      <span>klard.de</span>
+      <span class="sep">/</span>
+      <span>Klassifikation</span>
+      <span class="sep">/</span>
+      <span class="here">Welt ${currentWorld === "pro" ? "01" : "02"}</span>
+    </div>
+
+    <div class="h-tag">${currentWorld === "pro" ? "Welt 01 — Profession" : "Welt 02 — Alltag"}</div>
+    <h1 class="h-title">${w.title} <span class="accent">${w.titleAccent}</span></h1>
+    <p class="h-desc">${w.desc}</p>
+
+    <div class="legend">
+      <span class="legend-label">Modell</span>
+      <div class="legend-item"><span class="legend-dot dot-now"></span>Sofortbuchung — fester Preis, Live-Kalender</div>
+      <div class="legend-item"><span class="legend-dot dot-lead"></span>Pay-per-Lead — Anbieter kauft Anfrage</div>
+      <div class="legend-item"><span class="legend-dot dot-hybrid"></span>Hybrid — beide Modelle möglich</div>
+    </div>
+
+    ${w.areas.map(area => `
+      <section class="area-section" id="area-${area.id}">
+        <div class="area-head">
+          <div class="area-head-num">${area.num}</div>
+          <div class="area-head-meta">
+            <div class="area-head-name">${area.name}</div>
+            <div class="area-head-sub">${area.sub}</div>
+          </div>
+          <div class="area-head-stats">
+            <strong>${area.professions.length}</strong> Berufe<br>
+            <strong>${area.professions.filter(p => p.model === "now").length}</strong> Sofort<br>
+            <strong>${area.professions.filter(p => p.model === "lead").length}</strong> Lead<br>
+            <strong>${area.professions.filter(p => p.model === "hybrid").length}</strong> Hybrid
+          </div>
+        </div>
+        <div class="prof-grid">
+          ${area.professions.map(p => {
+            const m = modelLabel(p.model);
+            return `
+              <div class="prof">
+                <div>
+                  <div class="prof-id">${currentWorld.toUpperCase()}.${area.num}.${p.code}</div>
+                  <div class="prof-name">${p.name}</div>
+                  <div class="prof-services">${p.services}</div>
+                  <div class="prof-tags">
+                    ${p.req.map(r => `<span class="prof-tag req">${r}</span>`).join("")}
+                  </div>
+                </div>
+                <div class="prof-price">
+                  <div class="prof-price-amt">${p.price === "—" ? "—" : "€ " + p.price}</div>
+                  <div class="prof-price-unit">${p.unit}</div>
+                  <span class="prof-model ${m.cls}">${m.txt}</span>
+                </div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      </section>
+    `).join("")}
+
+    <div class="replit-note">
+      <div class="replit-icon">→</div>
+      <div class="replit-text">
+        <div class="replit-text-label">Bereit für Replit-Import</div>
+        <div class="replit-text-title">${totalProfs} Berufe · ${w.areas.length} Bereiche · 1 Hierarchie-Datei</div>
+        <div class="replit-text-desc">Die komplette Klassifikation wird beim Bestätigen als <strong style="color:var(--kraft)">klard-classification-v3.json</strong> + <strong style="color:var(--kraft)">klard-classification-v3.sql</strong> erzeugt. Schema-erweitert um <code style="font-family:var(--mono);color:var(--kraft)">world</code>, <code style="font-family:var(--mono);color:var(--kraft)">area_id</code> und <code style="font-family:var(--mono);color:var(--kraft)">pricing_model</code>.</div>
+      </div>
+      <button class="replit-cta" onclick="alert('Wenn diese Vorschau passt, generiere ich JSON + SQL für direkten Replit-Import.')">JSON + SQL erzeugen</button>
+    </div>
+  `;
+
+  document.getElementById("main").innerHTML = html;
+}
+
+function scrollToArea(id) {
+  // Sidebar active state
+  document.querySelectorAll(".area-item").forEach(el => el.classList.remove("active"));
+  event.currentTarget.classList.add("active");
+  // Scroll
+  const target = document.getElementById("area-" + id);
+  if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+// Init
+renderAreasList();
+renderMain();
+</script>
+
+</body>
+</html>

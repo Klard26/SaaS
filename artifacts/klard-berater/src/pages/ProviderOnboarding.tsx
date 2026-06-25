@@ -6,13 +6,14 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { QualificationsForm, type QualificationsValue } from "@/components/QualificationsForm";
-import { useCreateProvider, useListCategories, useGetMyProviderProfile, getGetMyProviderProfileQueryKey } from "@workspace/api-client-react";
+import { useCreateProvider, useGetMyProviderProfile, getGetMyProviderProfileQueryKey } from "@workspace/api-client-react";
+import { useClassifiedCategories } from "@/lib/classification";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { UserCheck, Upload, Loader2 } from "lucide-react";
@@ -47,7 +48,7 @@ export default function ProviderOnboarding() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [qualifications, setQualifications] = useState<QualificationsValue>({});
 
-  const { data: categories = [] } = useListCategories();
+  const { categories, grouped } = useClassifiedCategories();
   const createProvider = useCreateProvider();
 
   const { data: existingProfile } = useGetMyProviderProfile({
@@ -160,9 +161,16 @@ export default function ProviderOnboarding() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {categories.map(cat => (
-                            <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
-                          ))}
+                          {grouped.map(wg =>
+                            wg.areas.map(ag => (
+                              <SelectGroup key={ag.area.id}>
+                                <SelectLabel>{wg.world.title} · {ag.area.name}</SelectLabel>
+                                {ag.categories.map(cat => (
+                                  <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                                ))}
+                              </SelectGroup>
+                            )),
+                          )}
                         </SelectContent>
                       </Select>
                       <FormMessage />

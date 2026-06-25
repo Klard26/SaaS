@@ -588,6 +588,19 @@ export interface HealthStatus {
  */
 export type CategoryQualifications = { [key: string]: unknown } | null;
 
+/**
+ * @nullable
+ */
+export type CategoryPricingModel =
+  | (typeof CategoryPricingModel)[keyof typeof CategoryPricingModel]
+  | null;
+
+export const CategoryPricingModel = {
+  now: "now",
+  lead: "lead",
+  hybrid: "hybrid",
+} as const;
+
 export interface Category {
   id: number;
   name: string;
@@ -604,6 +617,57 @@ export interface Category {
   requiresDirectBilling?: boolean;
   /** @nullable */
   qualifications?: CategoryQualifications;
+  /** @nullable */
+  worldId?: string | null;
+  /** @nullable */
+  areaId?: string | null;
+  /** @nullable */
+  professionCode?: string | null;
+  /** @nullable */
+  pricingModel?: CategoryPricingModel;
+  /** @nullable */
+  indicativePrice?: number | null;
+  /** @nullable */
+  priceUnit?: string | null;
+  /** @nullable */
+  exampleServices?: string | null;
+  /** @nullable */
+  requirements?: string[] | null;
+}
+
+export type WorldDefaultPricingModel =
+  (typeof WorldDefaultPricingModel)[keyof typeof WorldDefaultPricingModel];
+
+export const WorldDefaultPricingModel = {
+  now: "now",
+  lead: "lead",
+  hybrid: "hybrid",
+} as const;
+
+export interface World {
+  id: string;
+  title: string;
+  /** @nullable */
+  description?: string | null;
+  defaultPricingModel: WorldDefaultPricingModel;
+  displayOrder: number;
+}
+
+export interface Area {
+  id: string;
+  worldId: string;
+  code: string;
+  /** @nullable */
+  num?: string | null;
+  name: string;
+  /** @nullable */
+  description?: string | null;
+  displayOrder: number;
+}
+
+export interface Classification {
+  worlds: World[];
+  areas: Area[];
 }
 
 export type ProviderSummarySubscriptionTier =
@@ -1889,6 +1953,10 @@ export type ListProvidersParams = {
   zip?: string;
   city?: string;
   category?: string;
+  /**
+   * Filter by classification area id (resolves to all professions in that Bereich)
+   */
+  area?: string;
   q?: string;
   minPrice?: number;
   maxPrice?: number;

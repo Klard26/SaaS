@@ -29,8 +29,49 @@ export const ListCategoriesResponseItem = zod.object({
   providerCount: zod.number().optional(),
   requiresDirectBilling: zod.boolean().optional(),
   qualifications: zod.record(zod.string(), zod.unknown()).nullish(),
+  worldId: zod.string().nullish(),
+  areaId: zod.string().nullish(),
+  professionCode: zod.string().nullish(),
+  pricingModel: zod
+    .union([
+      zod.literal("now"),
+      zod.literal("lead"),
+      zod.literal("hybrid"),
+      zod.literal(null),
+    ])
+    .nullish(),
+  indicativePrice: zod.number().nullish(),
+  priceUnit: zod.string().nullish(),
+  exampleServices: zod.string().nullish(),
+  requirements: zod.array(zod.string()).nullish(),
 });
 export const ListCategoriesResponse = zod.array(ListCategoriesResponseItem);
+
+/**
+ * @summary Get the world to area classification hierarchy (Welten and Bereiche)
+ */
+export const GetClassificationResponse = zod.object({
+  worlds: zod.array(
+    zod.object({
+      id: zod.string(),
+      title: zod.string(),
+      description: zod.string().nullish(),
+      defaultPricingModel: zod.enum(["now", "lead", "hybrid"]),
+      displayOrder: zod.number(),
+    }),
+  ),
+  areas: zod.array(
+    zod.object({
+      id: zod.string(),
+      worldId: zod.string(),
+      code: zod.string(),
+      num: zod.string().nullish(),
+      name: zod.string(),
+      description: zod.string().nullish(),
+      displayOrder: zod.number(),
+    }),
+  ),
+});
 
 /**
  * @summary List service templates for a given category slug
@@ -93,6 +134,12 @@ export const ListProvidersQueryParams = zod.object({
   zip: zod.coerce.string().optional(),
   city: zod.coerce.string().optional(),
   category: zod.coerce.string().optional(),
+  area: zod.coerce
+    .string()
+    .optional()
+    .describe(
+      "Filter by classification area id (resolves to all professions in that Bereich)",
+    ),
   q: zod.coerce.string().optional(),
   minPrice: zod.coerce.number().optional(),
   maxPrice: zod.coerce.number().optional(),

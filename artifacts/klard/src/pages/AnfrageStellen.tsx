@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Form,
@@ -20,7 +20,8 @@ import {
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { GuidedHeader } from "@/components/journey/GuidedHeader";
-import { useCreateRequest, useListCategories } from "@workspace/api-client-react";
+import { useCreateRequest } from "@workspace/api-client-react";
+import { useClassifiedCategories } from "@/lib/classification";
 import { useToast } from "@/hooks/use-toast";
 import { FileText, Loader2 } from "lucide-react";
 
@@ -66,7 +67,7 @@ const toCents = (eur?: number | null) =>
 export default function AnfrageStellen() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { data: categories = [] } = useListCategories();
+  const { grouped } = useClassifiedCategories();
   const createRequest = useCreateRequest();
 
   const form = useForm<FormData>({
@@ -157,11 +158,18 @@ export default function AnfrageStellen() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {categories.map((c) => (
-                            <SelectItem key={c.id} value={c.slug}>
-                              {c.name}
-                            </SelectItem>
-                          ))}
+                          {grouped.map((wg) =>
+                            wg.areas.map((ag) => (
+                              <SelectGroup key={ag.area.id}>
+                                <SelectLabel>{wg.world.title} · {ag.area.name}</SelectLabel>
+                                {ag.categories.map((c) => (
+                                  <SelectItem key={c.id} value={c.slug}>
+                                    {c.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
+                            )),
+                          )}
                         </SelectContent>
                       </Select>
                       <FormMessage />

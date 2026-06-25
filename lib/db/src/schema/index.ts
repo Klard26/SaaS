@@ -1,4 +1,5 @@
 export * from "./categories";
+export * from "./classification";
 export * from "./providers";
 export * from "./services";
 export * from "./timeSlots";

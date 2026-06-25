@@ -10,6 +10,10 @@ export type ListProvidersParams = {
   zip?: string;
   city?: string;
   category?: string;
+  /**
+   * Filter by classification area id (resolves to all professions in that Bereich)
+   */
+  area?: string;
   q?: string;
   minPrice?: number;
   maxPrice?: number;

@@ -72,6 +72,19 @@ paths:
                 items:
                   $ref: "#/components/schemas/Category"
 
+  /classification:
+    get:
+      operationId: getClassification
+      tags: [categories]
+      summary: Get the world to area classification hierarchy (Welten and Bereiche)
+      responses:
+        "200":
+          description: Classification hierarchy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Classification"
+
   /service-templates:
     get:
       operationId: listServiceTemplates
@@ -125,6 +138,10 @@ paths:
           schema: { type: string }
         - name: category
           in: query
+          schema: { type: string }
+        - name: area
+          in: query
+          description: Filter by classification area id (resolves to all professions in that Bereich)
           schema: { type: string }
         - name: q
           in: query
@@ -2428,6 +2445,49 @@ components:
         qualifications:
           type: ["object", "null"]
           additionalProperties: true
+        worldId:        { type: ["string", "null"] }
+        areaId:         { type: ["string", "null"] }
+        professionCode: { type: ["string", "null"] }
+        pricingModel:   { type: ["string", "null"], enum: [now, lead, hybrid, null] }
+        indicativePrice: { type: ["number", "null"] }
+        priceUnit:      { type: ["string", "null"] }
+        exampleServices: { type: ["string", "null"] }
+        requirements:
+          type: ["array", "null"]
+          items: { type: string }
+
+    World:
+      type: object
+      required: [id, title, defaultPricingModel, displayOrder]
+      properties:
+        id:          { type: string }
+        title:       { type: string }
+        description: { type: ["string", "null"] }
+        defaultPricingModel: { type: string, enum: [now, lead, hybrid] }
+        displayOrder: { type: integer }
+
+    Area:
+      type: object
+      required: [id, worldId, code, name, displayOrder]
+      properties:
+        id:          { type: string }
+        worldId:     { type: string }
+        code:        { type: string }
+        num:         { type: ["string", "null"] }
+        name:        { type: string }
+        description: { type: ["string", "null"] }
+        displayOrder: { type: integer }
+
+    Classification:
+      type: object
+      required: [worlds, areas]
+      properties:
+        worlds:
+          type: array
+          items: { $ref: "#/components/schemas/World" }
+        areas:
+          type: array
+          items: { $ref: "#/components/schemas/Area" }
 
     ProviderSummary:
       type: object

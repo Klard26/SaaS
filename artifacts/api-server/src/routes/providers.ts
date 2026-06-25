@@ -8,7 +8,7 @@ import {
   GetProviderParams,
   ListProvidersQueryParams,
 } from "@workspace/api-zod";
-import { eq, ilike, or, and, desc, type SQL, sql } from "drizzle-orm";
+import { eq, ilike, or, and, desc, inArray, type SQL, sql } from "drizzle-orm";
 import { getAuth, clerkClient } from "@clerk/express";
 import { randomBytes } from "node:crypto";
 import { slugify } from "../lib/slugify";
@@ -220,6 +220,15 @@ router.get("/providers", async (req, res): Promise<void> => {
     if (q.zip) conditions.push(eq(providersTable.zip, q.zip));
     if (q.city) conditions.push(ilike(providersTable.city, `%${q.city}%`));
     if (q.category) conditions.push(eq(providersTable.categorySlug, q.category));
+    if (q.area) {
+      // Resolve a classification Bereich to all of its profession slugs.
+      const areaSlugs = await db
+        .select({ slug: categoriesTable.slug })
+        .from(categoriesTable)
+        .where(eq(categoriesTable.areaId, q.area));
+      // Empty IN () matches nothing — a bogus area yields zero providers.
+      conditions.push(inArray(providersTable.categorySlug, areaSlugs.map((c) => c.slug)));
+    }
     if (q.q) {
       conditions.push(
         or(

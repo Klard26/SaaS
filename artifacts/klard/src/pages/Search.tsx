@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLocation, useSearch } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Navbar } from "@/components/Navbar";
-import { useListProviders, useListCategories, getListProvidersQueryKey } from "@workspace/api-client-react";
+import { useListProviders, getListProvidersQueryKey } from "@workspace/api-client-react";
 import {
   Search, MapPin, Briefcase, Star, X,
   ShieldCheck, Trophy, Calendar,
@@ -13,6 +13,7 @@ import { publicUrlForObjectPath } from "@/lib/upload";
 import { formatPriceEUR } from "@/lib/dateFmt";
 import { VerifiedBadge, PremiumBadge } from "@/components/journey/Badges";
 import { EmptyState } from "@/components/journey/EmptyState";
+import { useClassifiedCategories } from "@/lib/classification";
 
 type ChipKey = "rating45" | "verified" | "top"
   | "exp1to5" | "exp5to10" | "exp10to20" | "exp20plus";
@@ -26,6 +27,7 @@ export default function SearchPage() {
   const [q, setQ] = useState(params.get("q") ?? "");
   const [city, setCity] = useState(params.get("city") ?? "");
   const [category, setCategory] = useState(params.get("category") ?? "all");
+  const [area, setArea] = useState(params.get("area") ?? "all");
   const [minPrice, setMinPrice] = useState(params.get("minPrice") ?? "");
   const [maxPrice, setMaxPrice] = useState(params.get("maxPrice") ?? "");
   const [radius, setRadius] = useState("25");
@@ -36,13 +38,14 @@ export default function SearchPage() {
     ...(q ? { q } : {}),
     ...(city ? { city } : {}),
     ...(category && category !== "all" ? { category } : {}),
+    ...(area && area !== "all" ? { area } : {}),
     ...(minPrice ? { minPrice: Number(minPrice) } : {}),
     ...(maxPrice ? { maxPrice: Number(maxPrice) } : {}),
     limit: 50,
   };
 
   const { data: providersRaw = [], isLoading } = useListProviders(queryParams);
-  const { data: categories = [] } = useListCategories();
+  const { categories, grouped, areas } = useClassifiedCategories();
 
   // Client-side chip filters (visual feedback for filters not yet supported by backend)
   let providers = [...providersRaw];
@@ -58,6 +61,7 @@ export default function SearchPage() {
   else if (sortBy === "rating-desc") providers.sort((a, b) => b.rating - a.rating);
 
   const activeCategory = categories.find(c => c.slug === category);
+  const activeArea = areas.find(a => a.id === area);
 
   function toggleChip(k: ChipKey) {
     setChips(prev => {
@@ -74,12 +78,12 @@ export default function SearchPage() {
   }
 
   function clearAll() {
-    setQ(""); setCity(""); setCategory("all");
+    setQ(""); setCity(""); setCategory("all"); setArea("all");
     setMinPrice(""); setMaxPrice(""); setRadius("25");
     setChips(new Set());
   }
 
-  const hasFilters = q || city || (category && category !== "all") || minPrice || maxPrice || chips.size > 0;
+  const hasFilters = q || city || (category && category !== "all") || (area && area !== "all") || minPrice || maxPrice || chips.size > 0;
 
   return (
     <div className="min-h-screen bg-[var(--klard-bg)] flex flex-col">
@@ -91,11 +95,21 @@ export default function SearchPage() {
           <form onSubmit={applyTopFilters} className="klard-search !shadow-none !border !border-border max-w-none">
             <div className="klard-search-group">
               <span className="klard-search-lbl">Branche</span>
-              <select value={category} onChange={e => setCategory(e.target.value)} data-testid="select-category-top">
+              <select
+                value={category}
+                onChange={e => { setCategory(e.target.value); if (e.target.value !== "all") setArea("all"); }}
+                data-testid="select-category-top"
+              >
                 <option value="all">Alle Branchen</option>
-                {categories.map(c => (
-                  <option key={c.id} value={c.slug}>{c.name}</option>
-                ))}
+                {grouped.map(wg =>
+                  wg.areas.map(ag => (
+                    <optgroup key={ag.area.id} label={`${wg.world.title} · ${ag.area.name}`}>
+                      {ag.categories.map(c => (
+                        <option key={c.id} value={c.slug}>{c.name}</option>
+                      ))}
+                    </optgroup>
+                  )),
+                )}
               </select>
             </div>
             <div className="klard-search-group">
@@ -218,9 +232,25 @@ export default function SearchPage() {
               </a>
             </div>
           )}
+          {activeArea && !activeCategory && (
+            <div className="mb-3 flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--klard-teal-l)] text-[var(--klard-teal-d)] text-xs font-semibold px-3 py-1">
+                Bereich: {activeArea.name}
+                <button
+                  type="button"
+                  onClick={() => setArea("all")}
+                  className="hover:text-destructive"
+                  aria-label="Bereichsfilter entfernen"
+                  data-testid="button-clear-area"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            </div>
+          )}
           <div className="flex items-center justify-between mb-5">
             <h2 className="font-serif text-xl font-bold text-foreground">
-              {activeCategory ? activeCategory.name : "Alle Branchen"}
+              {activeCategory ? activeCategory.name : activeArea ? activeArea.name : "Alle Branchen"}
               <span className="font-sans font-normal text-sm text-muted-foreground ml-2">
                 {isLoading ? "lädt …" : `– ${providers.length} Anbieter`}
               </span>
