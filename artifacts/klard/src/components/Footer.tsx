@@ -6,7 +6,7 @@ export function Footer() {
       <div className="max-w-[1100px] mx-auto grid gap-9 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr] mb-9">
         <div>
           <div className="klard-logo text-[1.4rem] text-white mb-2">
-            klar<span className="text-[rgba(8,145,178,0.85)]">d</span>
+            klar<span>d</span>
           </div>
           <p className="text-[0.78rem] leading-[1.7] max-w-[280px]">
             Klare Preise. Geprüfte Berater. Direkt buchbar. Die erste transparente Plattform

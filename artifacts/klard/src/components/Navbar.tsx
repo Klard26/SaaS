@@ -50,7 +50,7 @@ export function Navbar() {
           onSubmit={submitNavSearch}
           className="hidden md:flex flex-1 max-w-[460px] mx-4"
         >
-          <div className="flex items-center w-full bg-secondary border-[1.5px] border-transparent focus-within:bg-white focus-within:border-primary focus-within:shadow-[0_0_0_3px_rgba(8,145,178,0.1)] rounded-full h-10 px-4 transition-all">
+          <div className="flex items-center w-full bg-secondary border-[1.5px] border-transparent focus-within:bg-white focus-within:border-primary focus-within:shadow-[0_0_0_3px_rgba(29,78,216,0.12)] rounded-full h-10 px-4 transition-all">
             <Search className="h-4 w-4 text-muted-foreground shrink-0 mr-2" />
             <input
               type="text"

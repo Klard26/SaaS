@@ -47,7 +47,7 @@ export default function Home() {
             <em className="italic font-semibold">Preis sehen. Sofort buchen.</em>
           </h1>
 
-          <p className="text-white/75 text-base md:text-[1rem] font-light leading-[1.75] max-w-[560px] mx-auto mb-10">
+          <p className="text-white/90 text-base md:text-[1rem] font-light leading-[1.75] max-w-[560px] mx-auto mb-10">
             Energieberater, Architekten, Statiker, Bauberater und weitere Bau- &
             Energieexperten – echte Festpreise, verifizierte Profile, Termine in Echtzeit buchen.
           </p>

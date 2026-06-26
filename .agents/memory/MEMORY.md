@@ -14,6 +14,7 @@
 - [Vitest integration gotchas](vitest-integration-gotchas.md) — api-server route tests under Vitest hang on pino-pretty worker + Proxy-mock `then` trap; mount a minimal app, mock explicit named exports.
 - [api-server dev serves stale routes](api-server-dev-stale.md) — after editing api-server route files, restart the workflow before curl-smoke; dev process can serve pre-edit code (e.g. old auth walls).
 - [Free-lead grant consumption concurrency](lead-grant-consumption-concurrency.md) — spend small aggregate counter rows with blocking lock-all-rows + guarded decrement, NOT SKIP LOCKED / LIMIT 1 (false-negative wallet debit); downgrade revoke must share the tier-flip tx.
+- [Klard customer-app brand palette](klard-brand-palette.md) — brand is turquoise→elegant-blue; `--klard-teal*` tokens are misleadingly named but hold BLUE values; transition lives only in gradients. Don't add literal teal/cyan.
 - [Running lib/energie-calc numerically](energie-calc-standalone-run.md) — TS-source libs w/ extensionless imports can't be run via node/tsx/esbuild ad-hoc; typecheck+hand-compute, or vitest inside an artifact.
 - [Path-less router.use guard trap](path-less-router-use-trap.md) — bare `router.use(requireAdmin)` on a root-mounted Express router 401s ALL fall-through routes mounted after it; always scope to the path prefix.
 - [Förderschiene fulfillment dual-fire](foerderschiene-fulfillment-dual-fire.md) — paid-report side effects run from BOTH webhook + success reconcile concurrently; need DB unique + atomic CAS claim for emails, not read-only dedup.
