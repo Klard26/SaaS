@@ -24,3 +24,9 @@ id = "0GBgsv53yuxSJDCthK3wi"
 uri = "file://deliverables/Klard_Marketingplan_GTM_90Tage.pdf"
 type = "pdf"
 title = "Klard – Marketing-Mix, Akquise & Go-to-Market (90-Tage-Plan)"
+
+[[outputs]]
+id = "-C_m4JdvB-s84emFbplBM"
+uri = "file://deliverables/klard-claude-export.md"
+type = "text"
+title = "Klard – Komplettes Projekt für Claude-Import"
