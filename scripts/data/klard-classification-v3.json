@@ -20,7 +20,7 @@
   "worlds": [
     {
       "id": "pro",
-      "title": "Beratung & Bauwesen",
+      "title": "Beratung",
       "description": "Professionelle Dienstleistungen mit Kammer-Pflicht, HOAI-Honorierung oder dena-Listung. Premium-Preise, terminbasierte Buchung, geringere Frequenz.",
       "default_pricing_model": "now",
       "areas": [
