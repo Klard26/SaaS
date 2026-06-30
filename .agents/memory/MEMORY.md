@@ -18,3 +18,4 @@
 - [Running lib/energie-calc numerically](energie-calc-standalone-run.md) — TS-source libs w/ extensionless imports can't be run via node/tsx/esbuild ad-hoc; typecheck+hand-compute, or vitest inside an artifact.
 - [Path-less router.use guard trap](path-less-router-use-trap.md) — bare `router.use(requireAdmin)` on a root-mounted Express router 401s ALL fall-through routes mounted after it; always scope to the path prefix.
 - [Förderschiene fulfillment dual-fire](foerderschiene-fulfillment-dual-fire.md) — paid-report side effects run from BOTH webhook + success reconcile concurrently; need DB unique + atomic CAS claim for emails, not read-only dedup.
+- [Professional slides content fit](slides-content-fit.md) — fixed slide box (~62vh content area); content silently slides under footer, no scroll; budget ≤~8 rendered lines, screenshot to verify (typecheck/validate won't catch overflow).

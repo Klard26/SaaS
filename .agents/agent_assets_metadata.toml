@@ -30,3 +30,9 @@ id = "-C_m4JdvB-s84emFbplBM"
 uri = "file://deliverables/klard-claude-export.md"
 type = "text"
 title = "Klard – Komplettes Projekt für Claude-Import"
+
+[[outputs]]
+id = "wX8121T_T-5V2En6WJWfQ"
+uri = "file://.local/outputs/Klard---Investor-Pitch.pdf"
+type = "pdf"
+title = "Klard – Investor Pitch (PDF)"

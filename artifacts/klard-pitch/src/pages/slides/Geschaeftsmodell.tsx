@@ -1,62 +1,68 @@
-export default function Geschaeftsmodell() {
+import { SlideFrame } from "@/components/SlideFrame";
+
+function Source({
+  no,
+  name,
+  children,
+}: {
+  no: string;
+  name: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="w-screen h-screen overflow-hidden relative bg-bg text-text font-display">
-      <div className="absolute inset-0 blueprint-grid pointer-events-none" />
-
-      <div className="relative h-full px-[8vw] py-[7vh] flex flex-col">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-[0.8vw]">
-            <div className="w-[1.1vw] h-[1.1vw] bg-primary" />
-            <span className="text-[1.5vw] tracking-[0.4em] text-muted font-semibold">
-              KLARD
-            </span>
-          </div>
-          <span className="text-[1.5vw] tracking-[0.3em] text-muted">16 / 19</span>
-        </div>
-
-        <div className="mt-[6vh]">
-          <span className="text-[1.5vw] tracking-[0.2em] text-primary font-semibold">
-            GESCHÄFTSMODELL
-          </span>
-          <h2 className="mt-[1.5vh] text-[4vw] font-bold tracking-tight text-deep leading-[1.05]">
-            Zwei Ertragsquellen
-          </h2>
-          <div className="mt-[2.5vh] w-[8vw] h-[0.5vh] bg-primary" />
-        </div>
-
-        <div className="mt-[6vh] grid grid-cols-2 gap-[3vw] flex-1 items-stretch">
-          <div className="bg-card border border-line p-[2.8vw] flex flex-col">
-            <span className="text-[1.5vw] tracking-[0.2em] text-primary font-semibold">QUELLE 01</span>
-            <h3 className="mt-[2vh] text-[2.4vw] font-semibold text-deep">Provision pro Buchung</h3>
-            <div className="mt-[3vh] flex items-end gap-[2vw]">
-              <div>
-                <div className="text-[3.4vw] font-extrabold text-deep leading-none">9 %</div>
-                <div className="mt-[1vh] text-[1.5vw] text-muted">Basic</div>
-              </div>
-              <div>
-                <div className="text-[3.4vw] font-extrabold text-primary leading-none">4 %</div>
-                <div className="mt-[1vh] text-[1.5vw] text-muted">Premium</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-card border border-line p-[2.8vw] flex flex-col">
-            <span className="text-[1.5vw] tracking-[0.2em] text-primary font-semibold">QUELLE 02</span>
-            <h3 className="mt-[2vh] text-[2.4vw] font-semibold text-deep">Wiederkehrende Abos</h3>
-            <div className="mt-[3vh] flex items-end gap-[0.8vw]">
-              <span className="text-[3.4vw] font-extrabold text-accent leading-none">89 €</span>
-              <span className="text-[1.5vw] text-muted mb-[0.8vh]">/ Monat · Premium</span>
-            </div>
-            <p className="mt-[3vh] text-[1.5vw] leading-snug text-muted">
-              Planbare, wiederkehrende Umsätze ergänzen die Vermittlungsprovision.
-            </p>
-          </div>
-        </div>
-
-        <p className="mt-[3vh] text-[1.5vw] text-deep font-medium">
-          Zahlungsabwicklung vollständig über Stripe.
-        </p>
+    <div className="bg-card border border-line p-[2.2vw] rounded-[0.6vw] flex flex-col">
+      <span className="text-[2.2vw] tracking-[0.2em] text-primary font-semibold">
+        {no}
+      </span>
+      <h3 className="mt-[1.8vh] text-[2.6vw] font-semibold text-deep leading-[1.15]">
+        {name}
+      </h3>
+      <div className="mt-[2.4vh] flex-1 flex flex-col justify-end">
+        {children}
       </div>
     </div>
+  );
+}
+
+export default function Geschaeftsmodell() {
+  return (
+    <SlideFrame
+      section="GESCHÄFTSMODELL"
+      page="08"
+      title="Klard verdient an drei sich ergänzenden Erlösströmen"
+      source="Preise serverseitig berechnet; Stand 2026."
+    >
+      <div className="grid grid-cols-3 gap-[2.4vw] flex-1 items-stretch">
+        <Source no="QUELLE 01" name="Provision pro Buchung">
+          <div className="flex items-end gap-[1.6vw]">
+            <span className="text-[3.6vw] font-extrabold text-deep leading-none">
+              9–14 %
+            </span>
+          </div>
+          <p className="mt-[1.4vh] text-[2.3vw] leading-[1.3] text-muted">
+            Beratung &amp; Bau · 10–15 % für Alltag &amp; Handwerk.
+          </p>
+        </Source>
+        <Source no="QUELLE 02" name="Pay-per-Lead">
+          <span className="text-[3.6vw] font-extrabold text-deep leading-none">
+            6–15 €
+          </span>
+          <p className="mt-[1.4vh] text-[2.3vw] leading-[1.3] text-muted">
+            pro qualifizierter Anfrage, je nach Kategorie.
+          </p>
+        </Source>
+        <Source no="QUELLE 03" name="Premium-Abonnement">
+          <div className="flex items-end gap-[1vw]">
+            <span className="text-[3.6vw] font-extrabold text-accent leading-none">
+              89 € / 69 €
+            </span>
+          </div>
+          <p className="mt-[1.4vh] text-[2.3vw] leading-[1.3] text-muted">
+            pro Monat · Pro- bzw. Alltag-Berater. Planbare, wiederkehrende
+            Umsätze.
+          </p>
+        </Source>
+      </div>
+    </SlideFrame>
   );
 }
