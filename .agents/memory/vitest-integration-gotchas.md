@@ -45,3 +45,15 @@ only the routers under test at `/api`, with a tiny middleware that sets a no-op
 email/invoice side-effects. Everything else (queries, the booking transaction,
 status transitions, authorization) runs for real against the dev Postgres.
 Fixtures use a unique suffix and are cleaned up in `afterAll`.
+
+## Running the suite in CI (or any fresh env)
+
+The full `pnpm run test` needs exactly two things to go green: a real Postgres
+with `DATABASE_URL` set (`@workspace/db` throws at import without it, and the
+integration tests run real insert/select/delete), and the schema pushed first
+(`pnpm --filter @workspace/db run push-force` → `drizzle-kit push --force`).
+
+**Why:** verified the suite passes with ONLY `DATABASE_URL` (+ a placeholder
+`SESSION_SECRET`) — it does NOT require any external-service secrets. Stripe,
+Clerk, Resend, Anthropic, and object storage are either mocked in the tests or
+degrade gracefully, so CI does not need those as repo secrets.
