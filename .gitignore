@@ -47,3 +47,6 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Large AI export bundle (generated for Claude import, not source code)
+deliverables/klard-claude-export.md
