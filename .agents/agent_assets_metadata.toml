@@ -36,3 +36,9 @@ id = "wX8121T_T-5V2En6WJWfQ"
 uri = "file://.local/outputs/Klard---Investor-Pitch.pdf"
 type = "pdf"
 title = "Klard – Investor Pitch (PDF)"
+
+[[outputs]]
+id = "FEHwcOES_ZEzki5g_LPwW"
+uri = "file://.local/outputs/Klard---Pitch-Deck.pdf"
+type = "pdf"
+title = "Klard – Pitch Deck.pdf"
